@@ -191,7 +191,7 @@ def step_response_is_iterable(context: Context) -> None:
     pass
 
 
-@given('the developer has created a Container named "{container_name}"')
+@given('a developer has created a Container named "{container_name}"')
 def step_create_named_container(context: Context, container_name: str) -> None:
     """Create a Container with a specific name for tracking."""
     from rivet_di import (

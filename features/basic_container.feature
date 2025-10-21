@@ -46,7 +46,7 @@ Feature: Basic Container Structure
 
   Scenario: Developer creates multiple independent containers
     Given a developer has created a Container named "container_a"
-    And the developer has created a Container named "container_b"
+    And a developer has created a Container named "container_b"
     When the developer modifies "container_a"
     Then "container_b" remains unchanged
     And the containers maintain independent state
