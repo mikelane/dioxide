@@ -32,6 +32,7 @@ dependencies = []
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.1",
+    "behave>=1.2.6",
     "mypy>=1.8",
     "ruff>=0.1",
     "isort>=5.13",
@@ -70,6 +71,10 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
+
+[[tool.mypy.overrides]]
+module = ["behave", "behave.*", "rivet_di"]
+ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py311"
