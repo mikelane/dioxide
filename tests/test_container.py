@@ -1,7 +1,6 @@
 """Tests for Container class."""
 
 import pytest
-
 from rivet_di import (
     Container,
     Scope,

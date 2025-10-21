@@ -1,6 +1,8 @@
 """Dependency injection scopes."""
 
-from enum import Enum
+from enum import (
+    Enum,
+)
 
 
 class Scope(str, Enum):

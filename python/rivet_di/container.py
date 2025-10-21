@@ -1,6 +1,9 @@
 """Dependency injection container."""
 
-from typing import Any, TypeVar
+from typing import (
+    Any,
+    TypeVar,
+)
 
 from rivet_di._rivet_core import Container as RustContainer
 
@@ -55,4 +58,4 @@ class Container:
             raise ValueError(msg)
 
         # Placeholder - will use Rust core
-        return component_type()  # type: ignore[return-value]
+        return component_type()
