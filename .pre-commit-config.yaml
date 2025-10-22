@@ -14,14 +14,14 @@ repos:
     rev: v0.1.15
     hooks:
       - id: ruff
-        args: [--fix]
+        args: [--fix, --unsafe-fixes]
       - id: ruff-format
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
-        args: [--profile=black, --line-length=100]
+        args: [--profile=black, --line-length=120]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
