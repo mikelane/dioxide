@@ -57,6 +57,8 @@ package-dir = {"" = "python"}
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Describe*", "Test*"]
+python_functions = ["it_*", "test_*"]
 addopts = [
     "--strict-markers",
     "--strict-config",
