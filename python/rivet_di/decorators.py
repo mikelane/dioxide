@@ -1,13 +1,8 @@
 """Decorator for marking classes as DI components."""
 
-from typing import (
-    Any,
-    TypeVar,
-)
+from typing import Any, TypeVar
 
-from rivet_di.scope import (
-    Scope,
-)
+from rivet_di.scope import Scope
 
 T = TypeVar('T')
 

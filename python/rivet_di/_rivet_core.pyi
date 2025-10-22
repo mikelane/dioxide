@@ -1,11 +1,7 @@
 """Type stubs for Rust core module."""
 
-from collections.abc import (
-    Callable,
-)
-from typing import (
-    TypeVar,
-)
+from collections.abc import Callable
+from typing import TypeVar
 
 T = TypeVar('T')
 

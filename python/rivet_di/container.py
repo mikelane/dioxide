@@ -1,11 +1,7 @@
 """Dependency injection container."""
 
-from collections.abc import (
-    Callable,
-)
-from typing import (
-    TypeVar,
-)
+from collections.abc import Callable
+from typing import TypeVar
 
 from rivet_di._rivet_core import Container as RustContainer
 
