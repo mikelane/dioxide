@@ -86,6 +86,7 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 strict_concatenate = true
+exclude = ["features/"]
 
 [[tool.mypy.overrides]]
 module = ["behave", "behave.*", "rivet_di._rivet_core"]

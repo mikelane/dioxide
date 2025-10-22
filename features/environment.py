@@ -1,12 +1,8 @@
 """Behave environment configuration for rivet-di BDD tests."""
 
-from typing import (
-    Any,
-)
+from typing import Any
 
-from behave.runner import (
-    Context,
-)
+from behave.runner import Context
 
 
 def before_all(context: Context) -> None:
@@ -31,7 +27,7 @@ def before_scenario(context: Context, scenario: Any) -> None:
 
     Clean up context to ensure test isolation.
     """
-    # Clear any previous test data
+    # Clear any previous test data - only initialize attributes that are used across scenarios
     context.container = None
     context.containers = {}
     context.exception = None
@@ -45,12 +41,8 @@ def after_scenario(context: Context, scenario: Any) -> None:
 
     Clean up resources and verify test state.
     """
-    # Clean up any containers
-    if hasattr(context, 'container'):
-        context.container = None
-
-    if hasattr(context, 'containers'):
-        context.containers.clear()
+    # Clean up any containers - no need to delete, they'll be reset in before_scenario
+    pass
 
 
 def after_all(context: Context) -> None:
