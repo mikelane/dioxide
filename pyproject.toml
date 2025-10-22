@@ -51,6 +51,9 @@ python-source = "python"
 module-name = "rivet_di._rivet_core"
 features = ["pyo3/extension-module"]
 
+[tool.setuptools]
+package-dir = {"" = "python"}
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
@@ -61,6 +64,7 @@ addopts = [
 
 [tool.mypy]
 python_version = "3.11"
+mypy_path = "python"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

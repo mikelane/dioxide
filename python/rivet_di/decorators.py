@@ -14,12 +14,13 @@ def component(
     Mark a class as a dependency injection component.
 
     Args:
-        scope: Lifecycle scope (SINGLETON or FACTORY)
+        scope: Lifecycle scope (SINGLETON or FACTORY), defaults to SINGLETON
 
     Returns:
         Decorated class with DI metadata
 
     Example:
+        >>> from rivet_di import Scope
         >>> @component(scope=Scope.SINGLETON)
         ... class DatabaseConnection:
         ...     pass
