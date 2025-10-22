@@ -47,3 +47,11 @@ repos:
         types: [rust]
         pass_filenames: false
         args: [--all-targets, --all-features, --, -D, warnings, -A, non-local-definitions]
+
+      - id: pytest-cov
+        name: pytest with coverage
+        entry: pytest
+        language: system
+        types: [python]
+        pass_filenames: false
+        args: [tests/test_component.py, --cov=rivet_di, --cov-fail-under=95, --cov-branch, -q]

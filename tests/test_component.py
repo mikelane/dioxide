@@ -1,6 +1,6 @@
 """Tests for @component decorator and auto-discovery."""
 
-from rivet_di import Container, component
+from rivet_di import Container, Scope, component
 
 
 def _clear_registry() -> None:
@@ -35,6 +35,24 @@ class DescribeComponentDecorator:
 
         registered = _get_registered_components()
         assert UserService in registered
+
+    def it_can_be_applied_with_parentheses(self) -> None:
+        """Decorator can be applied with parentheses and scope argument."""
+        _clear_registry()
+
+        @component()  # type: ignore[misc]
+        class DefaultScopeService:
+            pass
+
+        @component(scope=Scope.FACTORY)  # type: ignore[misc]
+        class FactoryService:
+            pass
+
+        from rivet_di import _get_registered_components
+
+        registered = _get_registered_components()
+        assert DefaultScopeService in registered
+        assert FactoryService in registered
 
 
 class DescribeScan:
@@ -121,3 +139,97 @@ class DescribeScan:
 
         # Verify singleton behavior
         assert controller.user_service is container.resolve(UserService)
+
+    def it_handles_components_without_init_parameters(self) -> None:
+        """Components without __init__ parameters are registered correctly."""
+        _clear_registry()
+
+        @component
+        class SimpleService:
+            value = 'simple'
+
+        container = Container()
+        container.scan()
+
+        service = container.resolve(SimpleService)
+        assert isinstance(service, SimpleService)
+        assert service.value == 'simple'
+
+    def it_handles_components_without_type_hints(self) -> None:
+        """Components with __init__ but no type hints are registered."""
+        _clear_registry()
+
+        @component
+        class LegacyService:
+            def __init__(self) -> None:
+                self.value = 'legacy'
+
+        container = Container()
+        container.scan()
+
+        service = container.resolve(LegacyService)
+        assert isinstance(service, LegacyService)
+        assert service.value == 'legacy'
+
+    def it_creates_new_instances_for_factory_scope(self) -> None:
+        """Components with factory scope create new instances each time."""
+        _clear_registry()
+
+        @component(scope=Scope.FACTORY)  # type: ignore[misc]
+        class FactoryService:
+            pass
+
+        container = Container()
+        container.scan()
+
+        service1 = container.resolve(FactoryService)
+        service2 = container.resolve(FactoryService)
+
+        # Different instances for factory scope
+        assert service1 is not service2
+
+
+class DescribeContainerBasicOperations:
+    """Tests for Container basic operations."""
+
+    def it_registers_instances_directly(self) -> None:
+        """Container can register pre-created instances."""
+        container = Container()
+
+        class Config:
+            def __init__(self) -> None:
+                self.value = 'test-config'
+
+        config_instance = Config()
+        container.register_instance(Config, config_instance)
+
+        resolved = container.resolve(Config)
+        assert resolved is config_instance
+        assert resolved.value == 'test-config'
+
+    def it_registers_classes_directly(self) -> None:
+        """Container can register classes for instantiation."""
+        container = Container()
+
+        class Service:
+            def __init__(self) -> None:
+                self.created = True
+
+        container.register_class(Service, Service)
+
+        resolved = container.resolve(Service)
+        assert isinstance(resolved, Service)
+        assert resolved.created is True
+
+    def it_reports_empty_state_correctly(self) -> None:
+        """Container correctly reports when empty or populated."""
+        container = Container()
+        assert container.is_empty() is True
+        assert len(container) == 0
+
+        class Service:
+            pass
+
+        container.register_class(Service, Service)
+        assert container.is_empty() is False
+        assert len(container) == 1
