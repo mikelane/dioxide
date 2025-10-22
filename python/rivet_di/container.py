@@ -1,7 +1,9 @@
 """Dependency injection container."""
 
+from collections.abc import (
+    Callable,
+)
 from typing import (
-    Any,
     TypeVar,
 )
 
@@ -21,23 +23,45 @@ class Container:
     def __init__(self) -> None:
         """Initialize the container."""
         self._rust_core = RustContainer()
-        self._components: dict[type, Any] = {}
 
-    def register(self, component_class: type[T]) -> None:
+    def register_instance(self, component_type: type[T], instance: T) -> None:
         """
-        Register a component class with the container.
+        Register a pre-created instance for a given type.
 
         Args:
-            component_class: Class decorated with @component
+            component_type: Type to register
+            instance: Pre-created instance to return for this type
 
         Raises:
-            ValueError: If class is not decorated with @component
+            KeyError: If type is already registered
         """
-        if not hasattr(component_class, '__rivet_scope__'):
-            msg = f'{component_class.__name__} must be decorated with @component'
-            raise ValueError(msg)
+        self._rust_core.register_instance(component_type, instance)
 
-        self._components[component_class] = component_class
+    def register_class(self, component_type: type[T], implementation: type[T]) -> None:
+        """
+        Register a class to instantiate for a given type.
+
+        Args:
+            component_type: Type to register
+            implementation: Class to instantiate (calls __init__ with no args)
+
+        Raises:
+            KeyError: If type is already registered
+        """
+        self._rust_core.register_class(component_type, implementation)
+
+    def register_factory(self, component_type: type[T], factory: Callable[[], T]) -> None:
+        """
+        Register a factory function for a given type.
+
+        Args:
+            component_type: Type to register
+            factory: Callable that returns an instance (called with no args)
+
+        Raises:
+            KeyError: If type is already registered
+        """
+        self._rust_core.register_factory(component_type, factory)
 
     def resolve(self, component_type: type[T]) -> T:
         """
@@ -50,12 +74,24 @@ class Container:
             Instance of the requested type
 
         Raises:
-            ValueError: If type is not registered
+            KeyError: If type is not registered
         """
-        # Will delegate to Rust core in walking skeleton
-        if component_type not in self._components:
-            msg = f'{component_type.__name__} is not registered'
-            raise ValueError(msg)
+        return self._rust_core.resolve(component_type)
 
-        # Placeholder - will use Rust core
-        return component_type()
+    def is_empty(self) -> bool:
+        """
+        Check if container has no registered providers.
+
+        Returns:
+            True if container is empty, False otherwise
+        """
+        return self._rust_core.is_empty()
+
+    def __len__(self) -> int:
+        """
+        Get count of registered providers.
+
+        Returns:
+            Number of registered providers
+        """
+        return len(self._rust_core)
