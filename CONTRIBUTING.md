@@ -1,6 +1,6 @@
-# Contributing to rivet-di
+# Contributing to dioxide
 
-Thank you for your interest in contributing to rivet-di! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to dioxide! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
@@ -11,8 +11,8 @@ Be respectful, inclusive, and professional. We're all here to build something us
 1. **Fork the repository** on GitHub
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/rivet-di.git
-   cd rivet-di
+   git clone https://github.com/YOUR_USERNAME/dioxide.git
+   cd dioxide
    ```
 3. **Set up development environment**:
    ```bash
@@ -27,7 +27,7 @@ Be respectful, inclusive, and professional. We're all here to build something us
 
 ### Before Making Changes
 
-1. Check existing [issues](https://github.com/mikelane/rivet-di/issues) and [pull requests](https://github.com/mikelane/rivet-di/pulls)
+1. Check existing [issues](https://github.com/mikelane/dioxide/issues) and [pull requests](https://github.com/mikelane/dioxide/pulls)
 2. Create an issue if one doesn't exist (use the appropriate template)
 3. Discuss your approach in the issue before starting work on large changes
 
@@ -163,4 +163,4 @@ Be respectful, inclusive, and professional. We're all here to build something us
 
 ## Thank You!
 
-Your contributions make rivet-di better for everyone. We appreciate your time and effort! 🎉
+Your contributions make dioxide better for everyone. We appreciate your time and effort! 🎉

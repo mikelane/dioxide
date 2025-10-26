@@ -67,7 +67,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     environment:
       name: pypi
-      url: https://pypi.org/p/rivet-di
+      url: https://pypi.org/p/dioxide
     permissions:
       id-token: write
 

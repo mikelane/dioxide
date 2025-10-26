@@ -1,4 +1,4 @@
-"""Behave environment configuration for rivet-di BDD tests."""
+"""Behave environment configuration for dioxide BDD tests."""
 
 from typing import Any
 
@@ -11,14 +11,14 @@ def before_all(context: Context) -> None:
 
     Set up any global test configuration needed across all scenarios.
     """
-    # Verify rivet-di is importable
+    # Verify dioxide is importable
     try:
-        import rivet_di  # noqa: F401
+        import dioxide  # noqa: F401
 
-        context.rivet_di_available = True
+        context.dioxide_available = True
     except ImportError:
-        context.rivet_di_available = False
-        print('WARNING: rivet-di not available - tests will fail')
+        context.dioxide_available = False
+        print('WARNING: dioxide not available - tests will fail')
 
 
 def before_scenario(context: Context, scenario: Any) -> None:

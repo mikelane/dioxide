@@ -1,16 +1,16 @@
-# rivet-di
+# dioxide
 
 **Fast, Rust-backed declarative dependency injection for Python**
 
-[![CI](https://github.com/mikelane/rivet-di/workflows/CI/badge.svg)](https://github.com/mikelane/rivet-di/actions)
-[![Python Version](https://img.shields.io/pypi/pyversions/rivet-di)](https://pypi.org/project/rivet-di/)
+[![CI](https://github.com/mikelane/dioxide/workflows/CI/badge.svg)](https://github.com/mikelane/dioxide/actions)
+[![Python Version](https://img.shields.io/pypi/pyversions/dioxide)](https://pypi.org/project/dioxide/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ## Overview
 
-`rivet-di` is a dependency injection framework for Python that combines:
+`dioxide` is a dependency injection framework for Python that combines:
 
 - **Declarative Python API** - Simple decorators and type hints
 - **Rust-backed performance** - Fast graph construction and resolution via PyO3
@@ -21,11 +21,11 @@
 
 🚧 **Work in Progress** - Currently implementing the v0.1 Walking Skeleton.
 
-See [Issues](https://github.com/mikelane/rivet-di/issues) and [Milestones](https://github.com/mikelane/rivet-di/milestones) for current progress.
+See [Issues](https://github.com/mikelane/dioxide/issues) and [Milestones](https://github.com/mikelane/dioxide/milestones) for current progress.
 
 ## Vision
 
-Traditional Python DI frameworks like `dependency-injector` are feature-rich but can be slow with large dependency graphs. `rivet-di` aims to provide:
+Traditional Python DI frameworks like `dependency-injector` are feature-rich but can be slow with large dependency graphs. `dioxide` aims to provide:
 
 1. **Fast graph construction** using Rust's `petgraph`
 2. **Type-based resolution** via Python's `__annotations__`
@@ -35,7 +35,7 @@ Traditional Python DI frameworks like `dependency-injector` are feature-rich but
 ## Quick Start (Planned API)
 
 ```python
-from rivet_di import Container, Scope, component
+from dioxide import Container, Scope, component
 
 @component(scope=Scope.SINGLETON)
 class DatabaseConnection:
@@ -98,8 +98,8 @@ container.shutdown()
 
 ```bash
 # Clone the repository
-git clone https://github.com/mikelane/rivet-di.git
-cd rivet-di
+git clone https://github.com/mikelane/dioxide.git
+cd dioxide
 
 # Install dependencies with uv
 uv venv
@@ -149,8 +149,8 @@ pre-commit install
 ## Architecture
 
 ```
-rivet-di/
-├── python/rivet_di/       # Python API
+dioxide/
+├── python/dioxide/       # Python API
 │   ├── __init__.py
 │   ├── container.py       # Main Container class
 │   ├── decorators.py      # @component decorator
@@ -171,7 +171,7 @@ rivet-di/
 
 ## Comparison to Other Frameworks
 
-| Feature | rivet-di | dependency-injector | injector |
+| Feature | dioxide | dependency-injector | injector |
 |---------|----------|---------------------|----------|
 | Type-based DI | ✅ | ✅ | ✅ |
 | Rust-backed | ✅ | ❌ | ❌ |

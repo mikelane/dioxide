@@ -9,7 +9,8 @@ These tests verify the Rust container implementation handles:
 - Circular dependencies
 """
 import pytest
-from rivet_di._rivet_core import Container as RustContainer
+
+from dioxide._dioxide_core import Container as RustContainer
 
 
 class DescribeRustContainerSingletonCaching:

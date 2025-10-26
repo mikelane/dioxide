@@ -1,10 +1,10 @@
 Feature: Basic Container Structure
-  As a Python developer using rivet-di
+  As a Python developer using dioxide
   I want a reliable dependency injection container
   So that I can manage my application's dependencies safely and efficiently
 
   # This feature implements the foundational Container structure that will
-  # serve as the core of the rivet-di dependency injection system. The Container
+  # serve as the core of the dioxide dependency injection system. The Container
   # provides thread-safe dependency storage and retrieval, enabling developers
   # to build loosely-coupled Python applications.
   #
@@ -15,7 +15,7 @@ Feature: Basic Container Structure
   # - Two-layer API design (Rust core + Python wrapper)
 
   Scenario: Developer creates a new container
-    Given the rivet-di library is available
+    Given the dioxide library is available
     When a developer creates a new Container instance
     Then the Container exists
     And the Container is ready to accept registrations

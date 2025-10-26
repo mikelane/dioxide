@@ -9,7 +9,7 @@
 
 ## Context
 
-We need to design the core `Container` struct in Rust that will serve as the foundation for rivet-di's dependency injection functionality. This is the most critical architectural decision as it affects:
+We need to design the core `Container` struct in Rust that will serve as the foundation for dioxide's dependency injection functionality. This is the most critical architectural decision as it affects:
 
 - Performance characteristics of the entire system
 - Thread-safety guarantees

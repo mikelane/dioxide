@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in rivet-di
+about: Report a bug in dioxide
 title: '[BUG] '
 labels: 'type: bug'
 assignees: ''
@@ -22,7 +22,7 @@ assignees: ''
 
 ## Environment
 - Python version:
-- rivet-di version:
+- dioxide version:
 - OS:
 
 ## Additional Context

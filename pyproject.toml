@@ -3,7 +3,7 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "rivet-di"
+name = "dioxide"
 version = "0.1.0"
 description = "Fast, Rust-backed declarative dependency injection for Python"
 authors = [
@@ -42,13 +42,13 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mikelane/rivet-di"
-Repository = "https://github.com/mikelane/rivet-di"
-Issues = "https://github.com/mikelane/rivet-di/issues"
+Homepage = "https://github.com/mikelane/dioxide"
+Repository = "https://github.com/mikelane/dioxide"
+Issues = "https://github.com/mikelane/dioxide/issues"
 
 [tool.maturin]
 python-source = "python"
-module-name = "rivet_di._rivet_core"
+module-name = "dioxide._dioxide_core"
 features = ["pyo3/extension-module"]
 
 [tool.setuptools]
@@ -91,7 +91,7 @@ strict_concatenate = true
 exclude = ["features/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "rivet_di._rivet_core"]
+module = ["behave", "behave.*", "dioxide._dioxide_core"]
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -134,7 +134,7 @@ ensure_newline_before_comments = true
 
 [tool.coverage.run]
 branch = true
-source = ["rivet_di"]
+source = ["dioxide"]
 
 [tool.coverage.report]
 precision = 2
@@ -142,7 +142,12 @@ show_missing = true
 skip_covered = false
 
 [tool.mutmut]
-paths_to_mutate = "python/rivet_di/"
+paths_to_mutate = "python/dioxide/"
 backup = false
 runner = "python -m pytest -x --assert=plain"
 tests_dir = "tests/"
+
+[dependency-groups]
+dev = [
+    "twine>=6.2.0",
+]

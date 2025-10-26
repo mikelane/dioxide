@@ -7,7 +7,7 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for setting up the GitHub Project board for rivet-di. The GitHub CLI and API have limited support for Projects v2, so the board must be created manually through the GitHub web interface.
+This guide provides step-by-step instructions for setting up the GitHub Project board for dioxide. The GitHub CLI and API have limited support for Projects v2, so the board must be created manually through the GitHub web interface.
 
 ---
 
@@ -50,11 +50,11 @@ This guide provides step-by-step instructions for setting up the GitHub Project 
 
 ## Step 1: Create GitHub Project
 
-1. Go to https://github.com/mikelane/rivet-di
+1. Go to https://github.com/mikelane/dioxide
 2. Click the **Projects** tab
 3. Click **New project** button
 4. Choose **Table** template (we'll add Board view later)
-5. Name it: **Rivet DI Development**
+5. Name it: **Dioxide Development**
 6. Click **Create project**
 
 ---
@@ -123,7 +123,7 @@ For estimation (optional for v0.1)
 1. Click **⋮** (more options) → **Settings**
 2. Click **Manage access**
 3. Scroll to **Danger zone** → **Import items**
-4. Select repository: `mikelane/rivet-di`
+4. Select repository: `mikelane/dioxide`
 5. Click **Import all open issues**
 
 ---
@@ -227,7 +227,7 @@ GitHub Projects supports automated workflows:
 
 ### Auto-add new issues
 1. Enable: **Auto-add to project**
-2. Set filter: `is:open is:issue repo:mikelane/rivet-di`
+2. Set filter: `is:open is:issue repo:mikelane/dioxide`
 3. Set initial Status: **📋 Backlog**
 
 ---
@@ -280,7 +280,7 @@ Create a project README with key metrics:
 4. Add this content:
 
 ```markdown
-# Rivet DI Development Project
+# Dioxide Development Project
 
 ## Current Sprint: v0.1 Walking Skeleton
 
@@ -301,15 +301,15 @@ Create a project README with key metrics:
 
 ## Links
 
-- [Product Requirements](https://github.com/mikelane/rivet-di/blob/main/docs/PRD.md)
-- [Sprint Plan](https://github.com/mikelane/rivet-di/blob/main/docs/SPRINT_PLAN.md)
-- [Recommendations](https://github.com/mikelane/rivet-di/blob/main/docs/RECOMMENDATIONS.md)
+- [Product Requirements](https://github.com/mikelane/dioxide/blob/main/docs/PRD.md)
+- [Sprint Plan](https://github.com/mikelane/dioxide/blob/main/docs/SPRINT_PLAN.md)
+- [Recommendations](https://github.com/mikelane/dioxide/blob/main/docs/RECOMMENDATIONS.md)
 
 ## Quick Actions
 
-- [Create Issue](https://github.com/mikelane/rivet-di/issues/new/choose)
-- [Create PR](https://github.com/mikelane/rivet-di/compare)
-- [View Milestones](https://github.com/mikelane/rivet-di/milestones)
+- [Create Issue](https://github.com/mikelane/dioxide/issues/new/choose)
+- [Create PR](https://github.com/mikelane/dioxide/compare)
+- [View Milestones](https://github.com/mikelane/dioxide/milestones)
 ```
 
 ---

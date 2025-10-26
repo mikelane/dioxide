@@ -1,10 +1,10 @@
 Feature: Provider Registration
-  As a Python developer using rivet-di
+  As a Python developer using dioxide
   I want to register different types of providers in the container
   So that I can manage object creation and lifecycle appropriately
 
   Background:
-    Given the rivet-di library is available
+    Given the dioxide library is available
 
   Scenario: Developer registers and resolves an instance provider
     Given a developer has created a new Container

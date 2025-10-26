@@ -44,19 +44,19 @@ jobs:
         run: maturin develop
 
       - name: Run pytest
-        run: pytest --cov=rivet_di --cov-report=xml --cov-report=term
+        run: pytest --cov=dioxide --cov-report=xml --cov-report=term
 
       - name: Run behave BDD tests
         run: behave
 
       - name: Run mypy type checking
-        run: mypy python/rivet_di
+        run: mypy python/dioxide
 
       - name: Run ruff linting
-        run: ruff check python/rivet_di
+        run: ruff check python/dioxide
 
       - name: Check code formatting
-        run: ruff format --check python/rivet_di
+        run: ruff format --check python/dioxide
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'

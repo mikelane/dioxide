@@ -50,8 +50,8 @@ repos:
 
       - id: pytest-cov
         name: pytest with coverage
-        entry: pytest
+        entry: uv run pytest
         language: system
         types: [python]
         pass_filenames: false
-        args: [tests/test_component.py, --cov=rivet_di, --cov-fail-under=95, --cov-branch, -q]
+        args: [tests/test_component.py, --cov=dioxide, --cov-fail-under=95, --cov-branch, -q]

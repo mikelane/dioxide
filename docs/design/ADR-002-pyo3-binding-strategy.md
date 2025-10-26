@@ -48,12 +48,12 @@ We will create a thin PyO3 wrapper layer that delegates to the Rust core, follow
                   │ Pure Python API
                   ↓
 ┌─────────────────────────────────────────┐
-│ python/rivet_di/                        │
+│ python/dioxide/                        │
 │ - container.py (Python wrapper)         │
 │ - decorators.py (Python decorators)     │
 │ - exceptions.py (Python exceptions)     │
 └─────────────────┬───────────────────────┘
-                  │ Import _rivet_core
+                  │ Import _dioxide_core
                   ↓
 ┌─────────────────────────────────────────┐
 │ src/adapters/python_container.rs        │
@@ -120,8 +120,8 @@ impl RustContainer {
 ```
 
 ```python
-# python/rivet_di/container.py
-from rivet_di._rivet_core import _RustContainer
+# python/dioxide/container.py
+from dioxide._dioxide_core import _RustContainer
 
 class Container:
     """
@@ -240,20 +240,20 @@ fn to_python_exception(py: Python, err: ContainerError) -> PyErr {
 **Python Side (Optional Custom Exceptions):**
 
 ```python
-# python/rivet_di/exceptions.py
-class RivetDIError(Exception):
-    """Base exception for rivet-di errors."""
+# python/dioxide/exceptions.py
+class DioxideError(Exception):
+    """Base exception for dioxide errors."""
     pass
 
-class DependencyNotRegisteredError(RivetDIError, KeyError):
+class DependencyNotRegisteredError(DioxideError, KeyError):
     """Raised when attempting to resolve an unregistered dependency."""
     pass
 
-class DuplicateRegistrationError(RivetDIError, ValueError):
+class DuplicateRegistrationError(DioxideError, ValueError):
     """Raised when attempting to register a type twice."""
     pass
 
-class ResolutionError(RivetDIError, RuntimeError):
+class ResolutionError(DioxideError, RuntimeError):
     """Raised when dependency resolution fails."""
     pass
 ```
@@ -390,7 +390,7 @@ class Container:
 **Private API (internal use only):**
 
 ```python
-class _RustContainer:  # Exposed from _rivet_core
+class _RustContainer:  # Exposed from _dioxide_core
     def __init__(self) -> None: ...
     def register_instance(self, py_type: type, instance: Any) -> None: ...
     def resolve(self, py_type: type) -> Any: ...
@@ -403,7 +403,7 @@ class _RustContainer:  # Exposed from _rivet_core
 
 **Rationale:**
 - **Start minimal:** Only what's needed for v0.1 walking skeleton
-- **Private Rust API:** `_rivet_core` signals "don't use directly"
+- **Private Rust API:** `_dioxide_core` signals "don't use directly"
 - **Python wrapper is public:** All user code goes through Python layer
 - **Incremental expansion:** Add features in future versions
 
@@ -433,7 +433,7 @@ src/
 │   ├── python_types.rs      # Type conversion utilities
 │   └── python_errors.rs     # Error conversion
 │
-└── lib.rs                   # #[pymodule] _rivet_core
+└── lib.rs                   # #[pymodule] _dioxide_core
 ```
 
 ### PyO3 Module Definition
@@ -448,7 +448,7 @@ mod adapters;
 use adapters::python_container::RustContainer;
 
 #[pymodule]
-fn _rivet_core(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _dioxide_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<RustContainer>()?;
     Ok(())
 }
@@ -482,7 +482,7 @@ mod tests {
 **BDD Tests (Python):**
 ```python
 # tests/bdd/steps/container_steps.py
-from rivet_di import Container
+from dioxide import Container
 
 @given("a container is created")
 def container_created(context):
@@ -642,7 +642,7 @@ Hint: You cannot register the same type twice.
 **Risk:** GIL limits true parallelism.
 
 **Mitigation:**
-- Document that rivet-di is not for CPU-bound parallel workloads
+- Document that dioxide is not for CPU-bound parallel workloads
 - Most Python code is I/O-bound anyway
 - In future, can release GIL for some operations
 
@@ -721,7 +721,7 @@ async def resolve_async(container: Container, type_: type[T]) -> T:
 
 **Next Steps:**
 1. Implement `RustContainer` in `src/adapters/python_container.rs`
-2. Implement `Container` wrapper in `python/rivet_di/container.py`
+2. Implement `Container` wrapper in `python/dioxide/container.py`
 3. Write integration tests (Rust + Python)
 4. Validate with BDD scenarios
 

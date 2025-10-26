@@ -1,11 +1,11 @@
 # Code Coverage
 
-This document explains how code coverage works for rivet-di and how to run coverage reports.
+This document explains how code coverage works for dioxide and how to run coverage reports.
 
 ## Architecture
 
-rivet-di is a hybrid Python/Rust project:
-- **Python code** (`python/rivet_di/`) - Public API that users interact with
+dioxide is a hybrid Python/Rust project:
+- **Python code** (`python/dioxide/`) - Public API that users interact with
 - **Rust code** (`rust/src/`) - Private implementation for performance-critical operations
 
 ## Coverage Tools
@@ -16,7 +16,7 @@ Measures coverage of the Python code. This is the **primary coverage metric** si
 
 **Run Python coverage:**
 ```bash
-pytest tests/ --cov=rivet_di --cov-report=term-missing --cov-report=html
+pytest tests/ --cov=dioxide --cov-report=term-missing --cov-report=html
 ```
 
 **View HTML report:**
@@ -50,7 +50,7 @@ rustup component add llvm-tools-preview
 cargo install cargo-llvm-cov
 
 # Set environment and build with instrumentation
-export LLVM_PROFILE_FILE='target/rivet-di-%p-%12m.profraw'
+export LLVM_PROFILE_FILE='target/dioxide-%p-%12m.profraw'
 export RUSTFLAGS='-C instrument-coverage'
 maturin develop --release
 
@@ -67,7 +67,7 @@ pytest tests/
 
 ```bash
 # Run all tests with coverage
-pytest tests/ --cov=rivet_di --cov-report=term-missing --cov-branch
+pytest tests/ --cov=dioxide --cov-report=term-missing --cov-branch
 
 # Verify branch coverage meets requirements
 # The report should show >= 95% branch coverage

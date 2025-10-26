@@ -264,7 +264,7 @@ impl Container {
 
 /// Rust-backed dependency injection core
 #[pymodule]
-fn _rivet_core(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _dioxide_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Container>()?;
     Ok(())
 }

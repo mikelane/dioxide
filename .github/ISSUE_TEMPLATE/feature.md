@@ -1,6 +1,6 @@
 ---
 name: Feature
-about: Propose a new feature for rivet-di
+about: Propose a new feature for dioxide
 title: '[FEATURE] '
 labels: 'type: feature'
 assignees: ''

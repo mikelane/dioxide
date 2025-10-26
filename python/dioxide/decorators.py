@@ -2,7 +2,7 @@
 
 from typing import Any, TypeVar
 
-from rivet_di.scope import Scope
+from dioxide.scope import Scope
 
 T = TypeVar('T')
 
@@ -37,7 +37,7 @@ def component(
 
     def decorator(target_cls: type[T]) -> type[T]:
         # Store DI metadata on the class
-        target_cls.__rivet_scope__ = scope  # type: ignore[attr-defined]
+        target_cls.__dioxide_scope__ = scope  # type: ignore[attr-defined]
         # Add to global registry for auto-discovery
         _component_registry.add(target_cls)
         return target_cls

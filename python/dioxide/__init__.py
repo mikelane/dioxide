@@ -1,4 +1,4 @@
-"""rivet-di: Fast, Rust-backed declarative dependency injection for Python."""
+"""dioxide: Fast, Rust-backed declarative dependency injection for Python."""
 
 from .container import Container
 from .decorators import _clear_registry, _get_registered_components, component

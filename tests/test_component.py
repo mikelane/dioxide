@@ -1,11 +1,11 @@
 """Tests for @component decorator and auto-discovery."""
 
-from rivet_di import Container, Scope, component
+from dioxide import Container, Scope, component
 
 
 def _clear_registry() -> None:
     """Clear the component registry between tests."""
-    from rivet_di import _clear_registry as clear
+    from dioxide import _clear_registry as clear
 
     clear()
 
@@ -31,7 +31,7 @@ class DescribeComponentDecorator:
         class UserService:
             pass
 
-        from rivet_di import _get_registered_components
+        from dioxide import _get_registered_components
 
         registered = _get_registered_components()
         assert UserService in registered
@@ -48,7 +48,7 @@ class DescribeComponentDecorator:
         class FactoryService:
             pass
 
-        from rivet_di import _get_registered_components
+        from dioxide import _get_registered_components
 
         registered = _get_registered_components()
         assert DefaultScopeService in registered

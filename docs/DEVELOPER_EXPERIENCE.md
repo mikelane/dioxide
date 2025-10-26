@@ -2,7 +2,7 @@
 
 ## Goal: The Most Magically Delicious DI Experience Ever
 
-This document captures the vision for rivet-di's developer experience, learning from the best parts of existing DI frameworks while avoiding their pitfalls.
+This document captures the vision for dioxide's developer experience, learning from the best parts of existing DI frameworks while avoiding their pitfalls.
 
 ## Core Principles
 
@@ -11,7 +11,7 @@ This document captures the vision for rivet-di's developer experience, learning 
 
 ```python
 # This just works - no XML, no config files, no setup
-from rivet_di import Container, component
+from dioxide import Container, component
 
 @component
 class UserService:

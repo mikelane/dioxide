@@ -2,33 +2,25 @@
 
 import threading
 
-from behave import (
-    given,
-    then,
-    when,
-)
-from behave.runner import (
-    Context,
-)
+from behave import given, then, when
+from behave.runner import Context
 
 
-@given('the rivet-di library is available')
+@given('the dioxide library is available')
 def step_library_available(context: Context) -> None:
-    """Verify rivet-di can be imported."""
+    """Verify dioxide can be imported."""
     try:
-        import rivet_di
+        import dioxide
 
-        context.rivet_di = rivet_di
+        context.dioxide = dioxide
     except ImportError as e:
-        raise AssertionError(f'rivet-di library not available: {e}') from e
+        raise AssertionError(f'dioxide library not available: {e}') from e
 
 
 @when('a developer creates a new Container instance')
 def step_create_container(context: Context) -> None:
     """Create a new Container instance."""
-    from rivet_di import (
-        Container,
-    )
+    from dioxide import Container
 
     context.container = Container()
 
@@ -44,21 +36,15 @@ def step_container_exists(context: Context) -> None:
 def step_container_ready(context: Context) -> None:
     """Verify the Container is in a valid state to accept registrations."""
     # Container should be instantiated and have registration methods
-    assert hasattr(
-        context.container, 'register_instance'
-    ), 'Container missing register_instance method'
+    assert hasattr(context.container, 'register_instance'), 'Container missing register_instance method'
     assert hasattr(context.container, 'register_class'), 'Container missing register_class method'
-    assert hasattr(
-        context.container, 'register_factory'
-    ), 'Container missing register_factory method'
+    assert hasattr(context.container, 'register_factory'), 'Container missing register_factory method'
 
 
 @given('a developer has created a new Container')
 def step_developer_created_container(context: Context) -> None:
     """Create a Container for the developer."""
-    from rivet_di import (
-        Container,
-    )
+    from dioxide import Container
 
     context.container = Container()
 
@@ -111,9 +97,7 @@ def step_raises_dependency_not_found(context: Context) -> None:
     """Verify a DependencyNotFoundError was raised."""
     assert context.exception is not None, 'No exception was raised'
     # Check for KeyError (as per ADR-002, we map to Python KeyError)
-    assert isinstance(
-        context.exception, KeyError
-    ), f'Expected KeyError, got {type(context.exception).__name__}'
+    assert isinstance(context.exception, KeyError), f'Expected KeyError, got {type(context.exception).__name__}'
 
 
 @then('the error message indicates "{dependency_name}" is not registered')
@@ -157,9 +141,7 @@ def step_access_from_multiple_threads(context: Context) -> None:
 @then('the Container maintains data integrity across all threads')
 def step_maintains_data_integrity(context: Context) -> None:
     """Verify no data corruption occurred during concurrent access."""
-    assert (
-        not context.thread_errors
-    ), f'Errors occurred during concurrent access: {context.thread_errors}'
+    assert not context.thread_errors, f'Errors occurred during concurrent access: {context.thread_errors}'
 
 
 @then('no race conditions occur during concurrent access')
@@ -194,9 +176,7 @@ def step_response_is_iterable(context: Context) -> None:
 @given('a developer has created a Container named "{container_name}"')
 def step_create_named_container(context: Context, container_name: str) -> None:
     """Create a Container with a specific name for tracking."""
-    from rivet_di import (
-        Container,
-    )
+    from dioxide import Container
 
     if not hasattr(context, 'containers'):
         context.containers = {}

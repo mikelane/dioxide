@@ -4,7 +4,7 @@ import inspect
 from collections.abc import Callable
 from typing import Any, TypeVar, get_type_hints
 
-from rivet_di._rivet_core import Container as RustContainer
+from dioxide._dioxide_core import Container as RustContainer
 
 T = TypeVar('T')
 
@@ -103,15 +103,15 @@ class Container:
 
         Components are registered as singletons by default.
         """
-        from rivet_di.decorators import _get_registered_components
-        from rivet_di.scope import Scope
+        from dioxide.decorators import _get_registered_components
+        from dioxide.scope import Scope
 
         for component_class in _get_registered_components():
             # Create a factory that auto-injects dependencies
             factory = self._create_auto_injecting_factory(component_class)
 
             # Check the scope
-            scope = getattr(component_class, '__rivet_scope__', Scope.SINGLETON)
+            scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
 
             if scope == Scope.SINGLETON:
                 # Wrap the factory in a singleton wrapper

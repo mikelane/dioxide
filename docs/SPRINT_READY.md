@@ -103,7 +103,7 @@
 Deliver a minimal, installable Python package with basic container and provider functionality.
 
 ### Success Criteria
-- [ ] Installable via `pip install rivet-di`
+- [ ] Installable via `pip install dioxide`
 - [ ] 7 BDD scenarios passing
   - `basic_container.feature` (4 scenarios)
   - `provider_registration.feature` (3 scenarios)
@@ -331,7 +331,7 @@ A sprint is done when:
 By end of Sprint 1 (2025-11-04), we should have:
 
 **Functional:**
-- Python developer can `pip install rivet-di`
+- Python developer can `pip install dioxide`
 - Can create a container in Python
 - Can register 3 types of providers (class, factory, instance)
 - Can resolve dependencies by type
