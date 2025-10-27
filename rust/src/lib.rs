@@ -74,8 +74,11 @@ pub enum Provider {
     /// Class to instantiate (calls __init__)
     Class(Py<PyType>),
 
-    /// Factory function to invoke
-    Factory(PyObject),
+    /// Factory function to invoke (singleton - caches result)
+    SingletonFactory(PyObject),
+
+    /// Factory function to invoke (transient - creates new each time)
+    TransientFactory(PyObject),
 }
 
 /// Core Rust container implementation
@@ -136,8 +139,8 @@ impl RustContainer {
         Ok(())
     }
 
-    /// Register a factory provider
-    pub fn register_factory(
+    /// Register a singleton factory provider (caches result)
+    pub fn register_singleton_factory(
         &self,
         py: Python,
         type_key: TypeKey,
@@ -152,7 +155,27 @@ impl RustContainer {
             });
         }
 
-        providers.insert(type_key, Provider::Factory(factory));
+        providers.insert(type_key, Provider::SingletonFactory(factory));
+        Ok(())
+    }
+
+    /// Register a transient factory provider (creates new instance each time)
+    pub fn register_transient_factory(
+        &self,
+        py: Python,
+        type_key: TypeKey,
+        factory: PyObject,
+    ) -> Result<(), ContainerError> {
+        let mut providers = self.providers.write().unwrap();
+
+        // Check for duplicate registration
+        if providers.contains_key(&type_key) {
+            return Err(ContainerError::DuplicateRegistration {
+                type_name: type_key.type_name(py),
+            });
+        }
+
+        providers.insert(type_key, Provider::TransientFactory(factory));
         Ok(())
     }
 
@@ -178,9 +201,28 @@ impl RustContainer {
 
         // Create instance based on provider type
         let instance = match provider {
-            Provider::Instance(obj) => obj.clone_ref(py),
-            Provider::Class(cls) => cls.call0(py)?,
-            Provider::Factory(factory) => factory.call0(py)?,
+            Provider::Instance(obj) => {
+                // Instance providers are always singletons (pre-created)
+                obj.clone_ref(py)
+            }
+            Provider::Class(cls) => {
+                // Class providers create new instances each time (transient)
+                cls.call0(py)?
+            }
+            Provider::SingletonFactory(factory) => {
+                // Singleton factory - call once and cache result
+                let instance = factory.call0(py)?;
+
+                // Cache the factory result
+                let mut singletons = self.singletons.write().unwrap();
+                singletons.insert(type_key.clone(), instance.clone_ref(py));
+
+                instance
+            }
+            Provider::TransientFactory(factory) => {
+                // Transient factory - create new instance each time (no caching)
+                factory.call0(py)?
+            }
         };
 
         Ok(instance)
@@ -235,11 +277,29 @@ impl Container {
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyKeyError, _>(e.to_string()))
     }
 
-    /// Register a factory function for a given type
-    fn register_factory(&self, py: Python, py_type: &PyType, factory: PyObject) -> PyResult<()> {
+    /// Register a singleton factory function for a given type (caches result)
+    fn register_singleton_factory(
+        &self,
+        py: Python,
+        py_type: &PyType,
+        factory: PyObject,
+    ) -> PyResult<()> {
         let type_key = TypeKey::new(py_type.into());
         self.rust_core
-            .register_factory(py, type_key, factory)
+            .register_singleton_factory(py, type_key, factory)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyKeyError, _>(e.to_string()))
+    }
+
+    /// Register a transient factory function for a given type (creates new instance each time)
+    fn register_transient_factory(
+        &self,
+        py: Python,
+        py_type: &PyType,
+        factory: PyObject,
+    ) -> PyResult<()> {
+        let type_key = TypeKey::new(py_type.into());
+        self.rust_core
+            .register_transient_factory(py, type_key, factory)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyKeyError, _>(e.to_string()))
     }
 

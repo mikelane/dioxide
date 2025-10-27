@@ -47,18 +47,35 @@ class Container:
         """
         self._rust_core.register_class(component_type, implementation)
 
-    def register_factory(self, component_type: type[T], factory: Callable[[], T]) -> None:
+    def register_singleton_factory(self, component_type: type[T], factory: Callable[[], T]) -> None:
         """
-        Register a factory function for a given type.
+        Register a singleton factory function for a given type.
+
+        The factory will be called once and the result cached.
 
         Args:
             component_type: Type to register
-            factory: Callable that returns an instance (called with no args)
+            factory: Callable that returns an instance (called once)
 
         Raises:
             KeyError: If type is already registered
         """
-        self._rust_core.register_factory(component_type, factory)
+        self._rust_core.register_singleton_factory(component_type, factory)
+
+    def register_transient_factory(self, component_type: type[T], factory: Callable[[], T]) -> None:
+        """
+        Register a transient factory function for a given type.
+
+        The factory will be called each time to create a new instance.
+
+        Args:
+            component_type: Type to register
+            factory: Callable that returns an instance (called each time)
+
+        Raises:
+            KeyError: If type is already registered
+        """
+        self._rust_core.register_transient_factory(component_type, factory)
 
     def resolve(self, component_type: type[T]) -> T:
         """
@@ -114,31 +131,11 @@ class Container:
             scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
 
             if scope == Scope.SINGLETON:
-                # Wrap the factory in a singleton wrapper
-                singleton_factory = self._create_singleton_factory(factory)
-                self.register_factory(component_class, singleton_factory)
+                # Register as singleton factory (Rust will cache the result)
+                self.register_singleton_factory(component_class, factory)
             else:
-                # For non-singletons, just register the factory
-                self.register_factory(component_class, factory)
-
-    def _create_singleton_factory(self, factory: Callable[[], T]) -> Callable[[], T]:
-        """
-        Wrap a factory function to return the same instance each time.
-
-        Args:
-            factory: The factory function to wrap
-
-        Returns:
-            A factory that caches the first instance and returns it on subsequent calls
-        """
-        instance_holder: list[T] = []  # Use list to avoid closure issues
-
-        def singleton_wrapper() -> T:
-            if not instance_holder:
-                instance_holder.append(factory())
-            return instance_holder[0]
-
-        return singleton_wrapper
+                # Register as transient factory (Rust creates new instance each time)
+                self.register_transient_factory(component_class, factory)
 
     def _create_auto_injecting_factory(self, cls: type[T]) -> Callable[[], T]:
         """

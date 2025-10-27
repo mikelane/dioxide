@@ -8,6 +8,7 @@ These tests verify the Rust container implementation handles:
 - Deep dependency chains
 - Circular dependencies
 """
+
 import pytest
 
 from dioxide._dioxide_core import Container as RustContainer
@@ -28,7 +29,7 @@ class DescribeRustContainerSingletonCaching:
             call_count['count'] += 1
             return Service()
 
-        container.register_factory(Service, factory)
+        container.register_singleton_factory(Service, factory)
 
         # Resolve multiple times
         first = container.resolve(Service)
@@ -89,7 +90,7 @@ class DescribeRustContainerRecursiveResolution:
             config = container.resolve(Config)
             return Database(config)
 
-        container.register_factory(Database, database_factory)
+        container.register_singleton_factory(Database, database_factory)
 
         result = container.resolve(Database)
         assert isinstance(result, Database)
@@ -121,7 +122,7 @@ class DescribeRustContainerMixedLifecycles:
             transient = container.resolve(TransientService)
             return SingletonService(transient)
 
-        container.register_factory(SingletonService, singleton_factory)
+        container.register_singleton_factory(SingletonService, singleton_factory)
 
         # First resolution - singleton factory called, resolves transient
         first = container.resolve(SingletonService)
@@ -152,7 +153,7 @@ class DescribeRustContainerMixedLifecycles:
         def singleton_factory() -> SingletonService:
             return SingletonService()
 
-        container.register_factory(SingletonService, singleton_factory)
+        container.register_singleton_factory(SingletonService, singleton_factory)
 
         # Register transient as class that resolves singleton
         # Since we can't inject in __init__ directly, use a factory
@@ -160,7 +161,7 @@ class DescribeRustContainerMixedLifecycles:
             singleton = container.resolve(SingletonService)
             return TransientService(singleton)
 
-        container.register_factory(TransientService, transient_factory)
+        container.register_transient_factory(TransientService, transient_factory)
 
         # Multiple resolutions - transient called each time
         first = container.resolve(TransientService)
@@ -220,10 +221,10 @@ class DescribeRustContainerDeepDependencyChains:
             b = container.resolve(ServiceB)
             return ServiceA(b)
 
-        container.register_factory(ServiceD, factory_d)
-        container.register_factory(ServiceC, factory_c)
-        container.register_factory(ServiceB, factory_b)
-        container.register_factory(ServiceA, factory_a)
+        container.register_singleton_factory(ServiceD, factory_d)
+        container.register_singleton_factory(ServiceC, factory_c)
+        container.register_singleton_factory(ServiceB, factory_b)
+        container.register_singleton_factory(ServiceA, factory_a)
 
         result = container.resolve(ServiceA)
         assert isinstance(result, ServiceA)
@@ -261,8 +262,8 @@ class DescribeRustContainerDeepDependencyChains:
             singleton = container.resolve(SingletonService)
             return TransientService(singleton)
 
-        container.register_factory(SingletonService, singleton_factory)
-        container.register_factory(TransientService, transient_factory)
+        container.register_singleton_factory(SingletonService, singleton_factory)
+        container.register_transient_factory(TransientService, transient_factory)
 
         # Resolve transient multiple times
         first = container.resolve(TransientService)
@@ -298,8 +299,8 @@ class DescribeRustContainerCircularDependencies:
             container.resolve(ServiceA)
             return ServiceB()
 
-        container.register_factory(ServiceA, factory_a)
-        container.register_factory(ServiceB, factory_b)
+        container.register_singleton_factory(ServiceA, factory_a)
+        container.register_singleton_factory(ServiceB, factory_b)
 
         # Should raise an error about circular dependency
         with pytest.raises(Exception) as exc_info:
@@ -335,9 +336,9 @@ class DescribeRustContainerCircularDependencies:
             container.resolve(ServiceA)
             return ServiceC()
 
-        container.register_factory(ServiceA, factory_a)
-        container.register_factory(ServiceB, factory_b)
-        container.register_factory(ServiceC, factory_c)
+        container.register_singleton_factory(ServiceA, factory_a)
+        container.register_singleton_factory(ServiceB, factory_b)
+        container.register_singleton_factory(ServiceC, factory_c)
 
         # Should raise an error about circular dependency
         with pytest.raises(Exception) as exc_info:
@@ -358,7 +359,7 @@ class DescribeRustContainerCircularDependencies:
             container.resolve(ServiceA)
             return ServiceA()
 
-        container.register_factory(ServiceA, factory_a)
+        container.register_singleton_factory(ServiceA, factory_a)
 
         # Should raise an error about circular dependency
         with pytest.raises(Exception) as exc_info:
