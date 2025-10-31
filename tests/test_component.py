@@ -40,11 +40,11 @@ class DescribeComponentDecorator:
         """Decorator can be applied with parentheses and scope argument."""
         _clear_registry()
 
-        @component()  # type: ignore[misc]
+        @component()
         class DefaultScopeService:
             pass
 
-        @component(scope=Scope.FACTORY)  # type: ignore[misc]
+        @component(scope=Scope.FACTORY)
         class FactoryService:
             pass
 
@@ -175,7 +175,7 @@ class DescribeScan:
         """Components with factory scope create new instances each time."""
         _clear_registry()
 
-        @component(scope=Scope.FACTORY)  # type: ignore[misc]
+        @component(scope=Scope.FACTORY)
         class FactoryService:
             pass
 
