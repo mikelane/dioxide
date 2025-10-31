@@ -54,4 +54,4 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        args: [tests/test_component.py, --cov=dioxide, --cov-fail-under=95, --cov-branch, -q]
+        args: [tests/, --cov=dioxide, --cov-fail-under=95, --cov-branch, -q]

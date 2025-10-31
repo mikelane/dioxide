@@ -77,6 +77,36 @@ class Container:
         """
         self._rust_core.register_transient_factory(component_type, factory)
 
+    def register_singleton(self, component_type: type[T], factory: Callable[[], T]) -> None:
+        """
+        Register a singleton provider manually.
+
+        The factory will be called once and the result cached.
+
+        Args:
+            component_type: Type to register
+            factory: Callable that returns an instance (called once)
+
+        Raises:
+            KeyError: If type is already registered
+        """
+        self.register_singleton_factory(component_type, factory)
+
+    def register_factory(self, component_type: type[T], factory: Callable[[], T]) -> None:
+        """
+        Register a transient (factory) provider manually.
+
+        The factory will be called each time to create a new instance.
+
+        Args:
+            component_type: Type to register
+            factory: Callable that returns an instance (called each time)
+
+        Raises:
+            KeyError: If type is already registered
+        """
+        self.register_transient_factory(component_type, factory)
+
     def resolve(self, component_type: type[T]) -> T:
         """
         Resolve a component instance.
@@ -130,12 +160,16 @@ class Container:
             # Check the scope
             scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
 
-            if scope == Scope.SINGLETON:
-                # Register as singleton factory (Rust will cache the result)
-                self.register_singleton_factory(component_class, factory)
-            else:
-                # Register as transient factory (Rust creates new instance each time)
-                self.register_transient_factory(component_class, factory)
+            try:
+                if scope == Scope.SINGLETON:
+                    # Register as singleton factory (Rust will cache the result)
+                    self.register_singleton_factory(component_class, factory)
+                else:
+                    # Register as transient factory (Rust creates new instance each time)
+                    self.register_transient_factory(component_class, factory)
+            except KeyError:
+                # Already registered manually - skip it (manual takes precedence)
+                pass
 
     def _create_auto_injecting_factory(self, cls: type[T]) -> Callable[[], T]:
         """
