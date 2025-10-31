@@ -18,13 +18,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-
-      - name: Create virtual environment
-        run: uv venv
+        uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        run: uv pip install -e ".[dev]"
+        run: uv sync --all-extras
 
       - name: Run ruff
         run: uv run ruff check python tests
@@ -57,19 +54,12 @@ jobs:
           override: true
 
       - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        uses: astral-sh/setup-uv@v5
 
-      - name: Create virtual environment
-        run: uv venv
-
-      - name: Install maturin
-        run: uv pip install maturin
-
-      - name: Build Rust extension
-        run: uv run maturin develop
-
-      - name: Install dependencies
-        run: uv pip install -e ".[dev]"
+      - name: Install dependencies and build
+        run: |
+          uv sync --all-extras
+          uv run maturin develop
 
       - name: Run tests
         run: uv run pytest
@@ -91,19 +81,12 @@ jobs:
           override: true
 
       - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        uses: astral-sh/setup-uv@v5
 
-      - name: Create virtual environment
-        run: uv venv
-
-      - name: Install maturin
-        run: uv pip install maturin
-
-      - name: Build Rust extension
-        run: uv run maturin develop
-
-      - name: Install dependencies
-        run: uv pip install -e ".[dev]"
+      - name: Install dependencies and build
+        run: |
+          uv sync --all-extras
+          uv run maturin develop
 
       - name: Run tests with coverage
         run: uv run pytest --cov=dioxide --cov-report=xml --cov-report=term-missing
