@@ -1,6 +1,6 @@
 """Decorator for marking classes as DI components."""
 
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
 from dioxide.scope import Scope
 
@@ -8,6 +8,20 @@ T = TypeVar('T')
 
 # Global registry for @component decorated classes
 _component_registry: set[type[Any]] = set()
+
+
+@overload
+def component(cls: type[T]) -> type[T]:
+    ...
+
+
+@overload
+def component(
+    cls: None = None,
+    *,
+    scope: Scope = Scope.SINGLETON,
+) -> Any:
+    ...
 
 
 def component(
