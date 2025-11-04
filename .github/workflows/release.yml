@@ -10,6 +10,7 @@ jobs:
   build:
     name: Build wheels on ${{ matrix.os }} for Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30  # Cost control: prevent runaway jobs
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +33,9 @@ jobs:
         with:
           workspaces: rust
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -49,6 +53,7 @@ jobs:
   build-sdist:
     name: Build source distribution
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Cost control: sdist builds are fast
     steps:
       - uses: actions/checkout@v4
 
@@ -77,6 +82,7 @@ jobs:
     name: Test wheels on ${{ matrix.os }}
     needs: build
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15  # Cost control: tests should complete quickly
     strategy:
       fail-fast: true
       matrix:
@@ -121,6 +127,7 @@ jobs:
     name: Publish to PyPI
     needs: [build, build-sdist, test-wheels]
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Cost control: publishing is fast
     environment:
       name: pypi
       url: https://pypi.org/p/dioxide
@@ -175,6 +182,7 @@ jobs:
     name: Create GitHub Release
     needs: publish
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # Cost control: release creation is fast
     permissions:
       contents: write  # Required for creating releases
 
