@@ -118,7 +118,7 @@ jobs:
           pip install $wheel.FullName
 
       - name: Install test dependencies
-        run: pip install pytest pytest-cov
+        run: pip install pytest pytest-cov mypy
 
       - name: Run tests
         run: pytest tests/ -v
