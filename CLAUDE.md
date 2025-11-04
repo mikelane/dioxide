@@ -300,6 +300,155 @@ When committing code:
 
 Keep commits clean and professional without unnecessary attribution.
 
+## Work Tracking and Project Management
+
+**IMPORTANT**: dioxide uses a three-tier tracking system to maintain visibility into project status and prevent work from being "lost" or forgotten.
+
+### Three-Tier Tracking System
+
+#### 1. STATUS.md (Weekly Updates - Single Source of Truth)
+
+**Location**: `/STATUS.md`
+**Update Frequency**: Every Friday (or after major milestones)
+**Purpose**: Current sprint status at a glance
+
+The STATUS.md file shows:
+- Current milestone progress (e.g., "67% complete - 4 of 6 issues done")
+- This week's completed work
+- In-progress items
+- Next actions
+- Quality metrics (test coverage, CI status)
+- Known blocking issues
+
+**When to update**:
+- Every Friday afternoon
+- After completing major features
+- Before sprint planning meetings
+- When milestones change
+
+#### 2. GitHub Milestone
+
+**Location**: https://github.com/mikelane/dioxide/milestone/4 (0.0.1-alpha)
+**Purpose**: Real-time progress tracking with visual progress bar
+
+GitHub milestones show:
+- Open vs. closed issues
+- Visual progress percentage
+- Due date (if set)
+- Automatic updates when issues close
+
+**How to use**:
+- Assign ALL release-related issues to the milestone
+- Close issues immediately when PRs merge
+- GitHub updates progress automatically
+
+#### 3. GitHub Project Board
+
+**Location**: https://github.com/users/mikelane/projects/2
+**Purpose**: Kanban-style visual workflow
+
+Project board features:
+- Drag-and-drop issue organization
+- Visual columns (Backlog, In Progress, Done)
+- Auto-moves issues when they close
+- Links to milestones and issues
+
+**When to use**:
+- Planning what to work on next
+- Reviewing overall project status
+- Demonstrating progress to stakeholders
+
+### Workflow: Starting New Work
+
+1. **Pick an issue** from the project board or milestone
+2. **Assign to yourself** on GitHub
+3. **Move to "In Progress"** on project board (if using columns)
+4. **Create branch**: `git checkout -b fix/issue-description` or `feat/issue-description`
+5. **Follow TDD**: Write tests first, then implementation
+6. **Commit with issue reference**: `git commit -m "fix: description (#22)"`
+
+### Workflow: Completing Work
+
+1. **Open PR** with `Fixes #22` in description
+2. **Request review** if needed
+3. **Merge PR** - GitHub auto-closes issue
+4. **Issue moves to "Done"** on project board automatically
+5. **Milestone progress updates** automatically
+
+### Workflow: Weekly Status Update (Friday)
+
+```bash
+# 1. Review what was completed this week
+gh issue list --milestone "0.0.1-alpha" --state closed --search "closed:>=$(date -v-7d +%Y-%m-%d)"
+
+# 2. Check milestone progress
+gh api repos/mikelane/dioxide/milestones/4 | jq '{open: .open_issues, closed: .closed_issues}'
+
+# 3. Update STATUS.md
+# - Move completed items from "In Progress" to "Completed This Week"
+# - Update milestone progress percentage
+# - Add new "Next Actions" for upcoming week
+# - Update "Last Updated" date
+
+# 4. Commit STATUS.md
+git add STATUS.md
+git commit -m "docs: weekly status update for $(date +%Y-%m-%d)"
+```
+
+### Planning Documents
+
+Long-term planning documents (updated less frequently):
+
+- **ROADMAP.md**: Long-term vision, updated quarterly
+- **docs/0.0.1-ALPHA_SCOPE.md**: Release scope definition
+- **docs/RELEASE_CHECKLIST_0.0.1-alpha.md**: Pre-release verification
+
+These documents provide historical context but should NOT be the primary source of current status. Always check STATUS.md first.
+
+### Why This System Works
+
+**Problem solved**: Previously, completed work (like the singleton caching bug fix) wasn't reflected in planning documents, causing confusion about what still needed to be done.
+
+**Solution**:
+1. **GitHub milestone** shows real-time completion (auto-updates)
+2. **STATUS.md** provides weekly snapshots (manual but quick)
+3. **Project board** gives visual overview (auto-updates from issues)
+
+All three stay synchronized with minimal manual effort:
+- Issue closes → Milestone updates automatically
+- Issue closes → Project board updates automatically
+- Weekly STATUS.md update → Takes 5 minutes
+- Planning docs → Only update when scope/vision changes
+
+### Git Commit Messages and Issue Linking
+
+**ALWAYS** reference the issue number in commit messages:
+
+```bash
+# Good - auto-links commit to issue
+git commit -m "fix: singleton caching in Rust container (#19)"
+git commit -m "feat: add manual provider registration (#20)"
+git commit -m "docs: update API documentation (#24)"
+
+# Bad - no link to issue
+git commit -m "fix: singleton caching bug"
+git commit -m "add new feature"
+```
+
+**Why?** GitHub automatically creates links between commits and issues, making it easy to see what code fixed which issue.
+
+### Preventing Work from Being "Lost"
+
+**Before this system**: Work was completed (singleton bug fixed) but planning docs still showed it as incomplete. PM recommended working on already-done tasks.
+
+**With this system**:
+1. Issue #19 closed → Milestone shows 3/6 complete
+2. STATUS.md updated weekly → Shows #19 in "Completed This Week"
+3. Project board → Shows #19 in "Done" column
+4. Planning docs updated → Reference actual issue numbers
+
+**Result**: No confusion about what's done vs. what's pending.
+
 ## Recent Development History
 
 ### @component Decorator Implementation
