@@ -3,7 +3,11 @@
 **Fast, Rust-backed declarative dependency injection for Python**
 
 [![CI](https://github.com/mikelane/dioxide/workflows/CI/badge.svg)](https://github.com/mikelane/dioxide/actions)
-[![Python Version](https://img.shields.io/pypi/pyversions/dioxide)](https://pypi.org/project/dioxide/)
+[![Release](https://github.com/mikelane/dioxide/actions/workflows/release-automated.yml/badge.svg)](https://github.com/mikelane/dioxide/actions/workflows/release-automated.yml)
+[![PyPI version](https://badge.fury.io/py/dioxide.svg)](https://pypi.org/project/dioxide/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/dioxide.svg)](https://pypi.org/project/dioxide/)
+[![Platform Support](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue)](https://github.com/mikelane/dioxide)
+[![Architecture](https://img.shields.io/badge/arch-x86__64%20%7C%20aarch64-green)](https://github.com/mikelane/dioxide)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -16,6 +20,22 @@
 - **Rust-backed performance** - Fast graph construction and resolution via PyO3
 - **Type safety** - Full support for mypy and type checkers
 - **Clean architecture** - Encourages loose coupling and testability
+
+## Installation
+
+```bash
+pip install dioxide
+```
+
+### Platform Support
+
+| Platform | x86_64 | ARM64/aarch64 |
+|----------|--------|---------------|
+| Linux    | ✅     | ✅            |
+| macOS    | ✅     | ✅ (M1/M2/M3) |
+| Windows  | ✅     | ❌            |
+
+**Python Versions**: 3.11, 3.12, 3.13, 3.14
 
 ## Status
 

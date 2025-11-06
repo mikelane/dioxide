@@ -472,6 +472,101 @@ git commit -m "add new feature"
 - Added comprehensive test suite with edge cases
 - Documented coverage approach for Python/Rust hybrid projects
 
+## Release Process (Automated)
+
+### Fully Automated Semantic Versioning
+
+Dioxide uses automated semantic versioning via GitHub Actions:
+
+1. **Commit to main** using [Conventional Commits](https://www.conventionalcommits.org/)
+   - `feat:` triggers minor version bump (0.1.0 → 0.2.0)
+   - `fix:`, `perf:`, `refactor:` trigger patch version bump (0.1.0 → 0.1.1)
+   - `BREAKING CHANGE:` in commit body triggers major version bump (0.1.0 → 1.0.0)
+
+2. **Semantic-release analyzes** commits and determines version bump
+
+3. **Version synchronized** between:
+   - Cargo.toml (Rust crate version)
+   - Maturin reads from Cargo.toml for Python package
+
+4. **Wheels built** for all platforms and architectures:
+   - Linux (x86_64, ARM64)
+   - macOS (x86_64 Intel, ARM64 Apple Silicon)
+   - Windows (x86_64)
+   - Python versions: 3.11, 3.13, 3.14
+
+5. **Tested** on all target platforms with comprehensive smoke tests
+
+6. **Published to PyPI** via Trusted Publishing (no API tokens)
+
+7. **GitHub release created** with changelog
+
+### Supported Platforms & Architectures
+
+| Platform | x86_64 | ARM64/aarch64 |
+|----------|--------|---------------|
+| Linux    | ✅     | ✅            |
+| macOS    | ✅     | ✅ (M1/M2/M3) |
+| Windows  | ✅     | ❌            |
+
+### Build Times
+
+Approximate build times per wheel:
+- **Linux x86_64**: 8-10 minutes
+- **Linux ARM64** (via QEMU): 12-15 minutes
+- **macOS x86_64**: 10-12 minutes
+- **macOS ARM64**: 8-10 minutes
+- **Windows x86_64**: 10-12 minutes
+
+Total release time: ~90-120 minutes (all platforms + tests)
+
+### Security Features
+
+- **PyPI Trusted Publishing**: No API tokens, OIDC authentication
+- **SHA-pinned Actions**: All GitHub Actions pinned to commit SHAs
+- **Cross-platform Testing**: Built wheels tested on all target platforms
+- **Automated Validation**: Tests, linting, type checking before publish
+
+### Manual Release (if needed)
+
+For emergency releases or testing:
+
+```bash
+# 1. Update version in Cargo.toml
+./scripts/sync_version.sh 0.2.0
+
+# 2. Commit and tag
+git add Cargo.toml Cargo.lock
+git commit -m "chore(release): 0.2.0"
+git tag v0.2.0
+git push origin main --tags
+
+# 3. GitHub Actions will automatically build and publish
+```
+
+### Conventional Commit Examples
+
+```bash
+# Feature (minor version bump)
+git commit -m "feat: add provider function support"
+
+# Bug fix (patch version bump)
+git commit -m "fix: resolve circular dependency detection issue"
+
+# Performance improvement (patch version bump)
+git commit -m "perf: optimize dependency graph construction"
+
+# Breaking change (major version bump)
+git commit -m "feat: redesign Container API
+
+BREAKING CHANGE: Container.register() now requires explicit scope parameter"
+
+# Non-release commits (no version bump)
+git commit -m "docs: update README examples"
+git commit -m "chore: update dependencies"
+git commit -m "ci: improve workflow caching"
+```
+
 ## Troubleshooting
 
 ### Maturin Build Issues

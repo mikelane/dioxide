@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "dioxide"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Fast, Rust-backed declarative dependency injection for Python"
 authors = [
     {name = "Mike Lane", email = "mikelane@gmail.com"}
@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Rust",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
@@ -159,4 +160,33 @@ tests_dir = "tests/"
 [dependency-groups]
 dev = [
     "twine>=6.2.0",
+    "python-semantic-release>=10.4.1",
 ]
+
+[tool.semantic_release]
+version_source = "commit"
+version_toml = []  # Don't update pyproject.toml
+version_variables = []  # Don't update any Python files
+build_command = ""  # Build handled by release workflow
+major_on_zero = true
+tag_format = "v{version}"
+commit_parser = "angular"
+
+[tool.semantic_release.changelog]
+changelog_file = "CHANGELOG.md"
+exclude_commit_patterns = [
+    "^chore:",
+    "^ci:",
+    "^docs:",
+    "^style:",
+    "^test:",
+]
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["feat", "fix", "perf", "refactor", "build", "docs"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf", "refactor"]
+
+[tool.semantic_release.remote]
+name = "origin"
+type = "github"

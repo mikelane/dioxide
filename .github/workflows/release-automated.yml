@@ -1,14 +1,78 @@
-name: Release
+name: Release (Automated)
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
+  semantic-release:
+    name: Determine Version & Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.release.outputs.released }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v5.0.0
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6  # v6.0.0
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a  # stable
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+
+      - name: Python Semantic Release
+        id: release
+        run: |
+          # Run semantic-release to determine new version
+          NEW_VERSION=$(uv run semantic-release version --print)
+
+          if [ "$NEW_VERSION" != "" ]; then
+            echo "New version: $NEW_VERSION"
+            echo "released=true" >> $GITHUB_OUTPUT
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+
+            # Update Cargo.toml
+            cargo set-version "$NEW_VERSION"
+
+            # Commit and tag
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add Cargo.toml Cargo.lock CHANGELOG.md
+            git commit -m "chore(release): $NEW_VERSION"
+            git tag "v$NEW_VERSION"
+            git push origin main --tags
+          else
+            echo "No release needed"
+            echo "released=false" >> $GITHUB_OUTPUT
+          fi
+
   build-wheels:
     name: Build wheels on ${{ matrix.platform || matrix.os }} for ${{ matrix.target }}
+    needs: semantic-release
+    if: needs.semantic-release.outputs.released == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
@@ -71,6 +135,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v5.0.0
+        with:
+          ref: ${{ needs.semantic-release.outputs.tag }}
 
       - name: Setup Python
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
@@ -112,10 +178,15 @@ jobs:
 
   build-sdist:
     name: Build source distribution
+    needs: semantic-release
+    if: needs.semantic-release.outputs.released == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Cost control: sdist builds are fast
+    timeout-minutes: 10
+
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v5.0.0
+        with:
+          ref: ${{ needs.semantic-release.outputs.tag }}
 
       - name: Setup Python
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
@@ -142,12 +213,12 @@ jobs:
     name: Test wheels on ${{ matrix.os }}
     needs: build-wheels
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15  # Cost control: tests should complete quickly
+    timeout-minutes: 15
     strategy:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.14']  # Test on latest Python only
+        python-version: ['3.14']
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v5.0.0
@@ -160,7 +231,7 @@ jobs:
       - name: Download wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
         with:
-          pattern: wheels-${{ matrix.os }}-*
+          pattern: wheels-*
           path: dist
           merge-multiple: true
 
@@ -186,32 +257,22 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
-  publish:
+  publish-pypi:
     name: Publish to PyPI
-    needs: [build-wheels, build-sdist, test-wheels]
+    needs: [semantic-release, build-wheels, build-sdist, test-wheels]
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Cost control: publishing is fast
+    if: needs.semantic-release.outputs.released == 'true'
     environment:
       name: pypi
-      url: https://pypi.org/p/dioxide
+      url: https://pypi.org/project/dioxide/
     permissions:
-      id-token: write  # Required for trusted publishing
+      id-token: write
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v5.0.0
-
-      - name: Download all wheels
+      - name: Download all artifacts
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
         with:
-          pattern: wheels-*
-          path: dist
-          merge-multiple: true
-
-      - name: Download sdist
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
-        with:
-          pattern: sdist
-          path: dist
+          path: dist/
           merge-multiple: true
 
       - name: Setup Python
@@ -228,62 +289,40 @@ jobs:
           # and MATURIN_PYPI_TOKEN is not provided
           maturin upload dist/*
 
-  release:
+  create-github-release:
     name: Create GitHub Release
-    needs: publish
+    needs: [semantic-release, publish-pypi]
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Cost control: release creation is fast
+    if: needs.semantic-release.outputs.released == 'true'
     permissions:
-      contents: write  # Required for creating releases
+      contents: write
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v5.0.0
         with:
-          fetch-depth: 0  # Fetch all history for changelog
+          ref: ${{ needs.semantic-release.outputs.tag }}
 
-      - name: Download all wheels
+      - name: Download all artifacts
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
         with:
-          pattern: wheels-*
-          path: dist
+          path: dist/
           merge-multiple: true
-
-      - name: Download sdist
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
-        with:
-          pattern: sdist
-          path: dist
-          merge-multiple: true
-
-      - name: Get version
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Extract changelog
         run: |
-          VERSION=${{ steps.get_version.outputs.VERSION }}
+          VERSION=${{ needs.semantic-release.outputs.version }}
           if [ -f CHANGELOG.md ]; then
-            # Extract section for this version from CHANGELOG.md
             sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | head -n -1 > release_notes.md
-            # If empty, generate basic notes
-            if [ ! -s release_notes.md ]; then
-              echo "Release $VERSION" > release_notes.md
-              echo "" >> release_notes.md
-              echo "See [CHANGELOG.md](CHANGELOG.md) for details." >> release_notes.md
-            fi
           else
             echo "Release $VERSION" > release_notes.md
-            echo "" >> release_notes.md
-            echo "Full changelog: https://github.com/mikelane/dioxide/compare/v${VERSION%.*}...$VERSION" >> release_notes.md
           fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191  # v2.2.0
         with:
+          tag_name: ${{ needs.semantic-release.outputs.tag }}
           body_path: release_notes.md
           files: dist/*
           draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          prerelease: false
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
