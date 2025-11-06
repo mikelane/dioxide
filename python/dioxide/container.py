@@ -491,9 +491,10 @@ class Container:
         """
         try:
             init_signature = inspect.signature(cls.__init__)
-            type_hints = get_type_hints(cls.__init__)
-        except (ValueError, AttributeError):
-            # No __init__ or no type hints - just instantiate directly
+            # Pass the class's module globals to resolve forward references
+            type_hints = get_type_hints(cls.__init__, globalns=cls.__init__.__globals__)
+        except (ValueError, AttributeError, NameError):
+            # No __init__ or no type hints, or can't resolve type hints - just instantiate directly
             return cls
 
         # Build factory that resolves dependencies
