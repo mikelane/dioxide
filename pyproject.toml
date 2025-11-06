@@ -168,7 +168,7 @@ version_source = "commit"
 version_toml = []  # Don't update pyproject.toml
 version_variables = []  # Don't update any Python files
 build_command = ""  # Build handled by release workflow
-major_on_zero = true
+major_on_zero = false  # Stay in 0.x until production-ready
 tag_format = "v{version}"
 commit_parser = "angular"
 
