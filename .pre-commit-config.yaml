@@ -1,6 +1,7 @@
 repos:
+  # General file hygiene
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -10,48 +11,59 @@ repos:
       - id: check-merge-conflict
       - id: mixed-line-ending
 
+  # Python formatting and linting (must match CI exactly)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.15
+    rev: v0.14.3
     hooks:
       - id: ruff
         args: [--fix, --unsafe-fixes]
+        files: ^(python/|tests/)
       - id: ruff-format
+        files: ^(python/|tests/)
 
+  # Import sorting
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 7.0.0
     hooks:
       - id: isort
         args: [--profile=black, --line-length=120]
+        files: ^(python/|tests/)
 
+  # Type checking (strict mode to match CI)
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies: [pytest>=8.0]
-        args: [--python-version=3.11]
+        args: [--strict, --config-file=pyproject.toml]
+        files: ^(python/|tests/)
         exclude: ^features/
 
+  # Rust formatting and linting (local hooks)
   - repo: local
     hooks:
       - id: cargo-fmt
         name: cargo fmt
-        entry: cargo fmt
+        entry: bash -c 'cd rust && cargo fmt --all --check'
         language: system
         types: [rust]
         pass_filenames: false
 
       - id: cargo-clippy
         name: cargo clippy
-        entry: cargo clippy
+        entry: bash -c 'cd rust && cargo clippy --all-targets --all-features -- -D warnings -A non-local-definitions'
         language: system
         types: [rust]
         pass_filenames: false
-        args: [--all-targets, --all-features, --, -D, warnings, -A, non-local-definitions]
 
-      - id: pytest-cov
-        name: pytest with coverage
-        entry: uv run pytest
-        language: system
-        types: [python]
-        pass_filenames: false
-        args: [tests/, --cov=dioxide, --cov-fail-under=95, --cov-branch, -q]
+      # NOTE: Tests are intentionally NOT included in pre-commit hooks.
+      # Reason: The Rust extension requires maturin build, but `uv run` reinstalls
+      # packages on each invocation, which undoes the maturin-built extension.
+      # This creates a chicken-and-egg problem that significantly slows down commits.
+      #
+      # Developer workflow:
+      # 1. Pre-commit catches linting/formatting issues (< 5 seconds)
+      # 2. Run tests manually: `uv run pytest tests/` (< 10 seconds)
+      # 3. CI runs full test suite on push
+      #
+      # This keeps local commits fast while ensuring quality via CI.

@@ -18,8 +18,8 @@ Be respectful, inclusive, and professional. We're all here to build something us
    ```bash
    uv venv
    source .venv/bin/activate
-   uv pip install -e ".[dev]"
-   maturin develop
+   uv sync --all-extras
+   uv run maturin develop
    pre-commit install
    ```
 
@@ -40,22 +40,24 @@ Be respectful, inclusive, and professional. We're all here to build something us
 
 2. **Write tests first** (TDD approach):
    - Add failing tests in `tests/`
-   - Run `pytest` to confirm they fail
+   - Run `uv run pytest tests/` to confirm they fail
    - Implement the feature
-   - Run `pytest` to confirm they pass
+   - Run `uv run pytest tests/` to confirm they pass
 
-3. **Follow code style**:
-   - Python: Single quotes, vertical hanging indent for imports
-   - Rust: Standard `rustfmt` style
-   - Run `tox -e format` to auto-format
-   - Run `tox -e lint` to check
+3. **Pre-commit hooks will automatically**:
+   - Format Python code (ruff format)
+   - Fix linting issues (ruff check --fix)
+   - Sort imports (isort)
+   - Check types (mypy --strict)
+   - Format Rust code (cargo fmt)
+   - Lint Rust code (cargo clippy)
 
-4. **Type check**:
+4. **Run tests before pushing**:
    ```bash
-   tox -e type
+   uv run pytest tests/ --cov=dioxide --cov-branch
    ```
 
-5. **Run full test suite**:
+5. **Run full quality checks** (optional, CI will run these):
    ```bash
    tox
    ```
@@ -69,6 +71,54 @@ Be respectful, inclusive, and professional. We're all here to build something us
   - `docs: Update README with examples`
   - `test: Add tests for shutdown lifecycle`
   - `refactor: Simplify graph construction logic`
+
+### Pre-commit Hooks
+
+Pre-commit hooks run automatically when you commit, catching issues before they reach CI.
+
+**What hooks do**:
+- ✅ Format Python code (ruff format)
+- ✅ Auto-fix linting issues (ruff check --fix --unsafe-fixes)
+- ✅ Sort imports (isort)
+- ✅ Type check (mypy --strict)
+- ✅ Format Rust code (cargo fmt)
+- ✅ Lint Rust code (cargo clippy)
+- ✅ Check YAML/TOML syntax
+- ✅ Remove trailing whitespace
+
+**Installation**:
+```bash
+pre-commit install
+```
+
+**Running manually**:
+```bash
+# Run all hooks on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run ruff --all-files
+
+# Update hook versions
+pre-commit autoupdate
+```
+
+**Bypassing hooks** (use sparingly):
+```bash
+# Skip hooks for WIP commits
+git commit --no-verify -m "WIP: work in progress"
+```
+
+**Performance**:
+- Hooks run in < 5 seconds for incremental commits
+- First run may take longer (installing hook environments)
+
+**Note on tests**:
+Tests are NOT run in pre-commit hooks due to technical limitations with the Rust extension build.
+Always run tests manually before pushing:
+```bash
+uv run pytest tests/ --cov=dioxide --cov-branch
+```
 
 ### Pull Request Process
 
