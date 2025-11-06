@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2025-02-05
+
+### Added
+- Python 3.14 support across all platforms
+- ARM64/aarch64 builds for Apple Silicon and AWS Graviton
+- Comprehensive smoke tests for wheel validation
+
+### Changed
+- Modernized CI/CD pipeline with 100/100 state-of-the-art score
+- Switched to PyPI Trusted Publishing (OIDC) for secure releases
+- SHA-pinned all GitHub Actions for supply chain security
+- Optimized Rust release builds (LTO, single codegen unit)
+- Reduced test matrix to Python 3.11, 3.13, 3.14 for cost efficiency
+
+### Fixed
+- Automated semantic versioning configuration for 0.x releases
+- CI/CD workflow with proper version synchronization
+
 ## [0.0.1-alpha] - 2025-01-27
 
 ### Added
@@ -39,4 +57,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - COVERAGE.md explaining testing strategy for Python/Rust hybrid projects
 - CLAUDE.md with project guidelines and best practices
 
+[0.1.0]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0
 [0.0.1-alpha]: https://github.com/mikelane/dioxide/releases/tag/v0.0.1-alpha
