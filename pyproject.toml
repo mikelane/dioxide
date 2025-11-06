@@ -30,6 +30,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = [
+    "maturin>=1.0,<2.0",
     "pytest>=8.0",
     "pytest-cov>=4.1",
     "behave>=1.2.6",
