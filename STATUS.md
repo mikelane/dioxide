@@ -1,73 +1,108 @@
 # dioxide Project Status
 
-**Last Updated**: 2025-11-04
-**Current Milestone**: 0.0.1-alpha
-**Target Release Date**: Pending PyPI token setup
-**Progress**: 83% (5 of 6 issues complete)
+**Last Updated**: 2025-11-06
+**Current Milestone**: 0.0.2-alpha
+**Latest Release**: v0.0.1-alpha (Nov 6, 2025)
+**Progress**: Planning next sprint
 
 ---
 
 ## Quick Summary
 
-✅ **Core features complete** - All DI functionality working
-✅ **CI/CD complete** - Full pipeline passing, release workflow ready
-❌ **Documentation needed** - API docs still TODO
-⏸️ **PyPI tokens needed** - Required for actual release
+🎉 **v0.0.1-alpha RELEASED** - Published to Test PyPI on Nov 6, 2025
+✅ **All 6 milestone issues complete** - 100% of 0.0.1-alpha scope delivered
+✅ **CI/CD working** - Full automation from tag to PyPI release
+🎯 **Next up**: 0.0.2-alpha - Circular dependency detection
 
 ---
 
-## This Sprint's Progress (0.0.1-alpha)
+## Recent Releases
 
-### ✅ Completed This Week
-- GitHub Actions CI workflow (#22) - Nov 3
-  - Full test matrix working (3 Python × 3 OS = 9 combinations)
-  - Coverage upload to Codecov configured
-  - All lint jobs passing (Python + Rust)
-- GitHub Actions release workflow (#23) - Nov 4
-  - Multi-platform wheel building (9 wheels + sdist)
-  - Comprehensive testing before publish
-  - Cost controls with timeouts
-  - Ready for production use (pending PyPI tokens)
-- Created CHANGELOG.md for 0.0.1-alpha release
+### v0.0.1-alpha (Released Nov 6, 2025) 🎉
+
+**Published to**: Test PyPI at https://test.pypi.org/project/dioxide/
+
+**What shipped**:
+- @component decorator for auto-discovery
+- Container.scan() for automatic registration
+- Constructor dependency injection
+- SINGLETON and FACTORY scopes
+- Manual provider registration
+- Type-safe Container.resolve() with mypy support
+- 100% test coverage (29 tests passing)
+- Full CI/CD automation
+- Cross-platform wheels (Linux, macOS, Windows)
+
+**Installation**:
+```bash
+pip install -i https://test.pypi.org/simple/ dioxide
+```
+
+**GitHub Release**: https://github.com/mikelane/dioxide/releases/tag/v0.0.1-alpha
+
+---
+
+## Current Sprint (0.0.2-alpha)
+
+### 🎯 Sprint Goal
+"Make it safe" - Add circular dependency detection with clear error messages
+
+### 📋 Planned Work
+- Issue #5: Detect and report circular dependencies
 
 ### 🔄 In Progress
-- None
+- Planning and scoping 0.0.2-alpha
 
-### ⏸️ Blocked
-- Actual release pending PyPI token configuration
+### ✅ Completed This Week
+- Released v0.0.1-alpha to Test PyPI
+- Closed 8 obsolete issues from old planning
+- Created new milestone structure (0.0.2-alpha, 0.0.3-alpha, 0.1.0-beta)
+- Reorganized backlog to match ROADMAP.md
 
 ---
 
 ## Milestone Progress
 
-**[View 0.0.1-alpha milestone →](https://github.com/mikelane/dioxide/milestone/1)**
+### 0.0.1-alpha (RELEASED ✅)
+**[View milestone →](https://github.com/mikelane/dioxide/milestone/4)**
+
+**Progress**: 100% (6 of 6 issues complete)
 
 | Issue | Status | Completed |
 |-------|--------|-----------|
-| #19 Singleton Caching Bug | ✅ DONE | Oct 26, 2025 |
-| #20 Manual Provider Registration | ✅ DONE | Oct 26, 2025 |
-| #21 Type Safety Testing | ✅ DONE | Oct 26, 2025 |
+| #19 Singleton Caching Bug | ✅ DONE | Oct 31, 2025 |
+| #20 Manual Provider Registration | ✅ DONE | Oct 31, 2025 |
+| #21 Type Safety Testing | ✅ DONE | Nov 6, 2025 |
 | #22 GitHub Actions CI | ✅ DONE | Nov 3, 2025 |
 | #23 GitHub Actions Release | ✅ DONE | Nov 4, 2025 |
-| #24 API Documentation | ❌ TODO | - |
+| #24 API Documentation | ✅ DONE | Nov 6, 2025 |
 
-**Progress**: 5 complete, 0 in progress, 1 not started
+### 0.0.2-alpha (PLANNED)
+**[View milestone →](https://github.com/mikelane/dioxide/milestone/5)**
+
+**Progress**: 0% (0 of 1 issues complete)
+
+| Issue | Status | Estimated |
+|-------|--------|-----------|
+| #5 Circular Dependency Detection | ⏳ TODO | 1 week |
+
+**Target**: Mid-late November 2025
 
 ---
 
-## Critical Path
+## Critical Path to 0.0.2-alpha
 
-What needs to happen for release:
+What needs to happen for the next release:
 
-1. ✅ ~~Fix singleton caching (#19)~~ - COMPLETE
-2. ✅ ~~Manual provider registration (#20)~~ - COMPLETE
-3. ✅ ~~Type safety testing (#21)~~ - COMPLETE
-4. ✅ ~~Complete CI workflow (#22)~~ - COMPLETE
-5. ✅ ~~Implement release workflow (#23)~~ - COMPLETE
-6. ⏳ **Add API documentation (#24)** ← NEXT
-7. ⏳ **Configure PyPI tokens** ← BLOCKING RELEASE
+1. ⏳ **Implement circular dependency detection (#5)** ← NEXT
+   - Design: Use petgraph::algo::toposort for cycle detection
+   - Implementation: Add cycle detection during Container.scan()
+   - Testing: Add tests for direct and indirect cycles
+   - Error messages: Show full cycle path in error
+2. ⏳ **Test and validate** - Ensure 100% coverage maintained
+3. ⏳ **Release to Test PyPI** - Tag v0.0.2-alpha
 
-**Estimated time to release**: 1 day (0.5 days docs + token setup)
+**Estimated time to release**: 1 week (per ROADMAP.md)
 
 ---
 
@@ -90,47 +125,44 @@ What needs to happen for release:
 
 ## Known Issues
 
-### Blocking Release
-1. **PyPI token configuration needed**
-   - Create Test PyPI account and generate API token
-   - Add TEST_PYPI_TOKEN to GitHub Secrets
-   - Create PyPI account and generate API token (for stable releases)
-   - Add PYPI_TOKEN to GitHub Secrets
+### Blocking Next Release
+- None currently - ready to start 0.0.2-alpha work
 
-### Non-Blocking
-- API documentation (#24) - nice to have for alpha release
+### Future Features (Backlog)
+- #2: Inject values by parameter name
+- #4: Graceful shutdown of singleton resources
+- #15: Set up pytest-bdd framework
 
 ---
 
 ## Recent Commits
 
 ```
+6a53a75 Add comprehensive pre-commit hooks for local development (#26)
+c34f4a3 Fix CI: Add maturin to dev dependencies (#27)
+463253c docs: update STATUS.md with CI/CD completion (#23)
 9e4ce5f fix(release): add mypy to test dependencies (#23)
 34127d0 feat: add release automation and CHANGELOG for 0.0.1-alpha (#23)
+5fe2f61 fix(ci): consolidate and fix GitHub Actions workflows (#22)
 40bd88b docs: add work tracking and project management guide to CLAUDE.md
 c16f03e docs: update project tracking to reflect completed work
-680017e fix(ci): explicitly install maturin before running maturin develop
-dcd28ca fix(ci): use official astral-sh/setup-uv action for cross-platform support
-2e912f0 fix(ci): use uv run for maturin commands
-a318625 fix(ci): repair broken GitHub Actions pipeline
 ```
 
 ---
 
 ## Next Actions
 
-**This Week** (by Nov 8):
-1. ✅ Fix GitHub Actions CI workflow (#22) - DONE
-2. ✅ Implement release workflow (#23) - DONE
-3. Configure PyPI tokens for Test PyPI
-4. Add API documentation (#24)
+**This Week** (by Nov 13):
+1. Review Issue #5 requirements and design approach
+2. Plan implementation strategy for circular dependency detection
+3. Set up test cases for cycle detection (direct and indirect cycles)
 
-**Next Steps for Release**:
-1. User creates Test PyPI account and generates token
-2. User adds TEST_PYPI_TOKEN to GitHub Secrets
-3. Test actual release with `git tag v0.0.1-alpha && git push origin v0.0.1-alpha`
-4. Verify package on Test PyPI
-5. Optional: Add API documentation before stable release
+**Next Sprint (0.0.2-alpha)**:
+1. Implement circular dependency detection in Container.scan()
+2. Add clear error messages showing full cycle path
+3. Maintain 100% test coverage
+4. Release v0.0.2-alpha to Test PyPI
+5. Target: Mid-late November 2025
 
 ---
 
@@ -159,7 +191,7 @@ a318625 fix(ci): repair broken GitHub Actions pipeline
 
 ---
 
-**Next Status Update**: Friday, Nov 8, 2025
+**Next Status Update**: Friday, Nov 13, 2025
 
 ---
 
