@@ -22,6 +22,8 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a  # stable
+        with:
+          toolchain: stable
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@82a92a6e8fbeee089604da2575505d1d082c0a73  # v2.7.5
@@ -96,6 +98,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a  # stable
         with:
+          toolchain: stable
           components: rustfmt, clippy
 
       - name: Cache Rust dependencies
