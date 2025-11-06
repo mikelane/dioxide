@@ -1,10 +1,12 @@
 name: Release (Automated)
 
+# TEMPORARILY DISABLED: Semantic-release needs v0.1.0 baseline to stabilize
+# Enable after a few clean commits (feat/fix) have been merged
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
 
 permissions:
   contents: write
