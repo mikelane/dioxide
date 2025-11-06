@@ -17,8 +17,7 @@ _component_registry: set[type[Any]] = set()
 
 
 @overload
-def component(cls: type[T]) -> type[T]:
-    ...
+def component(cls: type[T]) -> type[T]: ...
 
 
 @overload
@@ -26,8 +25,7 @@ def component(
     cls: None = None,
     *,
     scope: Scope = Scope.SINGLETON,
-) -> Any:
-    ...
+) -> Any: ...
 
 
 def component(
