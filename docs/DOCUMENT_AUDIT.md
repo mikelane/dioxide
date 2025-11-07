@@ -228,11 +228,11 @@ MLP-Aligned Phase Order Should Be:
    - ✅ Moved old ROADMAP.md to ROADMAP_OLD.md
    - ✅ All examples use MLP syntax
 
-4. **Update README.md** (1 hour)
-   - Replace Quick Start with MLP syntax
-   - Add note: "API in flux during alpha"
-   - Update all code examples to use MLP patterns
-   - Add profile system to features list
+4. ✅ **Update README.md** (COMPLETED 2025-11-07)
+   - ✅ Replaced Quick Start with MLP syntax
+   - ✅ Added alpha status warnings throughout
+   - ✅ Updated all code examples to use MLP patterns
+   - ✅ Added profile system to features list
 
 ### Phase 2: Documentation Cleanup (Next Week)
 
@@ -342,22 +342,24 @@ Thanks for your patience as we build dioxide the right way!
 
 Documentation alignment is complete when:
 
-- [ ] All code examples show MLP syntax
+- [x] All code examples show MLP syntax (DONE 2025-11-07 - Priority 0 complete)
 - [x] ROADMAP reflects MLP phase structure (DONE 2025-11-07)
-- [ ] README quick start uses MLP patterns
+- [x] README quick start uses MLP patterns (DONE 2025-11-07)
 - [x] STATUS.md shows MLP-aligned sprint plan (DONE 2025-11-07)
-- [ ] Historical docs clearly marked as deprecated
-- [ ] No conflicting information across docs
+- [ ] Historical docs clearly marked as deprecated (Priority 2)
+- [ ] No conflicting information across docs (In progress - Priority 1 next)
 - [x] DX_VISION.md reviewed and aligned/merged/deprecated (DONE 2025-11-07)
 
 ---
 
-**Next Action**: Update README.md with MLP syntax (Priority 0)
+**Next Action**: Update CLAUDE.md with MLP syntax (Priority 1)
 
 **Owner**: Product-Technical Lead
-**Timeline**: Phase 1 in progress (Nov 7-8, 2025)
+**Timeline**: Phase 1 complete (Nov 7, 2025), Phase 2 starting
 
 **Completed Actions**:
 - ✅ DX_VISION.md reviewed and aligned (2025-11-07)
 - ✅ STATUS.md updated for MLP realignment (2025-11-07)
 - ✅ ROADMAP.md rewritten to reflect MLP phase structure (2025-11-07)
+- ✅ README.md updated with MLP syntax (2025-11-07)
+- ✅ **ALL PRIORITY 0 TASKS COMPLETE** (2025-11-07)
