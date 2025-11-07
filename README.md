@@ -249,7 +249,22 @@ dioxide/
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! We follow a strict workflow to maintain code quality:
+
+**Quick start for contributors:**
+1. **Create or find an issue** - All work must be associated with a GitHub issue
+2. **Fork the repository** (external contributors)
+3. **Create a feature branch** with issue reference (e.g., `fix/issue-123-description`)
+4. **Follow TDD** - Write tests first, then implementation
+5. **Submit a Pull Request** - All changes must go through PR review
+
+**Key requirements:**
+- ✅ All work must have an associated GitHub issue
+- ✅ All changes must go through the Pull Request process
+- ✅ Tests and documentation are mandatory
+- ✅ Branch protection enforces these requirements on `main`
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 See [ROADMAP.md](ROADMAP.md) for the complete product roadmap and [MLP_VISION.md](docs/MLP_VISION.md) for the design philosophy.
 

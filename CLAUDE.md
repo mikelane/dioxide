@@ -604,22 +604,81 @@ Project board features:
 - Reviewing overall project status
 - Demonstrating progress to stakeholders
 
+### CRITICAL: Pull Request Requirement
+
+**ALL changes MUST go through the Pull Request process - NO EXCEPTIONS.**
+
+This applies to:
+- ✅ External contributors (via forks)
+- ✅ Maintainers (via branches in main repository)
+- ✅ All code changes, documentation updates, bug fixes, features
+- ✅ ALL work must have an associated GitHub issue
+
+Branch protection enforces this requirement on the `main` branch.
+
+### Code Review Requirements
+
+**Review process is CODEOWNERS-based:**
+
+- **External contributor PRs**: MUST be approved by @mikelane (via `.github/CODEOWNERS`)
+- **Maintainer PRs**: NO approval required (CODEOWNERS doesn't apply to code owners)
+- **All PRs**: MUST pass CI checks and resolve all conversations
+
+**Why maintainers don't need approval:**
+PRs from maintainers exist for archaeology (historical record) and to benefit from automated CI checks, NOT for review gates. CODEOWNERS requirements automatically don't apply when the PR author IS the code owner.
+
+**Branch protection settings:**
+- Require code owner reviews: ✅ Enabled
+- Minimum approving reviews: 0 (CODEOWNERS provides the requirement)
+- Dismiss stale reviews: ✅ Enabled
+- Require CI checks: ✅ Enabled (`build-and-test`)
+- Required linear history: ✅ Enabled
+- Required conversation resolution: ✅ Enabled
+
 ### Workflow: Starting New Work
 
-1. **Pick an issue** from the project board or milestone
-2. **Assign to yourself** on GitHub
+**For Maintainers:**
+1. **Create or verify GitHub issue exists** (MANDATORY - no issue, no work)
+2. **Assign issue to yourself** on GitHub
 3. **Move to "In Progress"** on project board (if using columns)
 4. **Create branch**: `git checkout -b fix/issue-description` or `feat/issue-description`
 5. **Follow TDD**: Write tests first, then implementation
 6. **Commit with issue reference**: `git commit -m "fix: description (#22)"`
+7. **Push branch**: `git push origin fix/issue-description`
+8. **Create Pull Request** - MANDATORY for all changes
+
+**For External Contributors:**
+1. **Fork the repository** if you haven't already
+2. **Sync your fork** with upstream: `git fetch upstream && git merge upstream/main`
+3. **Pick an issue** (look for `good-first-issue` or `help-wanted` labels)
+4. **Comment on the issue** to let maintainers know you're working on it
+5. **Create branch in your fork**: `git checkout -b fix/issue-description` or `feat/issue-description`
+6. **Follow TDD**: Write tests first, then implementation
+7. **Commit with issue reference**: `git commit -m "fix: description (#22)"`
+8. **Push to your fork**: `git push origin fix/issue-description`
+9. **Create Pull Request** from your fork to main repository
 
 ### Workflow: Completing Work
 
-1. **Open PR** with `Fixes #22` in description
-2. **Request review** if needed
-3. **Merge PR** - GitHub auto-closes issue
-4. **Issue moves to "Done"** on project board automatically
-5. **Milestone progress updates** automatically
+**For Maintainers:**
+1. **Open PR** with `Fixes #22` in description - MANDATORY, no direct merges
+2. **Fill out PR template** completely
+3. **Wait for CI checks** to pass
+4. **Merge PR** - No approval required (CODEOWNERS doesn't apply to code owners)
+5. **Issue auto-closes** via "Fixes #22" keyword
+6. **Issue moves to "Done"** on project board automatically
+7. **Milestone progress updates** automatically
+
+**Note**: Maintainer PRs don't require approval because CODEOWNERS requirements don't apply to the code owners themselves. PRs exist for archaeology/documentation purposes and to benefit from CI checks.
+
+**For External Contributors:**
+1. **Push to your fork**: `git push origin feature-branch`
+2. **Open PR from your fork** to main repository with `Fixes #22` in description
+3. **Fill out PR template** completely
+4. **Wait for review** from maintainers
+5. **Address feedback** if requested
+6. **PR will be merged** by maintainers once approved
+7. **Issue auto-closes** and moves to "Done" on project board
 
 ### Workflow: Weekly Status Update (Friday)
 
@@ -855,18 +914,23 @@ args: [tests/test_component.py, --cov=dioxide, --cov-fail-under=95, --cov-branch
 When working on this project, follow these requirements in order:
 
 1. **Consult MLP Vision** - Check `docs/MLP_VISION.md` before making design decisions
-2. **Ensure issue exists** - ALL work must have an associated GitHub issue (see Issue Tracking Requirements)
-3. **Always follow TDD** - Write tests before implementation
-4. **Test through Python API** - Don't write Rust unit tests
-5. **Check coverage** - Run coverage before committing
-6. **Use Describe*/it_* pattern** - Follow BDD test structure
-7. **Keep tests simple** - No logic in tests
-8. **Update documentation** - ALL code changes MUST include documentation updates (see Documentation Requirements)
-9. **Clean commits** - No attribution or co-authored lines, always reference issue number
-10. **Update issue** - Keep the GitHub issue updated as you work
-11. **Close properly** - Use "Fixes #N" in PR description to auto-close issue
+2. **Ensure issue exists** - ALL work must have an associated GitHub issue (see Issue Tracking Requirements) - NO EXCEPTIONS
+3. **Create feature branch** - Never work directly on main
+4. **Always follow TDD** - Write tests before implementation
+5. **Test through Python API** - Don't write Rust unit tests
+6. **Check coverage** - Run coverage before committing
+7. **Use Describe*/it_* pattern** - Follow BDD test structure
+8. **Keep tests simple** - No logic in tests
+9. **Update documentation** - ALL code changes MUST include documentation updates (see Documentation Requirements)
+10. **Clean commits** - No attribution or co-authored lines, always reference issue number
+11. **Update issue** - Keep the GitHub issue updated as you work
+12. **Create Pull Request** - ALL changes MUST go through PR process - NO EXCEPTIONS
+13. **Close properly** - Use "Fixes #N" in PR description to auto-close issue
 
-**CRITICAL**: Steps 3 (TDD) and 8 (Documentation) are NOT optional. Code without tests or documentation is incomplete and will not be merged.
+**CRITICAL**:
+- Step 2 (Issue exists) is MANDATORY - no issue means no work
+- Step 3 (TDD) and 9 (Documentation) are NOT optional - code without tests or documentation is incomplete
+- Step 12 (Pull Request) is ENFORCED by branch protection - direct pushes to main are blocked
 
 ## Reference Documentation
 
