@@ -142,7 +142,7 @@ jobs:
           if-no-files-found: error
 
   test-wheels:
-    name: Test wheels on ${{ matrix.os }}
+    name: Test wheels on ${{ matrix.os }} with Python ${{ matrix.python-version }}
     needs: build-wheels
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15  # Cost control: tests should complete quickly
@@ -150,7 +150,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.14']  # Test on latest Python only
+        python-version: ['3.13', '3.14']
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v5.0.0
@@ -159,6 +159,9 @@ jobs:
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@557e51de59eb14aaaba2ed9621916900a91d50c6  # v6.0.0
 
       - name: Download wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
@@ -169,11 +172,11 @@ jobs:
 
       - name: Install wheel
         run: |
-          # Let pip select the compatible wheel for this platform
-          pip install --find-links=dist --no-index dioxide
+          # Let uv pip select the compatible wheel for this platform
+          uv pip install --system --find-links=dist --no-index dioxide
 
       - name: Install test dependencies
-        run: pip install pytest pytest-cov mypy
+        run: uv pip install --system pytest pytest-cov mypy
 
       - name: Run smoke tests
         run: python tests/smoke_test.py
