@@ -39,71 +39,116 @@ pip install dioxide
 
 ## Status
 
-🚧 **Work in Progress** - Currently implementing the v0.1 Walking Skeleton.
+**⚠️ ALPHA**: dioxide is in active alpha development. API changes expected between releases.
 
-See [Issues](https://github.com/mikelane/dioxide/issues) and [Milestones](https://github.com/mikelane/dioxide/milestones) for current progress.
+- **Latest Release**: [v0.0.1-alpha](https://github.com/mikelane/dioxide/releases/tag/v0.0.1-alpha) (Nov 6, 2025) - Published to Test PyPI
+- **Current Work**: v0.0.2-alpha - MLP API Realignment (breaking changes)
+- **Next Milestone**: v0.1.0-beta - MLP Complete (API freeze) - Mid-December 2025
+
+See [ROADMAP.md](ROADMAP.md) for detailed timeline and [Issues](https://github.com/mikelane/dioxide/issues) for current work.
 
 ## Vision
 
-Traditional Python DI frameworks like `dependency-injector` are feature-rich but can be slow with large dependency graphs. `dioxide` aims to provide:
+**Make the Dependency Inversion Principle feel inevitable.**
 
-1. **Fast graph construction** using Rust's `petgraph`
-2. **Type-based resolution** via Python's `__annotations__`
-3. **Lifecycle management** with proper shutdown ordering
-4. **Clear error messages** for missing dependencies and cycles
+dioxide exists to make clean architecture (ports-and-adapters) the path of least resistance. We combine:
 
-## Quick Start (Planned API)
+1. **Type-safe DI** - If mypy passes, the wiring is correct
+2. **Profile-based implementations** - Swap PostgreSQL ↔ in-memory with one line
+3. **Testing without mocks** - Fast fakes at the seams, not mock behavior
+4. **Rust-backed performance** - Fast graph operations and resolution
+
+See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy.
+
+## Quick Start
+
+**⚠️ Note**: API examples show **target MLP syntax** (v0.1.0-beta). Current v0.0.1-alpha uses different syntax. See [CHANGELOG.md](CHANGELOG.md) for migration guide.
 
 ```python
-from dioxide import Container, Scope, component
+from dioxide import container, component, profile
+from typing import Protocol
 
-@component(scope=Scope.SINGLETON)
-class DatabaseConnection:
-    def __init__(self, connection_string: str):
-        self.connection_string = connection_string
+# Define a protocol (the seam)
+class EmailProvider(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
 
-@component(scope=Scope.SINGLETON)
-class UserRepository:
-    def __init__(self, db: DatabaseConnection):
-        self.db = db
+# Production implementation
+@component.implements(EmailProvider)
+@profile.production
+class SendGridEmail:
+    async def send(self, to: str, subject: str, body: str) -> None:
+        # Real SendGrid API call
+        pass
 
-# Create container and register components
-container = Container()
-container.register_value('connection_string', 'postgresql://localhost/mydb')
-container.register(DatabaseConnection)
-container.register(UserRepository)
+# Test/dev implementation
+@component.implements(EmailProvider)
+@profile("test", "development")
+class FakeEmail:
+    def __init__(self):
+        self.outbox = []
 
-# Resolve dependencies
-repo = container.resolve(UserRepository)
-# repo.db is automatically injected
+    async def send(self, to: str, subject: str, body: str) -> None:
+        self.outbox.append({"to": to, "subject": subject})
 
-# Clean shutdown
-container.shutdown()
+# Business logic depends on protocol, not implementation
+@component
+class NotificationService:
+    def __init__(self, email: EmailProvider):
+        self.email = email
+
+    async def send_welcome(self, user_email: str) -> None:
+        await self.email.send(user_email, "Welcome!", "Thanks for signing up!")
+
+# Scan and activate profile
+container.scan("app", profile="production")  # or "test" for testing
+
+# Use services directly (dependencies auto-injected)
+service = NotificationService()
+await service.send_welcome("user@example.com")
 ```
+
+**Key features**:
+- `@component` for singleton components (shared across app)
+- `@component.factory` for per-request components (new instance each time)
+- `@profile` to swap implementations by environment
+- Global singleton container (no manual instantiation)
+- Constructor injection via type hints
 
 ## Features
 
-### v0.1 Walking Skeleton (In Progress)
-- [x] Basic project structure
-- [ ] Type-based dependency resolution
-- [ ] Singleton and factory scopes
-- [ ] Value injection by parameter name
-- [ ] Duplicate registration prevention
-- [ ] Clear error messages
+### v0.0.1-alpha ✅ RELEASED (Nov 6, 2025)
+- [x] `@component` decorator for auto-discovery
+- [x] Container.scan() for automatic registration
+- [x] Constructor dependency injection
+- [x] SINGLETON and FACTORY scopes
+- [x] Manual provider registration
+- [x] Type-safe Container.resolve() with mypy support
+- [x] 100% test coverage
+- [x] Full CI/CD automation
 
-### v0.2 Core Features (Planned)
-- [ ] Named tokens for disambiguation
-- [ ] Circular dependency detection
-- [ ] Graceful shutdown with reverse ordering
-- [ ] Comprehensive test coverage (>95%)
-- [ ] Mutation testing with `mutmut`
+### v0.0.2-alpha 🔄 IN PROGRESS (MLP API Realignment)
+- [ ] `@component.factory` and `@component.implements()` syntax
+- [ ] `@profile` decorator system (hybrid approach)
+- [ ] `container.scan()` with package and profile parameters
+- [ ] Global singleton container pattern
+- [ ] Documentation realignment
+- [ ] Optional: `container[Type]` syntax
 
-### Future Enhancements (Backlog)
-- [ ] Conditional registration
-- [ ] Provider functions
-- [ ] Property injection
-- [ ] Performance benchmarks vs. `dependency-injector`
-- [ ] Documentation site
+### v0.1.0-beta 🎯 TARGET: Mid-December 2025 (MLP Complete)
+- [ ] Lifecycle protocols (`Initializable`, `Disposable`)
+- [ ] Circular dependency detection at startup
+- [ ] Excellent error messages with suggestions
+- [ ] Complete example application
+- [ ] FastAPI integration example
+- [ ] Testing guide (fakes > mocks philosophy)
+- [ ] API frozen (no breaking changes until 2.0)
+
+### Post-MLP Features (v0.2.0+)
+See [ROADMAP.md](ROADMAP.md) for post-MLP features:
+- Request scoping
+- Property injection
+- Framework integrations (FastAPI, Flask, Django)
+- Developer tooling (CLI, IDE plugins)
 
 ## Development
 
@@ -206,12 +251,7 @@ dioxide/
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-### Roadmap
-
-- v0.1: Walking skeleton with basic DI
-- v0.2: Production-ready core features
-- v0.3: Performance optimization and benchmarks
-- v1.0: Stable API
+See [ROADMAP.md](ROADMAP.md) for the complete product roadmap and [MLP_VISION.md](docs/MLP_VISION.md) for the design philosophy.
 
 ## License
 
@@ -225,4 +265,9 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Note**: This project is under active development. APIs may change before v1.0.
+**⚠️ Alpha Status**: dioxide is in active alpha development. Breaking API changes expected until v0.1.0-beta (mid-December 2025), when the API will freeze. Not recommended for production use yet.
+
+**MLP Timeline**:
+- **Now**: v0.0.2-alpha - API realignment with MLP Vision
+- **Dec 2025**: v0.1.0-beta - MLP Complete, API frozen ✨
+- **2026+**: Post-MLP features, ecosystem growth, 1.0 stable
