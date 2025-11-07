@@ -165,7 +165,7 @@ jobs:
           key: ${{ matrix.target }}-${{ matrix.python-version }}
 
       - name: Build wheels
-        uses: PyO3/maturin-action@ba5e2155629e0f0f6e6a501ba6f27f0645fc6d3f  # v1.47.1
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380  # v1.49.4
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --interpreter python${{ matrix.python-version }}
@@ -202,7 +202,7 @@ jobs:
           toolchain: stable
 
       - name: Build sdist
-        uses: PyO3/maturin-action@ba5e2155629e0f0f6e6a501ba6f27f0645fc6d3f  # v1.47.1
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380  # v1.49.4
         with:
           command: sdist
           args: --out dist
