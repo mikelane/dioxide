@@ -269,10 +269,18 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download all artifacts
+      - name: Download all wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
         with:
-          path: dist/
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download sdist
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
+        with:
+          pattern: sdist
+          path: dist
           merge-multiple: true
 
       - name: Setup Python
@@ -302,10 +310,18 @@ jobs:
         with:
           ref: ${{ needs.semantic-release.outputs.tag }}
 
-      - name: Download all artifacts
+      - name: Download all wheels
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
         with:
-          path: dist/
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download sdist
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4.1.8
+        with:
+          pattern: sdist
+          path: dist
           merge-multiple: true
 
       - name: Extract changelog
