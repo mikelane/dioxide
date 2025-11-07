@@ -1,9 +1,9 @@
 # dioxide Project Status
 
-**Last Updated**: 2025-11-06
-**Current Milestone**: 0.0.2-alpha
+**Last Updated**: 2025-11-07
+**Current Milestone**: 0.0.2-alpha (MLP Realignment)
 **Latest Release**: v0.0.1-alpha (Nov 6, 2025)
-**Progress**: Planning next sprint
+**Progress**: Sprint planning - MLP Vision alignment
 
 ---
 
@@ -12,7 +12,8 @@
 🎉 **v0.0.1-alpha RELEASED** - Published to Test PyPI on Nov 6, 2025
 ✅ **All 6 milestone issues complete** - 100% of 0.0.1-alpha scope delivered
 ✅ **CI/CD working** - Full automation from tag to PyPI release
-🎯 **Next up**: 0.0.2-alpha - Circular dependency detection
+🎯 **STRATEGIC SHIFT**: 0.0.2-alpha - **MLP Vision API Realignment**
+⚠️ **Breaking Changes**: API will change significantly to align with MLP_VISION.md
 
 ---
 
@@ -42,22 +43,37 @@ pip install -i https://test.pypi.org/simple/ dioxide
 
 ---
 
-## Current Sprint (0.0.2-alpha)
+## Current Sprint (0.0.2-alpha) - MLP Realignment
 
 ### 🎯 Sprint Goal
-"Make it safe" - Add circular dependency detection with clear error messages
+**"Align with MLP Vision"** - Realign API with canonical MLP_VISION.md specification
 
-### 📋 Planned Work
-- Issue #5: Detect and report circular dependencies
+**Why the change?**
+- v0.0.1-alpha was built before MLP Vision document existed
+- Current API doesn't match MLP specification (wrong syntax, missing features)
+- We're in alpha - perfect time for breaking changes
+- Zero external users on Test PyPI - minimal disruption
+
+### 📋 Planned Work (Breaking Changes)
+- Issue #28: Implement `@component.factory` and `@component.implements()` syntax
+- Issue #29: Implement `@profile` decorator system (core MLP feature)
+- Issue #30: Update `container.scan()` to accept package and profile parameters
+- Issue #31: Create global singleton container pattern
+- Issue #32: Realign all documentation with MLP Vision
+- Issue #33: Add `container[Type]` syntax (optional nice-to-have)
 
 ### 🔄 In Progress
-- Planning and scoping 0.0.2-alpha
+- PM assessment complete (see DX_EVALUATION.md)
+- Issues created for MLP realignment
+- Documentation updates starting
 
 ### ✅ Completed This Week
 - Released v0.0.1-alpha to Test PyPI
-- Closed 8 obsolete issues from old planning
-- Created new milestone structure (0.0.2-alpha, 0.0.3-alpha, 0.1.0-beta)
-- Reorganized backlog to match ROADMAP.md
+- Created MLP_VISION.md (canonical design document)
+- Completed PM assessment (DX_EVALUATION.md)
+- Created document audit (docs/DOCUMENT_AUDIT.md)
+- Deleted historical documents (0.0.1-alpha scope, checklists)
+- Created 6 GitHub issues for MLP realignment (#28-#33)
 
 ---
 
@@ -77,32 +93,51 @@ pip install -i https://test.pypi.org/simple/ dioxide
 | #23 GitHub Actions Release | ✅ DONE | Nov 4, 2025 |
 | #24 API Documentation | ✅ DONE | Nov 6, 2025 |
 
-### 0.0.2-alpha (PLANNED)
+### 0.0.2-alpha (IN PROGRESS - MLP Realignment)
 **[View milestone →](https://github.com/mikelane/dioxide/milestone/5)**
 
-**Progress**: 0% (0 of 1 issues complete)
+**Progress**: 0% (0 of 6 issues complete)
 
 | Issue | Status | Estimated |
 |-------|--------|-----------|
-| #5 Circular Dependency Detection | ⏳ TODO | 1 week |
+| #28 @component.factory and .implements() syntax | ⏳ TODO | 3 days |
+| #29 @profile decorator system | ⏳ TODO | 4 days |
+| #30 container.scan() with package & profile | ⏳ TODO | 2 days |
+| #31 Global singleton container | ⏳ TODO | 1 day |
+| #32 Documentation realignment | ⏳ TODO | 2 days |
+| #33 container[Type] syntax (optional) | ⏳ TODO | 1 day |
 
 **Target**: Mid-late November 2025
+**Breaking Changes**: YES (acceptable in alpha)
 
 ---
 
-## Critical Path to 0.0.2-alpha
+## Critical Path to 0.0.2-alpha (MLP Realignment)
 
 What needs to happen for the next release:
 
-1. ⏳ **Implement circular dependency detection (#5)** ← NEXT
-   - Design: Use petgraph::algo::toposort for cycle detection
-   - Implementation: Add cycle detection during Container.scan()
-   - Testing: Add tests for direct and indirect cycles
-   - Error messages: Show full cycle path in error
-2. ⏳ **Test and validate** - Ensure 100% coverage maintained
-3. ⏳ **Release to Test PyPI** - Tag v0.0.2-alpha
+1. ⏳ **Core API Changes** (Week 1-2)
+   - Implement `@component.factory` syntax
+   - Implement `@component.implements(Protocol)`
+   - Implement `@profile` decorator system (hybrid approach)
+   - Add package and profile parameters to `container.scan()`
+   - Create global singleton container pattern
 
-**Estimated time to release**: 1 week (per ROADMAP.md)
+2. ⏳ **Documentation Realignment** (Week 2)
+   - Update README with MLP syntax
+   - Rewrite ROADMAP for MLP phases
+   - Update all code examples
+   - Add migration guide from 0.0.1 to 0.0.2
+
+3. ⏳ **Test and Validate** (Ongoing)
+   - Maintain 100% test coverage
+   - Update all tests to MLP syntax
+   - Type safety validation with mypy
+
+4. ⏳ **Release to Test PyPI** - Tag v0.0.2-alpha
+
+**Estimated time to release**: 2-3 weeks
+**Why longer?** API realignment is significant work, but sets correct foundation
 
 ---
 
@@ -153,16 +188,24 @@ c16f03e docs: update project tracking to reflect completed work
 ## Next Actions
 
 **This Week** (by Nov 13):
-1. Review Issue #5 requirements and design approach
-2. Plan implementation strategy for circular dependency detection
-3. Set up test cases for cycle detection (direct and indirect cycles)
+1. ✅ Complete PM assessment (DX_EVALUATION.md)
+2. ✅ Create GitHub issues for MLP realignment (#28-#33)
+3. ✅ Delete historical documents
+4. 🔄 Update all documentation to MLP syntax
+5. ⏳ Start implementing `@component.factory` syntax (#28)
 
-**Next Sprint (0.0.2-alpha)**:
-1. Implement circular dependency detection in Container.scan()
-2. Add clear error messages showing full cycle path
-3. Maintain 100% test coverage
-4. Release v0.0.2-alpha to Test PyPI
-5. Target: Mid-late November 2025
+**Next Sprint (0.0.2-alpha - Weeks 1-2)**:
+1. Implement all core API changes (#28-#31)
+2. Realign all documentation (#32)
+3. Maintain 100% test coverage throughout
+4. Add migration guide from 0.0.1 to 0.0.2
+5. Release v0.0.2-alpha to Test PyPI
+6. Target: Mid-late November 2025
+
+**Future Sprints** (Post-0.0.2):
+- 0.0.3-alpha: Lifecycle management (`Initializable`, `Disposable`, async context manager)
+- 0.0.4-alpha: Complete example + polish + circular dependency detection
+- 0.1.0-beta: MLP complete, API freeze
 
 ---
 
@@ -170,13 +213,17 @@ c16f03e docs: update project tracking to reflect completed work
 
 | Document | Status | Last Updated |
 |----------|--------|--------------|
-| STATUS.md | ✅ Current | 2025-11-04 |
-| ROADMAP.md | ✅ Current | 2025-11-02 |
-| 0.0.1-ALPHA_SCOPE.md | ✅ Current | 2025-11-02 |
-| RELEASE_CHECKLIST.md | ✅ Current | 2025-11-02 |
+| STATUS.md | ✅ Updated for MLP | 2025-11-07 |
+| MLP_VISION.md | ✅ Canonical | 2025-11-07 |
+| DX_EVALUATION.md | ✅ Current | 2025-11-07 |
+| DOCUMENT_AUDIT.md | ✅ Current | 2025-11-07 |
+| ROADMAP.md | ⚠️ Needs rewrite | Old (pre-MLP) |
+| README.md | ⚠️ Needs update | Shows pre-MLP API |
+| CLAUDE.md | ⚠️ Needs update | Shows pre-MLP examples |
+| DX_VISION.md | ⚠️ Needs update | Has pre-MLP examples |
 | CHANGELOG.md | ✅ Current | 2025-11-04 |
-| README.md | ⚠️ Needs update | - |
-| CONTRIBUTING.md | ❌ Doesn't exist | - |
+| 0.0.1-ALPHA_SCOPE.md | ❌ Deleted | Historical |
+| RELEASE_CHECKLIST_0.0.1-alpha.md | ❌ Deleted | Historical |
 
 ---
 
@@ -187,11 +234,31 @@ c16f03e docs: update project tracking to reflect completed work
 - **Audience**: Contributors, maintainers, users
 - **Format**: Markdown for GitHub display
 
-**Note**: For long-term vision, see [ROADMAP.md](ROADMAP.md). For release details, see [docs/RELEASE_CHECKLIST_0.0.1-alpha.md](docs/RELEASE_CHECKLIST_0.0.1-alpha.md).
+**Note**: For design specification, see [MLP_VISION.md](docs/MLP_VISION.md) (canonical). For PM assessment, see [DX_EVALUATION.md](DX_EVALUATION.md).
 
 ---
 
-**Next Status Update**: Friday, Nov 13, 2025
+**Next Status Update**: Friday, Nov 15, 2025 (post API realignment progress)
+
+---
+
+## MLP Realignment Context
+
+**Why are we doing this?**
+
+dioxide v0.0.1-alpha was implemented before the MLP_VISION.md document was created. After creating the canonical MLP specification, we discovered significant API misalignment:
+
+- **Current API**: `@component(scope=Scope.FACTORY)`, `container = Container()`, `container.scan()`
+- **MLP API**: `@component.factory`, `from dioxide import container`, `container.scan("app", profile="test")`
+- **Missing**: Profile system (core MLP feature), lifecycle protocols, `@component.implements()`
+
+**Grade**: Current state is B- (75/100) - Only 36% complete toward MLP vision
+
+**Decision**: Realign NOW while we're in alpha with zero external users. The longer we wait, the more expensive the migration becomes.
+
+**Timeline**: 2-3 weeks for API realignment, then 1-2 weeks for lifecycle, then 1 week for polish = 4-6 weeks to MLP complete (0.1.0-beta)
+
+For full assessment, see [DX_EVALUATION.md](DX_EVALUATION.md).
 
 ---
 
