@@ -12,6 +12,8 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 
 **Note**: The package was recently renamed from `rivet_di` to `dioxide`. All references in code, tests, and documentation have been updated to use `dioxide`.
 
+**⚠️ API IN TRANSITION**: dioxide is currently undergoing MLP API realignment (v0.0.2-alpha). The current codebase uses v0.0.1-alpha syntax, but documentation has been updated to show target MLP syntax. Expect breaking changes as we implement the MLP Vision.
+
 ## MLP Vision: The North Star
 
 **CRITICAL**: Before making ANY architectural, API, or design decisions, consult **`docs/MLP_VISION.md`**.
@@ -334,46 +336,69 @@ dioxide/
 The `@component` decorator marks classes for auto-discovery:
 
 ```python
-from dioxide import component, Scope
+from dioxide import component, profile
+from typing import Protocol
 
-@component  # Default: SINGLETON scope
+# Singleton component (default) - shared across app
+@component
 class UserService:
     pass
 
-@component(scope=Scope.FACTORY)  # Create new instance each time
+# Factory component - new instance each time
+@component.factory
 class RequestHandler:
     pass
+
+# Protocol implementation with profile
+class EmailProvider(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
+
+@component.implements(EmailProvider)
+@profile.production
+class SendGridEmail:
+    async def send(self, to: str, subject: str, body: str) -> None:
+        pass  # Real implementation
 ```
 
-**Implementation**: `python/dioxide/decorators.py:13`
+**Implementation**: `python/dioxide/decorators.py` (MLP realignment in progress)
 
 **How it works**:
-1. Stores scope metadata on the class as `__dioxide_scope__` attribute
-2. Adds the class to a global registry (`_component_registry`)
-3. Container.scan() discovers all registered classes and creates auto-injecting factories
+1. `@component` - Registers as SINGLETON (default scope)
+2. `@component.factory` - Registers as FACTORY scope (new instance each call)
+3. `@component.implements(Protocol)` - Registers concrete implementation for protocol
+4. `@profile` - Associates component with environment profile (production, test, dev)
+5. `container.scan()` discovers all registered classes by profile
 
-### Container.scan()
+### Container (Global Singleton Pattern)
 
-Auto-discovers and registers all `@component` decorated classes:
+MLP uses a global singleton container for simplicity and ergonomics:
 
 ```python
-container = Container()
-container.scan()  # Finds all @component classes
+from dioxide import container, component, profile
+
+# Scan and activate a profile
+container.scan("app", profile="production")  # or "test", "development"
+
+# Resolve with automatic dependency injection
 controller = container.resolve(UserController)  # Dependencies auto-injected
+
+# Alternative syntax (optional)
+controller = container[UserController]
 ```
 
 **Features**:
-- Finds all classes decorated with `@component`
-- Inspects `__init__` type hints for dependencies
-- Creates auto-injecting factory functions
-- Registers with appropriate scope (SINGLETON or FACTORY)
+- **Global singleton**: No manual container instantiation (`from dioxide import container`)
+- **Profile selection**: Scan with `profile` parameter to activate environment-specific implementations
+- **Auto-discovery**: Finds all `@component` decorated classes in package
+- **Type-safe resolution**: `container.resolve(Type)` with full mypy support
+- **Dependency injection**: Inspects `__init__` type hints and auto-injects dependencies
 
-**Implementation**: `python/dioxide/container.py:96`
+**Implementation**: `python/dioxide/container.py` (MLP realignment in progress)
 
 **Important details**:
-- SINGLETON components are wrapped in a Python-level singleton factory (using closure)
-- FACTORY components are registered directly without singleton wrapping
-- The Rust container caches ALL provider results in its singleton cache (see bug fix below)
+- SINGLETON components shared across entire app lifecycle
+- FACTORY components create new instance for each resolution
+- Profile system enables clean swapping of implementations (e.g., DB → in-memory for tests)
 
 ### Rust Container
 
@@ -523,9 +548,14 @@ git commit -m "docs: weekly status update for $(date +%Y-%m-%d)"
 
 Long-term planning documents (updated less frequently):
 
-- **ROADMAP.md**: Long-term vision, updated quarterly
-- **docs/0.0.1-ALPHA_SCOPE.md**: Release scope definition
-- **docs/RELEASE_CHECKLIST_0.0.1-alpha.md**: Pre-release verification
+- **ROADMAP.md**: Long-term vision aligned with MLP (updated Nov 2025)
+- **docs/MLP_VISION.md**: Canonical design specification (THE north star)
+- **docs/DOCUMENT_AUDIT.md**: Documentation alignment tracking
+- **DX_EVALUATION.md**: PM assessment of current vs MLP state
+
+**Historical documents** (deleted during MLP realignment):
+- ~~docs/0.0.1-ALPHA_SCOPE.md~~ - Deleted (pre-MLP scope)
+- ~~docs/RELEASE_CHECKLIST_0.0.1-alpha.md~~ - Deleted (pre-MLP checklist)
 
 These documents provide historical context but should NOT be the primary source of current status. Always check STATUS.md first.
 
@@ -573,28 +603,32 @@ git commit -m "add new feature"
 
 **Result**: No confusion about what's done vs. what's pending.
 
-## Recent Development History
+## Current Status: MLP API Realignment (v0.0.2-alpha)
 
-### @component Decorator Implementation
-- Implemented flexible decorator supporting both `@component` and `@component(scope=...)`
-- Global registry tracks decorated classes
-- Supports SINGLETON (default) and FACTORY scopes
+**⚠️ IMPORTANT**: dioxide is currently undergoing MLP API realignment. The v0.0.1-alpha API is being replaced with the MLP Vision API.
 
-### Container.scan() Auto-Discovery
-- Scans global registry for `@component` decorated classes
-- Inspects `__init__` type hints to build dependency graph
-- Creates auto-injecting factory functions
-- Handles classes with/without __init__ parameters
+### Recent Milestones
 
-### Rust Singleton Cache Bug Fix
-- **Bug**: Factory providers were called multiple times instead of being cached
-- **Fix**: Modified resolve() in rust/src/lib.rs to populate singleton cache for Factory providers
-- **Test**: `tests/test_rust_container_edge_cases.py` verifies singleton behavior
+**v0.0.1-alpha (Released Nov 6, 2025)** ✅
+- First public release to Test PyPI
+- Basic `@component` decorator with `@component(scope=...)` syntax
+- `Container().scan()` auto-discovery
+- 100% test coverage
+- Full CI/CD automation
 
-### Coverage Achievement
-- Achieved 100% branch coverage for Python code
-- Added comprehensive test suite with edge cases
-- Documented coverage approach for Python/Rust hybrid projects
+**v0.0.2-alpha (In Progress - MLP Realignment)** 🔄
+- Breaking API changes to align with MLP Vision
+- New syntax: `@component.factory`, `@component.implements(Protocol)`
+- Profile system: `@profile.production`, `@profile("test", "development")`
+- Global singleton container: `from dioxide import container`
+- Updated `container.scan("package", profile="...")`
+
+**Timeline to MLP Complete**:
+- **Nov 2025**: v0.0.2-alpha (API realignment) ← **WE ARE HERE**
+- **Dec 2025**: v0.0.3-alpha (lifecycle management), v0.0.4-alpha (polish)
+- **Mid-Dec 2025**: v0.1.0-beta (MLP complete, API freeze)
+
+See [ROADMAP.md](ROADMAP.md) and [docs/MLP_VISION.md](docs/MLP_VISION.md) for details.
 
 ## Release Process (Automated)
 
