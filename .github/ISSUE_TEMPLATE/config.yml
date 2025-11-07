@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/mikelane/dioxide/discussions
+    about: For questions, ideas, and general discussions
+  - name: Security Vulnerability
+    url: https://github.com/mikelane/dioxide/security/advisories/new
+    about: Report security vulnerabilities privately

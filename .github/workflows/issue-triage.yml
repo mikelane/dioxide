@@ -1,0 +1,89 @@
+name: Issue Triage Automation
+
+on:
+  issues:
+    types: [opened, reopened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  auto-triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add to project
+        if: ${{ !contains(github.event.issue.labels.*.name, 'type: question') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          # Get project ID (dioxide Development)
+          PROJECT_ID=$(gh project list --owner mikelane --format json | jq -r '.projects[] | select(.title == "dioxide Development") | .number')
+
+          if [ -n "$PROJECT_ID" ]; then
+            echo "Adding issue to project #$PROJECT_ID"
+            gh project item-add "$PROJECT_ID" --owner mikelane --url "$ISSUE_URL"
+          else
+            echo "Project 'dioxide Development' not found"
+          fi
+
+      - name: Add triage comment
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const labels = context.payload.issue.labels.map(l => l.name);
+            const isBug = labels.some(l => l.includes('bug'));
+            const isCritical = labels.some(l => l.includes('critical'));
+            const isQuestion = labels.some(l => l.includes('question'));
+
+            let comment = '👋 Thanks for opening this issue!\n\n';
+
+            if (isQuestion) {
+              comment += '💬 This looks like a question. Consider using [GitHub Discussions](https://github.com/mikelane/dioxide/discussions) for ongoing conversations.\n\n';
+              comment += '**Response SLA:** We aim to respond within 3 business days.\n';
+            } else if (isCritical) {
+              comment += '🚨 This issue has been marked as **critical**. Our team will review it within 4 hours.\n\n';
+              comment += '**Fix SLA:** Critical issues are typically resolved within 24 hours.\n';
+            } else if (isBug) {
+              comment += '🐛 A maintainer will review this bug report and respond within 1 business day.\n\n';
+              comment += '**Triage SLA:** High priority bugs are typically triaged within 24 hours.\n';
+            } else {
+              comment += '📋 A maintainer will review this issue and respond within 3 business days.\n';
+            }
+
+            comment += '\n---\n';
+            comment += '_Issue lifecycle: [Documentation](https://github.com/mikelane/dioxide/blob/main/docs/issue-lifecycle.md)_';
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Assign based on area label
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const labels = context.payload.issue.labels.map(l => l.name);
+
+            // Area-based assignment (extend based on CODEOWNERS)
+            const assignments = {
+              'area: core': [],
+              'area: rust': [],
+              'area: python': [],
+              'area: infrastructure': [],
+            };
+
+            for (const [area, assignees] of Object.entries(assignments)) {
+              if (labels.includes(area) && assignees.length > 0) {
+                await github.rest.issues.addAssignees({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  assignees: assignees
+                });
+                console.log(`Assigned to: ${assignees.join(', ')}`);
+              }
+            }

@@ -1,0 +1,55 @@
+# CODEOWNERS - Defines individuals or teams responsible for code in the repository
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo (fallback)
+# These owners will be requested for review when someone opens a PR unless a later match takes precedence
+* @mikelane
+
+# Core container and graph implementation
+/src/core/ @mikelane
+/dioxide-core/ @mikelane
+
+# Rust implementation
+*.rs @mikelane
+/Cargo.toml @mikelane
+/Cargo.lock @mikelane
+/rust/ @mikelane
+
+# Python bindings and API
+*.py @mikelane
+/python/ @mikelane
+/pyproject.toml @mikelane
+/setup.py @mikelane
+
+# Documentation
+/docs/ @mikelane
+*.md @mikelane
+/README.md @mikelane
+/CONTRIBUTING.md @mikelane
+
+# CI/CD and infrastructure
+/.github/ @mikelane
+/.github/workflows/ @mikelane
+/Dockerfile @mikelane
+/docker-compose.yml @mikelane
+
+# Tests
+/tests/ @mikelane
+/**/tests/ @mikelane
+
+# Configuration files
+*.toml @mikelane
+*.yml @mikelane
+*.yaml @mikelane
+*.json @mikelane
+
+# Dependency files
+/requirements.txt @mikelane
+/poetry.lock @mikelane
+/package.json @mikelane
+/package-lock.json @mikelane
+/uv.lock @mikelane
+
+# Security-sensitive files
+/SECURITY.md @mikelane
+/.github/workflows/security-*.yml @mikelane

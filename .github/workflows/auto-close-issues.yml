@@ -1,0 +1,87 @@
+name: Auto-Close Issues on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  auto-close:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close linked issues
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            const prBody = context.payload.pull_request.body || '';
+            const prTitle = context.payload.pull_request.title || '';
+
+            // Extract issue numbers from PR body and title
+            // Patterns: "Closes #123", "Fixes #456", "Resolves #789"
+            const patterns = [
+              /(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[\s:]+#(\d+)/gi,
+              /#(\d+)/g
+            ];
+
+            const issueNumbers = new Set();
+
+            patterns.forEach(pattern => {
+              let match;
+              while ((match = pattern.exec(prBody)) !== null) {
+                issueNumbers.add(parseInt(match[1]));
+              }
+              pattern.lastIndex = 0; // Reset regex
+              while ((match = pattern.exec(prTitle)) !== null) {
+                issueNumbers.add(parseInt(match[1]));
+              }
+            });
+
+            if (issueNumbers.size === 0) {
+              console.log('No issue references found in PR');
+              return;
+            }
+
+            console.log(`Found issue references: ${Array.from(issueNumbers).join(', ')}`);
+
+            // Close each referenced issue
+            for (const issueNumber of issueNumbers) {
+              try {
+                // Get issue to check if it's still open
+                const { data: issue } = await github.rest.issues.get({
+                  owner,
+                  repo,
+                  issue_number: issueNumber
+                });
+
+                if (issue.state === 'open') {
+                  // Close the issue
+                  await github.rest.issues.update({
+                    owner,
+                    repo,
+                    issue_number: issueNumber,
+                    state: 'closed',
+                    state_reason: 'completed'
+                  });
+
+                  // Add comment linking to the PR
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: issueNumber,
+                    body: `✅ Closed by #${prNumber}`
+                  });
+
+                  console.log(`Closed issue #${issueNumber}`);
+                } else {
+                  console.log(`Issue #${issueNumber} is already closed`);
+                }
+              } catch (error) {
+                console.error(`Failed to close issue #${issueNumber}: ${error.message}`);
+              }
+            }
