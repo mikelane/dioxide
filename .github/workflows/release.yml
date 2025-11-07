@@ -167,18 +167,10 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - name: Install wheel (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
+      - name: Install wheel
         run: |
-          pip install dist/dioxide-*.whl
-
-      - name: Install wheel (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $wheel = Get-ChildItem -Path dist -Filter dioxide-*.whl | Select-Object -First 1
-          pip install $wheel.FullName
+          # Let pip select the compatible wheel for this platform
+          pip install --find-links=dist --no-index dioxide
 
       - name: Install test dependencies
         run: pip install pytest pytest-cov mypy
