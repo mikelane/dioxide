@@ -1,0 +1,111 @@
+name: Enhancement
+description: Suggest an improvement to an existing feature
+title: '[ENHANCEMENT] '
+labels: ['type: enhancement', 'status: triage']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an enhancement! Use this template for improvements to **existing** features.
+
+        For **new** features, please use the Feature Request template instead.
+
+  - type: textarea
+    id: feature-to-enhance
+    attributes:
+      label: Feature to Enhance
+      description: Which existing feature should be improved?
+      placeholder: Describe the current feature that needs enhancement
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: How does the feature currently work?
+      placeholder: Describe the current implementation and behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: desired-behavior
+    attributes:
+      label: Desired Behavior
+      description: How should the feature work after this enhancement?
+      placeholder: Describe the improved behavior you'd like to see
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this enhancement needed? What value does it provide?
+      placeholder: Explain the benefits and use cases for this improvement
+    validations:
+      required: true
+
+  - type: textarea
+    id: example-comparison
+    attributes:
+      label: Before/After Example
+      description: Show how code would change with this enhancement
+      placeholder: |
+        **Before (current):**
+        ```python
+        # Current usage
+        ```
+
+        **After (enhanced):**
+        ```python
+        # Improved usage
+        ```
+      render: markdown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      description: What is the impact of this enhancement?
+      options:
+        - High (Significantly improves usability or performance)
+        - Medium (Noticeable improvement, affects common use cases)
+        - Low (Minor improvement, nice to have)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: breaking-change
+    attributes:
+      label: Breaking Change?
+      description: Would this enhancement break existing code?
+      options:
+        - No (Backward compatible)
+        - Yes (Would require code changes)
+        - Maybe (Depends on implementation)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, benchmarks, or references here
+      placeholder: Performance benchmarks, similar implementations in other projects, etc.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: This is an enhancement to an existing feature (not a new feature)
+          required: true
+        - label: I have provided clear before/after examples
+          required: true

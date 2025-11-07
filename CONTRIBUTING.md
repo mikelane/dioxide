@@ -8,13 +8,16 @@ Be respectful, inclusive, and professional. We're all here to build something us
 
 ## Getting Started
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork**:
+1. **Search First**: Before creating a new issue or PR, search [existing issues](https://github.com/mikelane/dioxide/issues) to avoid duplicates
+2. **Read the Docs**: Familiarize yourself with the project documentation
+3. **Understand the Issue Lifecycle**: Review our [Issue Lifecycle Documentation](docs/issue-lifecycle.md) and [Label Guide](docs/label-guide.md)
+4. **Fork the repository** on GitHub
+5. **Clone your fork**:
    ```bash
    git clone https://github.com/YOUR_USERNAME/dioxide.git
    cd dioxide
    ```
-3. **Set up development environment**:
+6. **Set up development environment**:
    ```bash
    uv venv
    source .venv/bin/activate
@@ -22,6 +25,72 @@ Be respectful, inclusive, and professional. We're all here to build something us
    uv run maturin develop
    pre-commit install
    ```
+
+## How to Contribute
+
+There are many ways to contribute to dioxide:
+
+- 🐛 **Report bugs** using the [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.yml)
+- ✨ **Suggest features** using the [Feature Request template](.github/ISSUE_TEMPLATE/feature_request.yml)
+- 📈 **Propose enhancements** using the [Enhancement template](.github/ISSUE_TEMPLATE/enhancement.yml)
+- 📚 **Improve documentation** using the [Documentation template](.github/ISSUE_TEMPLATE/documentation.yml)
+- ❓ **Ask questions** using the [Question template](.github/ISSUE_TEMPLATE/question.yml) or [Discussions](https://github.com/mikelane/dioxide/discussions)
+- 💻 **Write code** by picking up issues labeled `good-first-issue` or `help-wanted`
+
+### Reporting Bugs
+
+Found a bug? Help us improve by reporting it!
+
+**What makes a good bug report:**
+- Clear, descriptive title: `[BUG] Container crashes when adding circular references`
+- Minimal reproducible example that demonstrates the issue
+- Expected vs actual behavior clearly stated
+- Environment information (dioxide version, Python version, OS)
+- Stack traces or error messages included
+- Severity label (Critical/High/Medium/Low)
+
+**Template:** Use the [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.yml)
+
+### Suggesting Features
+
+Have an idea for a new feature?
+
+**What makes a good feature request:**
+- User story format: "As a [user], I want [goal], so that [benefit]"
+- Clear problem statement explaining the pain point
+- Concrete example showing how the feature would be used
+- Acceptance criteria defining when the feature is "done"
+- Priority level (Critical/High/Medium/Low)
+
+**For improvements to existing features**, use the [Enhancement template](.github/ISSUE_TEMPLATE/enhancement.yml) instead.
+
+**Template:** Use the [Feature Request template](.github/ISSUE_TEMPLATE/feature_request.yml)
+
+### Issue Lifecycle
+
+Issues go through several stages in our workflow:
+
+1. **Triage** (`status: triage`) - New issue, needs review by maintainers
+2. **Backlog** - Triaged and validated, not yet scheduled
+3. **Planned** - Scheduled for development in upcoming sprint
+4. **In Progress** (`status: in-progress`) - Actively being worked on
+5. **Needs Review** (`status: needs-review`) - PR open, awaiting code review
+6. **Done** - Issue closed, changes merged or issue resolved
+
+See our [Issue Lifecycle Documentation](docs/issue-lifecycle.md) for detailed information.
+
+### Service Level Agreements (SLAs)
+
+We aim to meet these response times:
+
+| Priority | Acknowledgement | Resolution Target |
+|----------|----------------|-------------------|
+| Critical | 4 hours | 24 hours |
+| High | 1 day | 1 week |
+| Medium | 3 days | 2 weeks |
+| Low | Best effort | Best effort |
+
+**Note:** These are targets, not guarantees. This is an open source project maintained by volunteers.
 
 ## Development Workflow
 

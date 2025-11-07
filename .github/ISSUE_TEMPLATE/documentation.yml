@@ -1,0 +1,90 @@
+name: Documentation
+description: Report missing, incorrect, or unclear documentation
+title: '[DOCS] '
+labels: ['type: docs', 'status: triage']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve dioxide's documentation!
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What kind of documentation issue is this?
+      options:
+        - Missing documentation
+        - Incorrect documentation
+        - Unclear/confusing documentation
+        - Outdated documentation
+        - Typo or formatting issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Where should this documentation be? (Provide URL or file path)
+      placeholder: |
+        e.g., https://dioxide.readthedocs.io/en/latest/api/container.html
+        or docs/user-guide/getting-started.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Issue Description
+      description: What's wrong with the current documentation, or what's missing?
+      placeholder: Describe the documentation issue in detail
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-content
+    attributes:
+      label: Proposed Content
+      description: What should the documentation say instead? (Optional for bug reports, required for missing docs)
+      placeholder: |
+        Provide the corrected text or outline what should be documented
+
+        For API docs, include:
+        - Function/class signature
+        - Parameters and types
+        - Return value
+        - Examples
+      render: markdown
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Target Audience
+      description: Who is this documentation primarily for?
+      options:
+        - End users (using dioxide in their projects)
+        - API reference (developers using specific functions)
+        - Contributors (contributing to dioxide)
+        - Tutorial/guide (learning dioxide concepts)
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or examples
+      placeholder: Screenshots of confusing documentation, links to good examples from other projects, etc.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing documentation issues to avoid duplicates
+          required: true
+        - label: I have identified the specific location that needs updating
+          required: true

@@ -1,0 +1,134 @@
+name: Issue Metrics & Reporting
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run monthly on the 1st at 09:00 UTC
+    - cron: '0 9 1 * *'
+
+permissions:
+  issues: read
+  pull-requests: read
+  contents: read
+
+jobs:
+  issue-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
+
+      - name: Run issue-metrics tool
+        uses: github/issue-metrics@3cdeef0e85d5d3035e84a0e243e2e2fb3bb48d4b # v3.15.0
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SEARCH_QUERY: 'repo:mikelane/dioxide is:issue created:${{ steps.date.outputs.date }} -reason:"not planned"'
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@ea165f8d65ce2e9a1a6c3f4867f37c02d33d9f4a # v4.5.0
+        with:
+          name: issue-metrics-${{ steps.date.outputs.date }}
+          path: issue_metrics.md
+          retention-days: 90
+
+      - name: Create issue with report
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const date = '${{ steps.date.outputs.date }}';
+
+            // Read metrics report
+            const report = fs.readFileSync('issue_metrics.md', 'utf8');
+
+            // Create issue with report
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📊 Issue Metrics Report - ${date}`,
+              body: `## Monthly Issue Metrics Report\n\n${report}\n\n---\n_Generated automatically on the 1st of each month_`,
+              labels: ['type: docs', 'metrics']
+            });
+
+  calculate-sla-compliance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Calculate SLA compliance
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+
+            // Get all open issues
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            // SLA definitions (in hours)
+            const SLA = {
+              'priority: critical': { acknowledge: 4, resolve: 24 },
+              'priority: high': { acknowledge: 24, resolve: 168 }, // 1 week
+              'priority: medium': { acknowledge: 72, resolve: 336 }, // 2 weeks
+              'priority: low': { acknowledge: 168, resolve: 720 } // 1 month
+            };
+
+            let slaReport = '## SLA Compliance Report\n\n';
+            slaReport += '| Priority | Total | Within SLA | Breached | Compliance % |\n';
+            slaReport += '|----------|-------|------------|----------|-------------|\n';
+
+            for (const [priority, targets] of Object.entries(SLA)) {
+              const priorityIssues = issues.filter(issue =>
+                issue.labels.some(label => label.name === priority)
+              );
+
+              let withinSLA = 0;
+              let breached = 0;
+
+              priorityIssues.forEach(issue => {
+                const createdAt = new Date(issue.created_at);
+                const now = new Date();
+                const hoursOpen = (now - createdAt) / (1000 * 60 * 60);
+
+                // Check if issue has been acknowledged (any comment from maintainer)
+                const hasAcknowledgement = issue.comments > 0;
+                const isWithinAckSLA = hoursOpen <= targets.acknowledge || hasAcknowledgement;
+
+                if (isWithinAckSLA) {
+                  withinSLA++;
+                } else {
+                  breached++;
+                }
+              });
+
+              const total = priorityIssues.length;
+              const compliance = total > 0 ? ((withinSLA / total) * 100).toFixed(1) : 'N/A';
+
+              const priorityName = priority.replace('priority: ', '').toUpperCase();
+              slaReport += `| ${priorityName} | ${total} | ${withinSLA} | ${breached} | ${compliance}% |\n`;
+            }
+
+            slaReport += '\n### SLA Targets\n\n';
+            slaReport += '- **Critical**: Acknowledge in 4h, resolve in 24h\n';
+            slaReport += '- **High**: Acknowledge in 24h, resolve in 1 week\n';
+            slaReport += '- **Medium**: Acknowledge in 3 days, resolve in 2 weeks\n';
+            slaReport += '- **Low**: Best effort\n';
+
+            console.log(slaReport);
+
+            // Save to artifact
+            const fs = require('fs');
+            fs.writeFileSync('sla_report.md', slaReport);
+
+      - name: Upload SLA report
+        uses: actions/upload-artifact@ea165f8d65ce2e9a1a6c3f4867f37c02d33d9f4a # v4.5.0
+        with:
+          name: sla-compliance-report
+          path: sla_report.md
+          retention-days: 90

@@ -1,0 +1,116 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in dioxide
+title: '[BUG] '
+labels: ['type: bug', 'status: triage']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the form below with as much detail as possible.
+
+        Before submitting, please search existing issues to avoid duplicates.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: What went wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Initialize container with '...'
+        2. Add node with '...'
+        3. Call method '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe the expected outcome
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Describe what actually occurred
+    validations:
+      required: true
+
+  - type: textarea
+    id: minimal-reproducible-example
+    attributes:
+      label: Minimal Reproducible Example
+      description: Provide a minimal code example that reproduces the issue
+      placeholder: |
+        ```python
+        from dioxide import Container
+
+        # Your reproducible example here
+        container = Container()
+        # ...
+        ```
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Information
+      description: Please provide details about your environment
+      value: |
+        - **dioxide version**: (e.g., 0.1.0)
+        - **Python version**: (e.g., 3.11.5)
+        - **Operating System**: (e.g., macOS 14.1, Ubuntu 22.04, Windows 11)
+        - **Installation method**: (pip, uv, poetry, conda)
+      render: markdown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this bug?
+      options:
+        - Critical (System crash, data loss, security vulnerability)
+        - High (Major functionality broken, no workaround)
+        - Medium (Feature broken, workaround available)
+        - Low (Minor inconvenience, cosmetic issue)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (logs, screenshots, stack traces, etc.)
+      placeholder: Stack traces, error messages, screenshots, related issues, etc.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I have provided a minimal reproducible example
+          required: true
+        - label: I have included all relevant environment information
+          required: true

@@ -1,0 +1,90 @@
+name: Question / Support
+description: Ask a question or get help using dioxide
+title: '[QUESTION] '
+labels: ['type: question', 'status: triage']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reaching out! We're here to help.
+
+        **Note:** For in-depth discussions, consider using [GitHub Discussions](https://github.com/mikelane/dioxide/discussions) instead of opening an issue.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: Ask your question here in as much detail as possible
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: What Are You Trying to Accomplish?
+      description: Provide context about what you're trying to achieve
+      placeholder: Describe your use case and end goal
+    validations:
+      required: true
+
+  - type: textarea
+    id: attempted-solutions
+    attributes:
+      label: What Have You Tried?
+      description: What approaches have you already attempted?
+      placeholder: |
+        List what you've tried so far:
+        1. Attempted approach 1
+        2. Attempted approach 2
+        3. Read documentation page X
+    validations:
+      required: true
+
+  - type: textarea
+    id: code-example
+    attributes:
+      label: Relevant Code
+      description: Share any relevant code that demonstrates what you're working on
+      placeholder: |
+        ```python
+        # Your code here
+        from dioxide import Container
+
+        # ...
+        ```
+      render: python
+
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error Messages or Output
+      description: If you're encountering errors, paste them here
+      placeholder: |
+        Any error messages, stack traces, or unexpected output
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Provide relevant environment details
+      value: |
+        - **dioxide version**:
+        - **Python version**:
+        - **Operating System**:
+      render: markdown
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and discussions for similar questions
+          required: true
+        - label: I have checked the documentation
+          required: true
+        - label: I have provided sufficient context about what I'm trying to accomplish
+          required: true
