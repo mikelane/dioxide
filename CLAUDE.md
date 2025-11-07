@@ -243,6 +243,103 @@ pytest tests/ --cov=dioxide --cov-report=term-missing --cov-branch
 
 The pre-commit hook enforces these requirements. See `COVERAGE.md` for detailed documentation.
 
+## Documentation Requirements
+
+**CRITICAL**: Documentation is NOT optional. Every code change MUST include corresponding documentation updates.
+
+### Documentation-First Development
+
+All agents and developers are responsible for maintaining documentation as they work:
+
+1. **Before writing code**: Update or create documentation describing the feature/change
+2. **During development**: Keep documentation in sync with code changes
+3. **Before opening PR**: Verify all affected documentation is updated
+
+### What Must Be Documented
+
+**For every change, update relevant documentation**:
+
+- **API changes**: Update README.md Quick Start, CLAUDE.md examples, docstrings
+- **New features**: Add to README.md Features section, update ROADMAP.md if needed
+- **Breaking changes**: Document migration path, update all examples
+- **Bug fixes**: Update CHANGELOG.md (if significant), relevant docs explaining correct behavior
+- **Architecture decisions**: Create/update ADRs in docs/design/
+- **Configuration changes**: Update setup instructions in README.md and CLAUDE.md
+- **Testing patterns**: Update test documentation if new patterns introduced
+
+### Documentation Sources of Truth
+
+Know which document to update:
+
+| Type of Change | Primary Document | Secondary Documents |
+|----------------|------------------|---------------------|
+| Public API | README.md | CLAUDE.md, docs/MLP_VISION.md |
+| Developer workflow | CLAUDE.md | CONTRIBUTING.md |
+| Design decisions | docs/design/ADR-*.md | MLP_VISION.md |
+| Sprint status | STATUS.md | GitHub issues, milestones |
+| Long-term vision | ROADMAP.md | MLP_VISION.md |
+| MLP features | docs/MLP_VISION.md | README.md, ROADMAP.md |
+
+### PR Completion Checklist
+
+**A PR is NOT complete until**:
+
+- [ ] All code changes have corresponding documentation updates
+- [ ] README.md examples work with the changes
+- [ ] CLAUDE.md reflects any workflow changes
+- [ ] Docstrings added/updated for new/modified public APIs
+- [ ] CHANGELOG.md updated (if user-facing change)
+- [ ] Migration guide written (if breaking change)
+- [ ] ADR created (if architectural decision)
+- [ ] STATUS.md updated (if affects current sprint)
+
+### Examples of Required Documentation Updates
+
+**Adding a new decorator**:
+- ✅ Add example to README.md Quick Start
+- ✅ Add detailed explanation to CLAUDE.md Key Components
+- ✅ Add docstrings with usage examples
+- ✅ Update CHANGELOG.md
+- ✅ Create ADR if design decision involved
+
+**Fixing a bug**:
+- ✅ Update docstring if behavior clarification needed
+- ✅ Add comment in code explaining the fix
+- ✅ Update CHANGELOG.md if user-facing
+- ✅ Update any examples that showed incorrect usage
+
+**Refactoring internal code**:
+- ✅ Update CLAUDE.md if internal architecture changed
+- ✅ Update comments explaining new structure
+- ✅ Create ADR if significant design change
+
+**Changing workflow**:
+- ✅ Update CLAUDE.md with new commands/process
+- ✅ Update CONTRIBUTING.md if affects contributors
+- ✅ Update STATUS.md if affects current sprint
+
+### Documentation Review in PRs
+
+When reviewing PRs, check:
+
+1. **Accuracy**: Does documentation match the actual code behavior?
+2. **Completeness**: Are all changes documented?
+3. **Consistency**: Do examples across documents match?
+4. **Examples**: Do code examples actually work?
+5. **Migration**: Are breaking changes explained with migration path?
+
+**If documentation is missing or incomplete, request changes. Do NOT merge.**
+
+### Why This Matters
+
+Undocumented code is:
+- **Unusable**: Users can't learn how to use it
+- **Unmaintainable**: Future developers can't understand intent
+- **Untrustworthy**: Outdated docs are worse than no docs
+- **Incomplete**: The work isn't done until it's documented
+
+**Remember**: If it's not documented, it doesn't exist. Documentation is part of the implementation, not an afterthought.
+
 ## Common Development Commands
 
 ### Setup
@@ -764,9 +861,12 @@ When working on this project, follow these requirements in order:
 5. **Check coverage** - Run coverage before committing
 6. **Use Describe*/it_* pattern** - Follow BDD test structure
 7. **Keep tests simple** - No logic in tests
-8. **Clean commits** - No attribution or co-authored lines, always reference issue number
-9. **Update issue** - Keep the GitHub issue updated as you work
-10. **Close properly** - Use "Fixes #N" in PR description to auto-close issue
+8. **Update documentation** - ALL code changes MUST include documentation updates (see Documentation Requirements)
+9. **Clean commits** - No attribution or co-authored lines, always reference issue number
+10. **Update issue** - Keep the GitHub issue updated as you work
+11. **Close properly** - Use "Fixes #N" in PR description to auto-close issue
+
+**CRITICAL**: Steps 3 (TDD) and 8 (Documentation) are NOT optional. Code without tests or documentation is incomplete and will not be merged.
 
 ## Reference Documentation
 
