@@ -1,9 +1,11 @@
 name: Release (Automated)
 
 on:
-  push:
-    branches:
-      - main
+  # Temporarily disabled auto-trigger until v0.x semantic-release config is fixed
+  # See issue #43
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 permissions:
