@@ -63,9 +63,8 @@ pip install -i https://test.pypi.org/simple/ dioxide
 - Issue #33: Add `container[Type]` syntax (optional nice-to-have)
 
 ### 🔄 In Progress
-- PM assessment complete (see DX_EVALUATION.md)
-- Issues created for MLP realignment
-- Documentation updates starting
+- Documentation realignment (Priority 0 complete, Priority 1 remaining)
+- Next up: Update CLAUDE.md with MLP syntax (Priority 1)
 
 ### ✅ Completed This Week
 - Released v0.0.1-alpha to Test PyPI
@@ -74,6 +73,10 @@ pip install -i https://test.pypi.org/simple/ dioxide
 - Created document audit (docs/DOCUMENT_AUDIT.md)
 - Deleted historical documents (0.0.1-alpha scope, checklists)
 - Created 6 GitHub issues for MLP realignment (#28-#33)
+- **✅ Completed Priority 0 documentation alignment**:
+  - Updated DX_VISION.md to align with MLP (marked sections as post-MLP)
+  - Completely rewrote ROADMAP.md v2.0.0 with MLP phase structure
+  - Updated README.md with MLP syntax (Quick Start, Vision, Features)
 
 ---
 
@@ -191,8 +194,9 @@ c16f03e docs: update project tracking to reflect completed work
 1. ✅ Complete PM assessment (DX_EVALUATION.md)
 2. ✅ Create GitHub issues for MLP realignment (#28-#33)
 3. ✅ Delete historical documents
-4. 🔄 Update all documentation to MLP syntax
-5. ⏳ Start implementing `@component.factory` syntax (#28)
+4. ✅ Update Priority 0 documentation to MLP syntax (ROADMAP, README, DX_VISION)
+5. ⏳ Update CLAUDE.md with MLP syntax (Priority 1)
+6. ⏳ Start implementing `@component.factory` syntax (#28)
 
 **Next Sprint (0.0.2-alpha - Weeks 1-2)**:
 1. Implement all core API changes (#28-#31)
@@ -217,10 +221,10 @@ c16f03e docs: update project tracking to reflect completed work
 | MLP_VISION.md | ✅ Canonical | 2025-11-07 |
 | DX_EVALUATION.md | ✅ Current | 2025-11-07 |
 | DOCUMENT_AUDIT.md | ✅ Current | 2025-11-07 |
-| ROADMAP.md | ⚠️ Needs rewrite | Old (pre-MLP) |
-| README.md | ⚠️ Needs update | Shows pre-MLP API |
+| ROADMAP.md | ✅ Rewritten v2.0.0 | 2025-11-07 |
+| README.md | ✅ Updated MLP syntax | 2025-11-07 |
+| DX_VISION.md | ✅ Aligned with MLP | 2025-11-07 |
 | CLAUDE.md | ⚠️ Needs update | Shows pre-MLP examples |
-| DX_VISION.md | ⚠️ Needs update | Has pre-MLP examples |
 | CHANGELOG.md | ✅ Current | 2025-11-04 |
 | 0.0.1-ALPHA_SCOPE.md | ❌ Deleted | Historical |
 | RELEASE_CHECKLIST_0.0.1-alpha.md | ❌ Deleted | Historical |
