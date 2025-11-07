@@ -8,16 +8,25 @@ Be respectful, inclusive, and professional. We're all here to build something us
 
 ## Getting Started
 
+**IMPORTANT**: All contributions MUST go through the Pull Request process. External contributions MUST be made through forks. Maintainers work directly in the main repository but MUST still create PRs for all changes.
+
+### For External Contributors (Fork-Based Workflow)
+
 1. **Search First**: Before creating a new issue or PR, search [existing issues](https://github.com/mikelane/dioxide/issues) to avoid duplicates
 2. **Read the Docs**: Familiarize yourself with the project documentation
 3. **Understand the Issue Lifecycle**: Review our [Issue Lifecycle Documentation](docs/issue-lifecycle.md) and [Label Guide](docs/label-guide.md)
-4. **Fork the repository** on GitHub
+4. **Fork the repository** on GitHub (click the "Fork" button in the top right)
 5. **Clone your fork**:
    ```bash
    git clone https://github.com/YOUR_USERNAME/dioxide.git
    cd dioxide
    ```
-6. **Set up development environment**:
+6. **Add upstream remote** to keep your fork in sync:
+   ```bash
+   git remote add upstream https://github.com/mikelane/dioxide.git
+   git fetch upstream
+   ```
+7. **Set up development environment**:
    ```bash
    uv venv
    source .venv/bin/activate
@@ -25,6 +34,25 @@ Be respectful, inclusive, and professional. We're all here to build something us
    uv run maturin develop
    pre-commit install
    ```
+
+### For Maintainers (Direct Repository Access)
+
+1. **Clone the repository** directly:
+   ```bash
+   git clone https://github.com/mikelane/dioxide.git
+   cd dioxide
+   ```
+2. **Set up development environment**:
+   ```bash
+   uv venv
+   source .venv/bin/activate
+   uv sync --all-extras
+   uv run maturin develop
+   pre-commit install
+   ```
+3. **Create feature branches** directly in the main repository
+4. **IMPORTANT**: ALL changes MUST go through the PR process - no direct pushes to main
+5. **All work MUST have an associated GitHub issue** - create one before starting work
 
 ## How to Contribute
 
@@ -102,18 +130,26 @@ We aim to meet these response times:
 
 ### Making Changes
 
-1. **Create a feature branch**:
+1. **Sync your fork with upstream** (if not already up to date):
+   ```bash
+   git checkout main
+   git fetch upstream
+   git merge upstream/main
+   git push origin main
+   ```
+
+2. **Create a feature branch** in your fork:
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
-2. **Write tests first** (TDD approach):
+3. **Write tests first** (TDD approach):
    - Add failing tests in `tests/`
    - Run `uv run pytest tests/` to confirm they fail
    - Implement the feature
    - Run `uv run pytest tests/` to confirm they pass
 
-3. **Pre-commit hooks will automatically**:
+4. **Pre-commit hooks will automatically**:
    - Format Python code (ruff format)
    - Fix linting issues (ruff check --fix)
    - Sort imports (isort)
@@ -121,12 +157,12 @@ We aim to meet these response times:
    - Format Rust code (cargo fmt)
    - Lint Rust code (cargo clippy)
 
-4. **Run tests before pushing**:
+5. **Run tests before pushing**:
    ```bash
    uv run pytest tests/ --cov=dioxide --cov-branch
    ```
 
-5. **Run full quality checks** (optional, CI will run these):
+6. **Run full quality checks** (optional, CI will run these):
    ```bash
    tox
    ```
@@ -191,21 +227,47 @@ uv run pytest tests/ --cov=dioxide --cov-branch
 
 ### Pull Request Process
 
-1. **Update documentation** if needed (README, docstrings, etc.)
-2. **Ensure all tests pass**:
+**ALL changes must go through PRs - no exceptions.**
+
+#### For External Contributors (From Forks)
+
+1. **Ensure issue exists** for the work (create one if needed)
+2. **Update documentation** if needed (README, docstrings, etc.)
+3. **Ensure all tests pass**:
    ```bash
    tox
    ```
-3. **Push to your fork**:
+4. **Push to your fork**:
    ```bash
    git push origin feature/your-feature-name
    ```
-4. **Create a Pull Request** on GitHub
-5. **Fill out the PR template** with:
+5. **Create a Pull Request** on GitHub from your fork to the main repository
+6. **Fill out the PR template** with:
    - Description of changes
-   - Related issue(s)
+   - Related issue(s) - use "Fixes #N" or "Closes #N"
    - Testing performed
    - Checklist completion
+
+#### For Maintainers (Direct Repository Access)
+
+1. **Ensure issue exists** for the work (create one if needed - MANDATORY)
+2. **Update documentation** if needed (README, docstrings, etc.)
+3. **Ensure all tests pass**:
+   ```bash
+   tox
+   ```
+4. **Push to the main repository**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+5. **Create a Pull Request** on GitHub - ALL changes require PR review
+6. **Fill out the PR template** with:
+   - Description of changes
+   - Related issue(s) - use "Fixes #N" or "Closes #N"
+   - Testing performed
+   - Checklist completion
+7. **Wait for CI checks** to pass before merging
+8. **Get approval** (can self-approve as maintainer, but PR process is mandatory)
 
 ### PR Checklist
 
