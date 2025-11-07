@@ -182,10 +182,16 @@ MLP-Aligned Phase Order Should Be:
 - **Priority**: P1
 
 #### docs/DX_VISION.md
-- **Status**: 🔵 Need to review (just discovered)
-- **Content**: Unknown - another vision doc?
-- **Action**: **REVIEW** - does this conflict with or complement MLP_VISION.md?
-- **Priority**: P0 (potential conflict with MLP)
+- **Status**: ✅ Reviewed and aligned
+- **Content**: Aspirational DX vision document
+- **Action**: **ALIGNED** - Updated to clarify relationship with MLP_VISION.md
+- **Changes Made** (2025-11-07):
+  - Added document status warning at top
+  - Fixed API examples to use MLP syntax (`from dioxide import container`)
+  - Marked sections 9-14 as "POST-MLP" (async, config, framework integration, production, tooling, patterns)
+  - Updated version to 1.2 with changelog
+- **Relationship**: Complementary - DX_VISION = aspirational long-term UX, MLP_VISION = concrete near-term spec
+- **Priority**: Completed
 
 #### docs/GITHUB_PROJECT_SETUP.md
 - **Status**: 🔵 Need to review
@@ -207,9 +213,9 @@ MLP-Aligned Phase Order Should Be:
 
 **Priority 0 - Blocks Progress:**
 
-1. **Review DX_VISION.md** (30 min)
-   - Determine if it conflicts with MLP_VISION.md
-   - Merge, deprecate, or align
+1. ✅ **Review DX_VISION.md** (COMPLETED 2025-11-07)
+   - ✅ Determined: Complementary but outdated
+   - ✅ Action taken: Aligned with MLP_VISION.md (see changes above)
 
 2. **Update STATUS.md** (30 min)
    - Change 0.0.2-alpha scope to "API Realignment"
@@ -338,14 +344,18 @@ Documentation alignment is complete when:
 - [ ] All code examples show MLP syntax
 - [ ] ROADMAP reflects MLP phase structure
 - [ ] README quick start uses MLP patterns
-- [ ] STATUS.md shows MLP-aligned sprint plan
+- [x] STATUS.md shows MLP-aligned sprint plan (DONE 2025-11-07)
 - [ ] Historical docs clearly marked as deprecated
 - [ ] No conflicting information across docs
-- [ ] DX_VISION.md reviewed and aligned/merged/deprecated
+- [x] DX_VISION.md reviewed and aligned/merged/deprecated (DONE 2025-11-07)
 
 ---
 
-**Next Action**: Review DX_VISION.md and determine relationship to MLP_VISION.md
+**Next Action**: Update ROADMAP.md to reflect MLP phase structure (Priority 0)
 
 **Owner**: Product-Technical Lead
-**Timeline**: Phase 1 complete by end of week (Nov 8, 2025)
+**Timeline**: Phase 1 in progress (Nov 7-8, 2025)
+
+**Completed Actions**:
+- ✅ DX_VISION.md reviewed and aligned (2025-11-07)
+- ✅ STATUS.md updated for MLP realignment (2025-11-07)

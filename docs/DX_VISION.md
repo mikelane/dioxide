@@ -4,9 +4,27 @@
 
 ---
 
+## ⚠️ IMPORTANT: Document Status
+
+**This is an ASPIRATIONAL vision document** - it describes the long-term ideal developer experience for dioxide.
+
+**For current implementation:** See **[MLP_VISION.md](MLP_VISION.md)** - the canonical design specification for what we're building NOW.
+
+**Relationship:**
+- **MLP_VISION.md** = Concrete spec for MLP (Minimum Loveable Product) - BUILD THIS FIRST
+- **DX_VISION.md** = Aspirational UX goals for post-MLP - THE LONG-TERM DREAM
+
+Many features shown in this document (async/await, configuration management, observability, CLI tools) are **explicitly out of scope** for MLP. They represent post-MLP aspirations.
+
+**Last Updated:** 2025-11-07 (aligned with MLP_VISION.md)
+
+---
+
 ## Purpose of This Document
 
 This document captures the **aspirational developer experience** for dioxide - what we want developers to feel when they use this framework. It's not a feature list or roadmap, but rather a **guiding philosophy** that informs every design decision.
+
+**Note:** Code examples may show post-MLP features. For current MLP API, always refer to [MLP_VISION.md](MLP_VISION.md).
 
 When making choices about API design, error messages, documentation, or features, we ask:
 - **Does this make the simple case simpler?**
@@ -26,7 +44,7 @@ This document is inspired by the best parts of Spring Boot, dependency-injector,
 **What this looks like:**
 
 ```python
-from dioxide import Container, component
+from dioxide import container, component
 
 @component
 class EmailService:
@@ -37,9 +55,9 @@ class UserService:
     def __init__(self, email: EmailService):
         self.email = email
 
-container = Container()
-container.scan()
-user_service = container.resolve(UserService)
+# MLP API: global singleton container
+container.scan("app")
+user_service = container[UserService]
 
 # That's it. No configuration, no wiring, no boilerplate.
 ```
@@ -64,22 +82,23 @@ user_service = container.resolve(UserService)
 **Complexity ladder:**
 
 ```python
-# Level 0: Just works (90% of use cases)
+# Level 0: Just works (90% of use cases) - MLP
 @component
 class Service:
     pass
 
-# Level 1: Control lifecycle (8% of use cases)
-@component(scope=Scope.TRANSIENT)
+# Level 1: Control lifecycle (8% of use cases) - MLP
+@component.factory
 class RequestHandler:
     pass
 
-# Level 2: Conditional registration (1.5% of use cases)
-@component(when=lambda: os.getenv('FEATURE_ENABLED') == 'true')
-class FeatureService:
+# Level 2: Profile-based implementations (1.5% of use cases) - MLP
+@component.implements(EmailProvider)
+@profile.production
+class SendGridEmail:
     pass
 
-# Level 3: Manual provider factories (0.5% of use cases)
+# Level 3: Manual provider factories (0.5% of use cases) - Post-MLP
 container.register_provider(
     AuthService,
     provider=lambda: AuthService(config.auth_url),
@@ -880,7 +899,15 @@ When developers use dioxide, they should feel:
 
 ---
 
-## 9. Async/Await Native Support
+## Post-MLP Features (Aspirational)
+
+The following sections describe features that are **explicitly out of scope** for the MLP. They represent the long-term aspirational vision for dioxide.
+
+**For MLP scope:** See [MLP_VISION.md - What We're NOT Building](MLP_VISION.md#what-were-not-building)
+
+---
+
+## 9. Async/Await Native Support ⚠️ POST-MLP
 
 **Philosophy:** Modern Python is async. DI should embrace it, not fight it.
 
@@ -953,7 +980,7 @@ async with container.lifespan():
 
 ---
 
-## 10. Configuration Management Excellence
+## 10. Configuration Management Excellence ⚠️ POST-MLP
 
 **Philosophy:** Configuration is a dependency. Treat it as such.
 
@@ -1041,7 +1068,7 @@ container.load_config_from_azure_keyvault()
 
 ---
 
-## 11. Framework Integration Patterns
+## 11. Framework Integration Patterns ⚠️ POST-MLP
 
 **Philosophy:** dioxide should integrate seamlessly with existing frameworks, not replace them.
 
@@ -1141,7 +1168,7 @@ def user_view(request, service: UserService):
 
 ---
 
-## 12. Production Readiness
+## 12. Production Readiness ⚠️ POST-MLP
 
 **Philosophy:** DX includes production experience, not just development.
 
@@ -1270,7 +1297,7 @@ container.metrics()
 
 ---
 
-## 13. Developer Tooling
+## 13. Developer Tooling ⚠️ POST-MLP
 
 **Philosophy:** Great DX includes great tools.
 
@@ -1343,7 +1370,7 @@ container = Container(mode="development")
 
 ---
 
-## 14. Real-World Patterns
+## 14. Real-World Patterns ⚠️ POST-MLP
 
 **Philosophy:** Provide guidance for common patterns developers actually use.
 
@@ -1479,10 +1506,11 @@ class UserService:
 
 **This is a living document.** As we learn from users, we'll update this vision to reflect what actually creates joy in practice.
 
-**Version:** 1.1
-**Last Updated:** 2025-01-30
+**Version:** 1.2
+**Last Updated:** 2025-11-07
 **Owner:** Product & Technical Lead
-**Next Review:** After 0.0.1-alpha user feedback
+**Next Review:** After 0.0.2-alpha MLP realignment
 
 **Changelog:**
+- v1.2 (2025-11-07): Aligned with MLP_VISION.md, added document status warnings, marked post-MLP sections, updated code examples to use MLP API (global singleton container, `@component.factory`, `@profile`)
 - v1.1 (2025-01-30): Added sections on async/await support, configuration management, framework integrations (FastAPI/Flask/Django), production readiness (lifecycle, health checks, observability), developer tooling (IDE/CLI), and real-world patterns (multi-tenant, feature flags, plugins, repository)
