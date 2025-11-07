@@ -12,6 +12,130 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 
 **Note**: The package was recently renamed from `rivet_di` to `dioxide`. All references in code, tests, and documentation have been updated to use `dioxide`.
 
+## MLP Vision: The North Star
+
+**CRITICAL**: Before making ANY architectural, API, or design decisions, consult **`docs/MLP_VISION.md`**.
+
+The MLP Vision document is the **canonical design reference** for Dioxide. It defines:
+
+- **The North Star**: Make the Dependency Inversion Principle feel inevitable
+- **Guiding Principles**: 7 core principles that guide ALL decisions (type-safe, explicit, fails fast, etc.)
+- **Core API Design**: `@component`, `@profile`, container, lifecycle protocols
+- **Profile System**: Hybrid approach (common + custom profiles via `__getattr__`)
+- **Testing Philosophy**: Fakes at the seams, NOT mocks
+- **What We're NOT Building**: Explicit exclusions list for MLP scope
+- **Decision Framework**: 5 questions to ask when making choices
+
+**When to consult MLP_VISION.md:**
+
+- ✅ Before designing new features
+- ✅ When choosing between implementation approaches
+- ✅ When questions arise about scope ("should we support X?")
+- ✅ When making API design decisions
+- ✅ When unclear about testing approach
+- ✅ When considering architecture patterns
+
+**Key principle:** If MLP_VISION.md says not to build something for MLP, don't build it. Simplicity over features.
+
+## Issue Tracking Requirements
+
+**MANDATORY**: All work must be associated with a GitHub issue.
+
+### Before Starting Any Work
+
+**STOP.** Before writing ANY code, tests, or documentation:
+
+1. **Check for existing issue**
+   ```bash
+   gh issue list --label "enhancement" --label "bug"
+   ```
+
+2. **If no issue exists, create one OR ask to create one**
+   ```bash
+   gh issue create --title "Brief description" --body "Detailed description"
+   ```
+
+3. **Assign the issue to yourself**
+   ```bash
+   gh issue develop <issue-number> --checkout
+   ```
+
+4. **Reference the issue in branch name**
+   ```bash
+   git checkout -b feat/issue-123-add-profile-system
+   git checkout -b fix/issue-456-circular-dependency
+   ```
+
+**No exceptions.** Even small changes, bug fixes, documentation updates, or refactoring need an issue.
+
+### Why This Is Required
+
+- **Traceability**: Every change has a reason and context
+- **Progress tracking**: Milestone and project board stay accurate
+- **Communication**: Team/stakeholders can see what's being worked on
+- **History**: Future developers understand why decisions were made
+- **Prevents duplicate work**: See what's already in progress
+
+### During Work: Keep Issue Updated
+
+As you work, **keep the issue updated** with progress:
+
+1. **Add comments** when you make important discoveries
+   ```bash
+   gh issue comment <issue-number> --body "Found that X requires Y, adjusting approach"
+   ```
+
+2. **Update description** if scope changes
+   ```bash
+   gh issue edit <issue-number> --body "Updated description..."
+   ```
+
+3. **Add labels** as appropriate
+   ```bash
+   gh issue edit <issue-number> --add-label "blocked" --add-label "needs-discussion"
+   ```
+
+4. **Link related issues**
+   ```
+   # In issue comment
+   Related to #123
+   Blocks #456
+   Depends on #789
+   ```
+
+### When Completing Work
+
+1. **Reference issue in ALL commits**
+   ```bash
+   git commit -m "feat: add profile system (#123)"
+   ```
+
+2. **Use closing keywords in PR description**
+   ```markdown
+   Fixes #123
+   Closes #456
+   Resolves #789
+   ```
+
+3. **Update issue before closing** with summary
+   ```bash
+   gh issue comment <issue-number> --body "Completed. Final approach: ..."
+   ```
+
+### Issue Requirements Checklist
+
+Before considering ANY task complete:
+
+- [ ] Issue exists for the work
+- [ ] Issue is assigned to you
+- [ ] Branch name references issue number
+- [ ] Commits reference issue number
+- [ ] PR description uses "Fixes #N" or "Closes #N"
+- [ ] Issue has been updated during work if scope changed
+- [ ] Issue will auto-close when PR merges
+
+**If any checkbox is unchecked, the work is NOT complete.**
+
 ## Critical Architecture Decision: Public API vs Private Implementation
 
 **IMPORTANT**: This is a hybrid Python/Rust project with a clear separation:
@@ -597,19 +721,25 @@ args: [tests/test_component.py, --cov=dioxide, --cov-fail-under=95, --cov-branch
 
 ## Working with Claude Code
 
-When working on this project:
+When working on this project, follow these requirements in order:
 
-1. **Always follow TDD** - Write tests before implementation
-2. **Test through Python API** - Don't write Rust unit tests
-3. **Check coverage** - Run coverage before committing
-4. **Use Describe*/it_* pattern** - Follow BDD test structure
-5. **Keep tests simple** - No logic in tests
-6. **Clean commits** - No attribution or co-authored lines
+1. **Consult MLP Vision** - Check `docs/MLP_VISION.md` before making design decisions
+2. **Ensure issue exists** - ALL work must have an associated GitHub issue (see Issue Tracking Requirements)
+3. **Always follow TDD** - Write tests before implementation
+4. **Test through Python API** - Don't write Rust unit tests
+5. **Check coverage** - Run coverage before committing
+6. **Use Describe*/it_* pattern** - Follow BDD test structure
+7. **Keep tests simple** - No logic in tests
+8. **Clean commits** - No attribution or co-authored lines, always reference issue number
+9. **Update issue** - Keep the GitHub issue updated as you work
+10. **Close properly** - Use "Fixes #N" in PR description to auto-close issue
 
 ## Reference Documentation
 
+- **docs/MLP_VISION.md**: 🌟 **CANONICAL DESIGN DOCUMENT** - The north star for all architectural and API decisions
 - **README.md**: Project overview and quick start
 - **COVERAGE.md**: Detailed coverage documentation
+- **STATUS.md**: Current sprint status and progress
 - **pyproject.toml**: Python configuration
 - **Cargo.toml**: Rust configuration
 - **.pre-commit-config.yaml**: Quality checks configuration
