@@ -616,6 +616,25 @@ This applies to:
 
 Branch protection enforces this requirement on the `main` branch.
 
+### Code Review Requirements
+
+**Review process is CODEOWNERS-based:**
+
+- **External contributor PRs**: MUST be approved by @mikelane (via `.github/CODEOWNERS`)
+- **Maintainer PRs**: NO approval required (CODEOWNERS doesn't apply to code owners)
+- **All PRs**: MUST pass CI checks and resolve all conversations
+
+**Why maintainers don't need approval:**
+PRs from maintainers exist for archaeology (historical record) and to benefit from automated CI checks, NOT for review gates. CODEOWNERS requirements automatically don't apply when the PR author IS the code owner.
+
+**Branch protection settings:**
+- Require code owner reviews: ✅ Enabled
+- Minimum approving reviews: 0 (CODEOWNERS provides the requirement)
+- Dismiss stale reviews: ✅ Enabled
+- Require CI checks: ✅ Enabled (`build-and-test`)
+- Required linear history: ✅ Enabled
+- Required conversation resolution: ✅ Enabled
+
 ### Workflow: Starting New Work
 
 **For Maintainers:**
@@ -645,11 +664,12 @@ Branch protection enforces this requirement on the `main` branch.
 1. **Open PR** with `Fixes #22` in description - MANDATORY, no direct merges
 2. **Fill out PR template** completely
 3. **Wait for CI checks** to pass
-4. **Review and approve** your own PR (or request peer review for complex changes)
-5. **Merge PR** once approved and all checks pass
-6. **Issue auto-closes** via "Fixes #22" keyword
-7. **Issue moves to "Done"** on project board automatically
-8. **Milestone progress updates** automatically
+4. **Merge PR** - No approval required (CODEOWNERS doesn't apply to code owners)
+5. **Issue auto-closes** via "Fixes #22" keyword
+6. **Issue moves to "Done"** on project board automatically
+7. **Milestone progress updates** automatically
+
+**Note**: Maintainer PRs don't require approval because CODEOWNERS requirements don't apply to the code owners themselves. PRs exist for archaeology/documentation purposes and to benefit from CI checks.
 
 **For External Contributors:**
 1. **Push to your fork**: `git push origin feature-branch`

@@ -260,14 +260,24 @@ uv run pytest tests/ --cov=dioxide --cov-branch
    ```bash
    git push origin feature/your-feature-name
    ```
-5. **Create a Pull Request** on GitHub - ALL changes require PR review
+5. **Create a Pull Request** on GitHub - ALL changes require PR (for archaeology/documentation)
 6. **Fill out the PR template** with:
    - Description of changes
    - Related issue(s) - use "Fixes #N" or "Closes #N"
    - Testing performed
    - Checklist completion
 7. **Wait for CI checks** to pass before merging
-8. **Get approval** (can self-approve as maintainer, but PR process is mandatory)
+8. **Merge directly** - No approval required for maintainer PRs (CODEOWNERS requirement doesn't apply to code owners)
+
+### Review Requirements
+
+**How code review works in dioxide:**
+
+- **External contributor PRs**: Require approval from @mikelane (via CODEOWNERS)
+- **Maintainer PRs**: No approval required (CODEOWNERS doesn't apply to code owners)
+- **All PRs**: Must pass CI checks and conversation resolution
+
+The repository uses `.github/CODEOWNERS` to automatically assign @mikelane as reviewer for all external contributions. This ensures code quality while allowing maintainers to merge their own PRs for efficient workflow.
 
 ### PR Checklist
 
