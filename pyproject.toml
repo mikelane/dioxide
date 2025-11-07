@@ -2,6 +2,7 @@
 requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
+
 [project]
 name = "dioxide"
 dynamic = ["version"]
@@ -39,7 +40,6 @@ dev = [
     "isort>=5.13",
     "tox>=4.0",
     "pre-commit>=3.0",
-    "mutmut>=2.4",
 ]
 
 [project.urls]
@@ -160,6 +160,10 @@ tests_dir = "tests/"
 dev = [
     "twine>=6.2.0",
     "python-semantic-release>=10.4.1",
+]
+test = [
+    "libcst>=1.8.6",
+    "mutmut>=3.2.3",
 ]
 
 [tool.semantic_release]
