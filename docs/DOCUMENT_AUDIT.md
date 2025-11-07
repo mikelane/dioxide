@@ -112,18 +112,19 @@ container.scan("app", profile="production")
 ### 🔴 MISALIGNED - Needs Major Rewrite
 
 #### ROADMAP.md
-- **Status**: ❌ Written before MLP Vision existed
-- **Conflicts**:
-  - **0.0.2-alpha**: "Circular Dependencies" - should be "API Realignment"
-  - **0.0.3-alpha**: "Named Tokens & Disambiguation" - profile system not described correctly
-  - Profile system positioned as 3rd priority, but MLP says it's core
-  - No mention of lifecycle protocols until 0.2.0-beta (should be in alpha)
-  - API examples throughout show pre-MLP syntax
-  - Phases don't match MLP priorities
-- **Action**: **REWRITE** entire roadmap based on MLP priorities
-- **Priority**: P0 (strategic planning)
-- **Estimated Effort**: 2-3 hours
-- **Note**: Create ROADMAP_v2.md, mark old ROADMAP as deprecated
+- **Status**: ✅ Rewritten and aligned (2025-11-07)
+- **Action**: **COMPLETE** - Entire roadmap rewritten based on MLP priorities
+- **Changes Made**:
+  - Complete rewrite from scratch (v1.1 → v2.0.0)
+  - 0.0.2-alpha: "Circular Dependencies" → "MLP API Realignment"
+  - 0.0.3-alpha: "Named Tokens" → "Lifecycle Management"
+  - 0.0.4-alpha: "Provider Functions" → "Polish + Complete Example"
+  - 0.1.0-beta: "Performance" → "MLP Complete" (API freeze milestone)
+  - Post-MLP features clearly separated (0.2.0+)
+  - Timeline: MLP complete by mid-December 2025
+  - All API examples use MLP syntax
+  - References MLP_VISION.md as canonical source
+- **Priority**: Completed
 
 **Key conflicts:**
 ```
@@ -217,15 +218,15 @@ MLP-Aligned Phase Order Should Be:
    - ✅ Determined: Complementary but outdated
    - ✅ Action taken: Aligned with MLP_VISION.md (see changes above)
 
-2. **Update STATUS.md** (30 min)
-   - Change 0.0.2-alpha scope to "API Realignment"
-   - Update sprint plan to reflect MLP priorities
-   - Add note about MLP alignment effort
+2. ✅ **Update STATUS.md** (COMPLETED 2025-11-07)
+   - ✅ Changed 0.0.2-alpha scope to "API Realignment"
+   - ✅ Updated sprint plan to reflect MLP priorities
+   - ✅ Added note about MLP alignment effort
 
-3. **Rewrite ROADMAP.md → ROADMAP_v2.md** (2-3 hours)
-   - Create new roadmap matching MLP phase structure
-   - Mark old ROADMAP.md as deprecated
-   - Ensure all examples use MLP syntax
+3. ✅ **Rewrite ROADMAP.md** (COMPLETED 2025-11-07)
+   - ✅ Created new roadmap matching MLP phase structure
+   - ✅ Moved old ROADMAP.md to ROADMAP_OLD.md
+   - ✅ All examples use MLP syntax
 
 4. **Update README.md** (1 hour)
    - Replace Quick Start with MLP syntax
@@ -342,7 +343,7 @@ Thanks for your patience as we build dioxide the right way!
 Documentation alignment is complete when:
 
 - [ ] All code examples show MLP syntax
-- [ ] ROADMAP reflects MLP phase structure
+- [x] ROADMAP reflects MLP phase structure (DONE 2025-11-07)
 - [ ] README quick start uses MLP patterns
 - [x] STATUS.md shows MLP-aligned sprint plan (DONE 2025-11-07)
 - [ ] Historical docs clearly marked as deprecated
@@ -351,7 +352,7 @@ Documentation alignment is complete when:
 
 ---
 
-**Next Action**: Update ROADMAP.md to reflect MLP phase structure (Priority 0)
+**Next Action**: Update README.md with MLP syntax (Priority 0)
 
 **Owner**: Product-Technical Lead
 **Timeline**: Phase 1 in progress (Nov 7-8, 2025)
@@ -359,3 +360,4 @@ Documentation alignment is complete when:
 **Completed Actions**:
 - ✅ DX_VISION.md reviewed and aligned (2025-11-07)
 - ✅ STATUS.md updated for MLP realignment (2025-11-07)
+- ✅ ROADMAP.md rewritten to reflect MLP phase structure (2025-11-07)
