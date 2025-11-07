@@ -1,7 +1,5 @@
 """Smoke test for installed dioxide package."""
 
-from __future__ import annotations
-
 
 def test_import() -> None:
     """Test that dioxide can be imported."""
