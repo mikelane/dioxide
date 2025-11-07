@@ -28,7 +28,7 @@ impl From<PyErr> for ContainerError {
 }
 
 /// Type key for provider registry (Python type object)
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TypeKey {
     /// Python type object (class)
     py_type: Py<PyType>,
@@ -41,10 +41,10 @@ impl TypeKey {
 
     pub fn type_name(&self, py: Python) -> String {
         self.py_type
-            .as_ref(py)
+            .bind(py)
             .name()
-            .unwrap_or("<unknown>")
-            .to_string()
+            .map(|n| n.to_string())
+            .unwrap_or_else(|_| "<unknown>".to_string())
     }
 }
 
@@ -65,20 +65,42 @@ impl PartialEq for TypeKey {
 
 impl Eq for TypeKey {}
 
+impl Clone for TypeKey {
+    fn clone(&self) -> Self {
+        Python::attach(|py| TypeKey {
+            py_type: self.py_type.clone_ref(py),
+        })
+    }
+}
+
 /// Provider variants for different creation strategies
-#[derive(Clone)]
 pub enum Provider {
     /// Pre-created instance
-    Instance(PyObject),
+    Instance(Py<PyAny>),
 
     /// Class to instantiate (calls __init__)
     Class(Py<PyType>),
 
     /// Factory function to invoke (singleton - caches result)
-    SingletonFactory(PyObject),
+    SingletonFactory(Py<PyAny>),
 
     /// Factory function to invoke (transient - creates new each time)
-    TransientFactory(PyObject),
+    TransientFactory(Py<PyAny>),
+}
+
+impl Clone for Provider {
+    fn clone(&self) -> Self {
+        Python::attach(|py| match self {
+            Provider::Instance(obj) => Provider::Instance(obj.clone_ref(py)),
+            Provider::Class(cls) => Provider::Class(cls.clone_ref(py)),
+            Provider::SingletonFactory(factory) => {
+                Provider::SingletonFactory(factory.clone_ref(py))
+            }
+            Provider::TransientFactory(factory) => {
+                Provider::TransientFactory(factory.clone_ref(py))
+            }
+        })
+    }
 }
 
 /// Core Rust container implementation
@@ -87,7 +109,7 @@ pub struct RustContainer {
     providers: Arc<RwLock<HashMap<TypeKey, Provider>>>,
 
     /// Singleton instance cache: maps Python type to cached instance
-    singletons: Arc<RwLock<HashMap<TypeKey, PyObject>>>,
+    singletons: Arc<RwLock<HashMap<TypeKey, Py<PyAny>>>>,
 }
 
 impl RustContainer {
@@ -104,7 +126,7 @@ impl RustContainer {
         &self,
         py: Python,
         type_key: TypeKey,
-        instance: PyObject,
+        instance: Py<PyAny>,
     ) -> Result<(), ContainerError> {
         let mut providers = self.providers.write().unwrap();
 
@@ -144,7 +166,7 @@ impl RustContainer {
         &self,
         py: Python,
         type_key: TypeKey,
-        factory: PyObject,
+        factory: Py<PyAny>,
     ) -> Result<(), ContainerError> {
         let mut providers = self.providers.write().unwrap();
 
@@ -164,7 +186,7 @@ impl RustContainer {
         &self,
         py: Python,
         type_key: TypeKey,
-        factory: PyObject,
+        factory: Py<PyAny>,
     ) -> Result<(), ContainerError> {
         let mut providers = self.providers.write().unwrap();
 
@@ -180,7 +202,7 @@ impl RustContainer {
     }
 
     /// Resolve a dependency by type
-    pub fn resolve(&self, py: Python, type_key: &TypeKey) -> Result<PyObject, ContainerError> {
+    pub fn resolve(&self, py: Python, type_key: &TypeKey) -> Result<Py<PyAny>, ContainerError> {
         // Check singleton cache first
         {
             let singletons = self.singletons.read().unwrap();
@@ -262,18 +284,28 @@ impl Container {
     }
 
     /// Register an instance for a given type
-    fn register_instance(&self, py: Python, py_type: &PyType, instance: PyObject) -> PyResult<()> {
-        let type_key = TypeKey::new(py_type.into());
+    fn register_instance(
+        &self,
+        py: Python,
+        py_type: &Bound<'_, PyType>,
+        instance: Py<PyAny>,
+    ) -> PyResult<()> {
+        let type_key = TypeKey::new(py_type.clone().unbind());
         self.rust_core
             .register_instance(py, type_key, instance)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyKeyError, _>(e.to_string()))
     }
 
     /// Register a class for a given type
-    fn register_class(&self, py: Python, py_type: &PyType, class: &PyType) -> PyResult<()> {
-        let type_key = TypeKey::new(py_type.into());
+    fn register_class(
+        &self,
+        py: Python,
+        py_type: &Bound<'_, PyType>,
+        class: &Bound<'_, PyType>,
+    ) -> PyResult<()> {
+        let type_key = TypeKey::new(py_type.clone().unbind());
         self.rust_core
-            .register_class(py, type_key, class.into())
+            .register_class(py, type_key, class.clone().unbind())
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyKeyError, _>(e.to_string()))
     }
 
@@ -281,10 +313,10 @@ impl Container {
     fn register_singleton_factory(
         &self,
         py: Python,
-        py_type: &PyType,
-        factory: PyObject,
+        py_type: &Bound<'_, PyType>,
+        factory: Py<PyAny>,
     ) -> PyResult<()> {
-        let type_key = TypeKey::new(py_type.into());
+        let type_key = TypeKey::new(py_type.clone().unbind());
         self.rust_core
             .register_singleton_factory(py, type_key, factory)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyKeyError, _>(e.to_string()))
@@ -294,18 +326,18 @@ impl Container {
     fn register_transient_factory(
         &self,
         py: Python,
-        py_type: &PyType,
-        factory: PyObject,
+        py_type: &Bound<'_, PyType>,
+        factory: Py<PyAny>,
     ) -> PyResult<()> {
-        let type_key = TypeKey::new(py_type.into());
+        let type_key = TypeKey::new(py_type.clone().unbind());
         self.rust_core
             .register_transient_factory(py, type_key, factory)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyKeyError, _>(e.to_string()))
     }
 
     /// Resolve a dependency by type
-    fn resolve(&self, py: Python, py_type: &PyType) -> PyResult<PyObject> {
-        let type_key = TypeKey::new(py_type.into());
+    fn resolve(&self, py: Python, py_type: &Bound<'_, PyType>) -> PyResult<Py<PyAny>> {
+        let type_key = TypeKey::new(py_type.clone().unbind());
         self.rust_core
             .resolve(py, &type_key)
             .map_err(|e| PyErr::new::<pyo3::exceptions::PyKeyError, _>(e.to_string()))
@@ -324,7 +356,7 @@ impl Container {
 
 /// Rust-backed dependency injection core
 #[pymodule]
-fn _dioxide_core(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _dioxide_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Container>()?;
     Ok(())
 }
