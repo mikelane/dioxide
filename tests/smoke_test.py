@@ -68,4 +68,4 @@ if __name__ == '__main__':
     test_core_functionality()
     test_singleton_scope()
     test_factory_scope()
-    print('✓ All smoke tests passed')
+    print('All smoke tests passed')
