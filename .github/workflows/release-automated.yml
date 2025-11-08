@@ -1,21 +1,22 @@
 name: Release (Automated)
 
 on:
-  # Temporarily disabled auto-trigger until v0.x semantic-release config is fixed
-  # See issue #43
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: write
   id-token: write
+  issues: write
+  pull-requests: write
 
 jobs:
   semantic-release:
-    name: Determine Version & Create Release
+    name: Semantic Release
     runs-on: ubuntu-latest
+    concurrency: release
     outputs:
       released: ${{ steps.release.outputs.released }}
       version: ${{ steps.release.outputs.version }}
@@ -25,7 +26,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v5.0.0
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
@@ -48,30 +49,24 @@ jobs:
 
       - name: Python Semantic Release
         id: release
+        uses: python-semantic-release/python-semantic-release@v10.4.1
+        with:
+          github_token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
+          git_committer_name: "github-actions[bot]"
+          git_committer_email: "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update Cargo.toml version
+        if: steps.release.outputs.released == 'true'
         run: |
-          # Run semantic-release to determine new version
-          NEW_VERSION=$(uv run semantic-release version --print)
+          VERSION="${{ steps.release.outputs.version }}"
+          echo "Updating Cargo.toml to version $VERSION"
+          cargo set-version "$VERSION"
 
-          if [ "$NEW_VERSION" != "" ]; then
-            echo "New version: $NEW_VERSION"
-            echo "released=true" >> $GITHUB_OUTPUT
-            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-            echo "tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
-
-            # Update Cargo.toml
-            cargo set-version "$NEW_VERSION"
-
-            # Commit and tag
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add Cargo.toml CHANGELOG.md
-            git commit -m "chore(release): $NEW_VERSION"
-            git tag "v$NEW_VERSION"
-            git push origin main --tags
-          else
-            echo "No release needed"
-            echo "released=false" >> $GITHUB_OUTPUT
-          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock
+          git commit --amend --no-edit
+          git push origin main --force-with-lease
 
   build-wheels:
     name: Build wheels on ${{ matrix.platform || matrix.os }} for ${{ matrix.target }}
