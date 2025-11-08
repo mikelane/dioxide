@@ -11,6 +11,8 @@ jobs:
   test:
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      id-token: write  # Required for OIDC authentication with Codecov
     strategy:
       fail-fast: false
       matrix:
@@ -51,12 +53,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7  # v5.5.1
         with:
+          use_oidc: true  # Use OIDC authentication instead of token
           files: ./coverage.xml
           flags: python-${{ matrix.python-version }}
           name: dioxide
           fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   lint-python:
     name: Lint Python
