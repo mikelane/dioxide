@@ -168,7 +168,7 @@ test = [
 
 [tool.semantic_release]
 version_source = "commit"
-version_toml = []  # Don't update pyproject.toml
+version_toml = ["Cargo.toml:version"]  # Update Cargo.toml version for Maturin
 version_variables = []  # Don't update any Python files
 build_command = ""  # Build handled by release workflow
 allow_zero_version = true  # Allow 0.x versions (v10+ defaults to false)
