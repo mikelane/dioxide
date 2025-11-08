@@ -39,14 +39,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@7b1c307e0dcbda6122208f10795a713336a9b35a  # stable
-        with:
-          toolchain: stable
-
-      - name: Install cargo-edit
-        run: cargo install cargo-edit
-
       - name: Python Semantic Release
         id: release
         uses: python-semantic-release/python-semantic-release@v10.4.1
@@ -54,19 +46,6 @@ jobs:
           github_token: ${{ secrets.SEMANTIC_RELEASE_TOKEN }}
           git_committer_name: "github-actions[bot]"
           git_committer_email: "github-actions[bot]@users.noreply.github.com"
-
-      - name: Update Cargo.toml version
-        if: steps.release.outputs.released == 'true'
-        run: |
-          VERSION="${{ steps.release.outputs.version }}"
-          echo "Updating Cargo.toml to version $VERSION"
-          cargo set-version "$VERSION"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Cargo.toml Cargo.lock
-          git commit --amend --no-edit
-          git push origin main --force-with-lease
 
   build-wheels:
     name: Build wheels on ${{ matrix.platform || matrix.os }} for ${{ matrix.target }}
