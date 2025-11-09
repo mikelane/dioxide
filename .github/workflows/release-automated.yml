@@ -37,10 +37,9 @@ jobs:
     name: Semantic Release
     runs-on: ubuntu-latest
     needs: determine-release
-    # Only run on branch pushes, not tags, and skip bot commits
-    if: |
-      github.ref_type == 'branch' &&
-      github.event.head_commit.author.name != 'github-actions[bot]'
+    # DISABLED: Using manual tagging for all releases (alpha + stable)
+    # Will re-enable for stable releases only after MLP complete
+    if: false
     concurrency: release
     outputs:
       released: ${{ steps.release.outputs.released }}
