@@ -358,6 +358,43 @@ class Container:
         """
         return self._rust_core.resolve(component_type)
 
+    def __getitem__(self, component_type: type[T]) -> T:
+        """Resolve a component using bracket syntax.
+
+        Provides an alternative, more Pythonic syntax for resolving components.
+        This method is equivalent to calling resolve() and simply delegates to it.
+
+        Args:
+            component_type: The type to resolve. Must have been previously
+                registered via scan() or manual registration methods.
+
+        Returns:
+            An instance of the requested type. For SINGLETON scope, the same
+            instance is returned on every call. For FACTORY scope, a new
+            instance is created on each call.
+
+        Raises:
+            KeyError: If the type is not registered in this container.
+
+        Example:
+            >>> from dioxide import container, component
+            >>>
+            >>> @component
+            ... class Logger:
+            ...     def log(self, msg: str):
+            ...         print(f'LOG: {msg}')
+            >>>
+            >>> container.scan()
+            >>> logger = container[Logger]  # Bracket syntax
+            >>> logger.log('Using bracket notation')
+
+        Note:
+            This is purely a convenience method. Both container[Type] and
+            container.resolve(Type) work identically and return the same
+            instance for singleton-scoped components.
+        """
+        return self.resolve(component_type)
+
     def is_empty(self) -> bool:
         """Check if container has no registered providers.
 
@@ -509,3 +546,9 @@ class Container:
             return cls(**kwargs)
 
         return factory
+
+
+# Global singleton container instance for simplified API
+# This provides the MLP-style ergonomic API while keeping Container class
+# available for advanced use cases (testing isolation, multi-tenant apps)
+container: Container = Container()
