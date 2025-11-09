@@ -1003,6 +1003,222 @@ class RequestContext:
 
 ---
 
+## Post-MLP Enhancements
+
+These enhancements improve developer ergonomics while maintaining MLP's core principles. They are **explicitly excluded from MLP** to maintain focus, but represent the natural evolution of Dioxide's API.
+
+### Auto-Detecting Protocol Implementations
+
+**Problem:** `@component.implements(EmailProvider)` is explicit but verbose when you're already inheriting from the Protocol.
+
+**Solution:** Smart `@component` decorator that auto-detects Protocol inheritance.
+
+```python
+# Current MLP approach (explicit)
+@component.implements(EmailProvider)
+class SendGridEmail:
+    async def send(self, to: str, subject: str, body: str) -> None:
+        pass
+
+# Post-MLP enhancement (auto-detect)
+@component
+class SendGridEmail(EmailProvider):  # Auto-detects EmailProvider!
+    async def send(self, to: str, subject: str, body: str) -> None:
+        pass
+```
+
+**Implementation:**
+
+```python
+from typing import Protocol, get_type_hints
+
+def is_protocol(cls) -> bool:
+    """Check if a class is a typing.Protocol."""
+    return (
+        isinstance(cls, type) and
+        issubclass(cls, Protocol) and
+        cls is not Protocol  # Exclude Protocol itself
+    )
+
+def component(cls):
+    """Auto-register component, detecting Protocol implementations."""
+
+    # Check each base class for Protocols
+    for base in cls.__bases__:
+        if is_protocol(base):
+            container._register_implementation(base, cls)
+
+    # Also register as a component
+    container._register_component(cls)
+
+    return cls
+```
+
+**Benefits:**
+
+- ✅ **Minimal boilerplate** - Just `@component`
+- ✅ **Still explicit** - You must inherit from Protocol
+- ✅ **Type-safe** - mypy validates Protocol implementation
+- ✅ **No metaclass magic** - Simple decorator inspection
+- ✅ **Backward compatible** - `@component.implements()` still works
+
+**Why Post-MLP:**
+- Adds complexity to `@component` decorator
+- Need to handle edge cases (multiple Protocols, generic Protocols)
+- MLP should prove core value first
+
+### Pydantic-Based Profile Configuration
+
+**Problem:** Profile implementations scattered across codebase. No centralized view of "what gets used in production vs test".
+
+**Solution:** Type-safe Python configuration via Pydantic Settings.
+
+```python
+from pydantic import BaseSettings
+from typing import Type
+
+class DiOxideSettings(BaseSettings):
+    """Centralized, type-safe profile configuration."""
+
+    class Production:
+        email: Type[EmailProvider] = SendGridEmail
+        db: Type[DatabaseProvider] = PostgresDB
+        cache: Type[CacheProvider] = RedisCache
+
+    class Test:
+        email: Type[EmailProvider] = FakeEmail
+        db: Type[DatabaseProvider] = InMemoryDB
+        cache: Type[CacheProvider] = DictCache
+
+    class Development:
+        email: Type[EmailProvider] = ConsoleEmail
+        db: Type[DatabaseProvider] = SQLiteDB
+        cache: Type[CacheProvider] = DictCache
+
+# Usage
+container.load_profile(DiOxideSettings.Production)
+```
+
+**Benefits:**
+
+- ✅ **Type-safe** - mypy validates all types
+- ✅ **Centralized** - See all profile mappings in one place
+- ✅ **IDE support** - Autocomplete works
+- ✅ **Python-native** - No TOML/YAML hell
+- ✅ **Validation** - Pydantic ensures correct types at runtime
+
+**Why Post-MLP:**
+- Requires `container.load_profile()` API (new surface)
+- Pydantic dependency (MLP should minimize dependencies)
+- Need to validate against existing decorator-based approach
+
+### Combined Approach: Auto-Detect + Pydantic
+
+**The full vision:**
+
+```python
+# Step 1: Define implementations (auto-registered via decorator)
+@component
+class SendGridEmail(EmailProvider):
+    async def send(self, to: str, subject: str, body: str) -> None:
+        # Real SendGrid implementation
+        pass
+
+@component
+class FakeEmail(EmailProvider):
+    def __init__(self):
+        self.outbox = []
+
+    async def send(self, to: str, subject: str, body: str) -> None:
+        self.outbox.append({"to": to, "subject": subject, "body": body})
+
+# Step 2: Configure profiles (type-safe, centralized)
+class Settings(BaseSettings):
+    class Production:
+        email: Type[EmailProvider] = SendGridEmail
+
+    class Test:
+        email: Type[EmailProvider] = FakeEmail
+
+# Step 3: Activate profile
+container.load_profile(Settings.Production)
+
+# Step 4: Use it
+service = NotificationService()  # EmailProvider auto-injected!
+```
+
+**Result:**
+- **Minimal boilerplate** - Just `@component` decorator
+- **Centralized configuration** - All profiles in one place
+- **Type-safe** - mypy validates everything
+- **No YAML/TOML** - Pure Python configuration
+- **No metaclass magic** - Simple decorator inspection
+
+### Implementation Notes
+
+**Edge cases to handle:**
+
+```python
+# Multiple Protocol inheritance
+class EmailAndSMS(EmailProvider, SMSProvider):
+    pass  # Should register for both Protocols
+
+# Non-Protocol bases mixed with Protocols
+class SendGridEmail(EmailProvider, LoggingMixin):
+    pass  # Only register EmailProvider, ignore LoggingMixin
+
+# Generic Protocols
+class Repository(Protocol[T]):
+    def save(self, item: T) -> None: ...
+
+class UserRepository(Repository[User]):
+    pass  # Handle generic Protocol correctly
+```
+
+### Backward Compatibility
+
+Both approaches coexist:
+
+```python
+# Explicit (MLP) - Always supported
+@component.implements(EmailProvider)
+@profile.production
+class SendGridEmail:
+    pass
+
+# Auto-detect + Pydantic (Post-MLP) - Optional sugar
+@component
+class SendGridEmail(EmailProvider):
+    pass
+
+class Settings(BaseSettings):
+    class Production:
+        email: Type[EmailProvider] = SendGridEmail
+```
+
+**Decision:** Support both. Auto-detect + Pydantic is ergonomic sugar on top of MLP foundation.
+
+### Why These Are Post-MLP
+
+1. **MLP must prove core value first**
+   - Dependency injection works
+   - Profile system works
+   - Testing without mocks works
+
+2. **These add complexity**
+   - Auto-detection needs edge case handling
+   - Pydantic adds dependency
+   - `container.load_profile()` is new API surface
+
+3. **These are optimizations**
+   - Make existing features more ergonomic
+   - Don't fundamentally change the model
+   - Can be added without breaking changes
+
+**Timeline:** Consider for v0.2.0 after MLP (v0.1.0) proves market fit.
+
+---
+
 ## Success Metrics
 
 How do we know Dioxide MLP is successful?
