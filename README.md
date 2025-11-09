@@ -127,9 +127,10 @@ await service.send_welcome("user@example.com")
 - [x] Full CI/CD automation
 
 ### v0.0.2-alpha 🔄 IN PROGRESS (MLP API Realignment)
-- [ ] `@component.factory` and `@component.implements()` syntax
+- [x] `@component.implements(Protocol)` syntax - ✅ Issue #66
 - [x] `@profile` decorator system (hybrid approach) - ✅ Issue #68
-- [ ] `container.scan()` with package and profile parameters
+- [ ] `@component.factory` attribute syntax - Issue #65
+- [ ] `container.scan()` with package and profile parameters - Issue #69
 - [x] Global singleton container pattern - ✅ Issue #70
 - [ ] Documentation realignment
 - [x] Optional: `container[Type]` syntax - ✅ Issue #70

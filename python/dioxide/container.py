@@ -519,6 +519,10 @@ class Container:
             # Check the scope
             scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
 
+            # Check if this class implements a protocol
+            protocol_class = getattr(component_class, '__dioxide_implements__', None)
+
+            # Register the implementation under its concrete type
             try:
                 if scope == Scope.SINGLETON:
                     # Register as singleton factory (Rust will cache the result)
@@ -529,6 +533,29 @@ class Container:
             except KeyError:
                 # Already registered manually - skip it (manual takes precedence)
                 pass
+
+            # If this class implements a protocol, also register it under the protocol type
+            # IMPORTANT: For singleton scope, both protocol and concrete class must resolve
+            # to the same instance. We achieve this by creating a factory that resolves
+            # the concrete class (which is already cached by Rust if singleton).
+            if protocol_class is not None:
+                # Create a factory that resolves via the concrete class
+                # This ensures singleton instances are shared between protocol and concrete type
+                def create_protocol_factory(impl_class: type[Any]) -> Callable[[], Any]:
+                    """Create factory that resolves the concrete implementation."""
+                    return lambda: self.resolve(impl_class)
+
+                protocol_factory = create_protocol_factory(component_class)
+                try:
+                    if scope == Scope.SINGLETON:
+                        self.register_singleton_factory(protocol_class, protocol_factory)
+                    else:
+                        self.register_transient_factory(protocol_class, protocol_factory)
+                except KeyError:
+                    # Protocol already has an implementation registered - skip it
+                    # (This will happen with multiple implementations - we'll handle
+                    # profile-based selection in a future iteration)
+                    pass
 
     def _create_auto_injecting_factory(self, cls: type[T]) -> Callable[[], T]:
         """Create a factory function that auto-injects dependencies from type hints.

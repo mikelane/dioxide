@@ -92,8 +92,8 @@ class DescribeProfileDecorator:
         class MultiProfileService:
             pass
 
-        assert 'production' in MultiProfileService.__dioxide_profiles__  # type: ignore[attr-defined]
-        assert 'test' in MultiProfileService.__dioxide_profiles__  # type: ignore[attr-defined]
+        assert 'production' in MultiProfileService.__dioxide_profiles__
+        assert 'test' in MultiProfileService.__dioxide_profiles__
 
     def it_stores_profiles_as_frozenset(self) -> None:
         """Profiles stored as immutable frozenset."""
@@ -102,7 +102,7 @@ class DescribeProfileDecorator:
         class ImmutableService:
             pass
 
-        assert isinstance(ImmutableService.__dioxide_profiles__, frozenset)  # type: ignore[attr-defined]
+        assert isinstance(ImmutableService.__dioxide_profiles__, frozenset)
 
     def it_creates_unique_profile_attribute_per_class(self) -> None:
         """Each decorated class gets its own profile set."""
@@ -115,10 +115,10 @@ class DescribeProfileDecorator:
         class Service2:
             pass
 
-        assert 'production' in Service1.__dioxide_profiles__  # type: ignore[attr-defined]
-        assert 'production' not in Service2.__dioxide_profiles__  # type: ignore[attr-defined]
-        assert 'test' in Service2.__dioxide_profiles__  # type: ignore[attr-defined]
-        assert 'test' not in Service1.__dioxide_profiles__  # type: ignore[attr-defined]
+        assert 'production' in Service1.__dioxide_profiles__
+        assert 'production' not in Service2.__dioxide_profiles__
+        assert 'test' in Service2.__dioxide_profiles__
+        assert 'test' not in Service1.__dioxide_profiles__
 
 
 class DescribeProfileDecoratorEdgeCases:
@@ -167,8 +167,8 @@ class DescribeProfileDecoratorEdgeCases:
         class UpperCaseService:
             pass
 
-        assert 'production' in UpperCaseService.__dioxide_profiles__  # type: ignore[attr-defined]
-        assert 'PRODUCTION' not in UpperCaseService.__dioxide_profiles__  # type: ignore[attr-defined]
+        assert 'production' in UpperCaseService.__dioxide_profiles__
+        assert 'PRODUCTION' not in UpperCaseService.__dioxide_profiles__
 
     def it_deduplicates_profile_names(self) -> None:
         """Duplicate profile names are deduplicated."""
@@ -177,9 +177,9 @@ class DescribeProfileDecoratorEdgeCases:
         class DuplicateService:
             pass
 
-        profile_list = list(DuplicateService.__dioxide_profiles__)  # type: ignore[attr-defined]
+        profile_list = list(DuplicateService.__dioxide_profiles__)
         assert profile_list.count('prod') == 1
-        assert 'staging' in DuplicateService.__dioxide_profiles__  # type: ignore[attr-defined]
+        assert 'staging' in DuplicateService.__dioxide_profiles__
 
 
 class DescribeProfileDecoratorWithComponent:
