@@ -172,3 +172,78 @@ def _clear_registry() -> None:
         affect already-configured Container instances.
     """
     _component_registry.clear()
+
+
+def implements(
+    protocol_class: type[Any],
+    *,
+    scope: Scope = Scope.SINGLETON,
+) -> Any:
+    """Mark a class as implementing a protocol.
+
+    This decorator marks a concrete class as an implementation of a protocol,
+    enabling protocol-based dependency resolution. The container will register
+    the implementation so it can be resolved by the protocol type.
+
+    Usage:
+        Protocol implementation:
+            >>> from typing import Protocol
+            >>> from dioxide import component
+            >>>
+            >>> class EmailProvider(Protocol):
+            ...     async def send(self, to: str, subject: str, body: str) -> None: ...
+            >>>
+            >>> @component.implements(EmailProvider)
+            ... class SendGridEmail:
+            ...     async def send(self, to: str, subject: str, body: str) -> None:
+            ...         pass  # Implementation
+
+        Multiple implementations with profiles:
+            >>> from dioxide import profile
+            >>>
+            >>> @component.implements(EmailProvider)
+            >>> @profile.production
+            ... class SendGridEmail:
+            ...     async def send(self, to: str, subject: str, body: str) -> None:
+            ...         pass  # Real implementation
+            >>>
+            >>> @component.implements(EmailProvider)
+            >>> @profile.test
+            ... class InMemoryEmail:
+            ...     def __init__(self) -> None:
+            ...         self.sent_emails: list[dict[str, str]] = []
+            ...
+            ...     async def send(self, to: str, subject: str, body: str) -> None:
+            ...         self.sent_emails.append({'to': to, 'subject': subject, 'body': body})
+
+    Args:
+        protocol_class: The protocol class that this implementation satisfies.
+        scope: Lifecycle scope controlling instance creation and caching.
+            Defaults to Scope.SINGLETON. Use Scope.FACTORY for new instances
+            on each resolve() call.
+
+    Returns:
+        A decorator function that marks the class as implementing the protocol
+        and registers it with the container.
+
+    Note:
+        - The implementation class must satisfy the protocol's interface
+        - Multiple implementations of the same protocol are allowed
+        - Use @profile decorators to select implementations per environment
+        - The protocol itself is not registered, only the implementation
+    """
+
+    def decorator(target_cls: type[T]) -> type[T]:
+        # Store protocol metadata on the class
+        target_cls.__dioxide_implements__ = protocol_class  # type: ignore[attr-defined]
+        # Store DI scope metadata
+        target_cls.__dioxide_scope__ = scope  # type: ignore[attr-defined]
+        # Add to global registry for auto-discovery
+        _component_registry.add(target_cls)
+        return target_cls
+
+    return decorator
+
+
+# Attach implements as an attribute to component for @component.implements() syntax
+component.implements = implements  # type: ignore[attr-defined]
