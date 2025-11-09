@@ -21,7 +21,7 @@ def test_invalid_method_call() -> None:
     service = container.resolve(UserService)
 
     # This should fail mypy - wrong_method doesn't exist
-    service.wrong_method()  # type: ignore[attr-defined]
+    service.wrong_method()
 
 
 def test_invalid_attribute_access() -> None:
@@ -32,7 +32,7 @@ def test_invalid_attribute_access() -> None:
     service = container.resolve(UserService)
 
     # This should fail mypy - nonexistent_attr doesn't exist
-    _ = service.nonexistent_attr  # type: ignore[attr-defined]
+    _ = service.nonexistent_attr
 
 
 def test_wrong_argument_types() -> None:
