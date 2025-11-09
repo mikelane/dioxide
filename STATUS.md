@@ -1,9 +1,9 @@
 # dioxide Project Status
 
-**Last Updated**: 2025-11-07
+**Last Updated**: 2025-11-08
 **Current Milestone**: 0.0.2-alpha (MLP Realignment)
 **Latest Release**: v0.0.1-alpha (Nov 6, 2025)
-**Progress**: Sprint planning - MLP Vision alignment
+**Progress**: MLP realignment sprint kicked off - 8 new issues created
 
 ---
 
@@ -55,24 +55,35 @@ pip install -i https://test.pypi.org/simple/ dioxide
 - Zero external users on Test PyPI - minimal disruption
 
 ### 📋 Planned Work (Breaking Changes)
-- Issue #28: Implement `@component.factory` and `@component.implements()` syntax
-- Issue #29: Implement `@profile` decorator system (core MLP feature)
-- Issue #30: Update `container.scan()` to accept package and profile parameters
-- Issue #31: Create global singleton container pattern
-- Issue #32: Realign all documentation with MLP Vision
-- Issue #33: Add `container[Type]` syntax (optional nice-to-have)
+- Issue #65: [MLP] Implement @component decorator (singleton + factory scopes)
+- Issue #66: [MLP] Implement @component.implements(Protocol)
+- Issue #67: [MLP] Implement Initializable and Disposable lifecycle protocols
+- Issue #68: [MLP] Implement @profile decorator system (CORE - cornerstone feature)
+- Issue #69: [MLP] Update container.scan() to accept package and profile parameters
+- Issue #70: [MLP] Create global singleton container pattern
+- Issue #71: [MLP] Add container[Type] resolution syntax (nice-to-have)
+- Issue #72: [MLP] Create complete notification service example application
+- Issue #73: [MLP] Add FastAPI integration example
+- Issue #74: [DOCS] Create migration guide from v0.0.1-alpha to v0.0.2-alpha
+- Issue #75: [DOCS] Rewrite documentation with MLP syntax
 
 ### 🔄 In Progress
-- Documentation realignment (Priority 0 complete, Priority 1 remaining)
-- Next up: Update CLAUDE.md with MLP syntax (Priority 1)
+- MLP realignment sprint initiated (Nov 8, 2025)
+- 11 GitHub issues created for complete MLP alignment
+- Next up: Start implementing core API changes (#65, #66, #68)
 
-### ✅ Completed This Week
+### ✅ Completed This Week (Nov 3-8, 2025)
 - Released v0.0.1-alpha to Test PyPI
 - Created MLP_VISION.md (canonical design document)
 - Completed PM assessment (DX_EVALUATION.md)
 - Created document audit (docs/DOCUMENT_AUDIT.md)
 - Deleted historical documents (0.0.1-alpha scope, checklists)
-- Created 6 GitHub issues for MLP realignment (#28-#33)
+- **✅ Created 11 comprehensive GitHub issues for MLP realignment**:
+  - #65-#67: Core API updates (@component, .implements(), lifecycle)
+  - #68-#70: Profile system and container updates (CRITICAL)
+  - #71: Nice-to-have container[Type] syntax
+  - #72-#73: Example applications (notification service, FastAPI)
+  - #74-#75: Migration guide and documentation rewrite
 - **✅ Completed Priority 0 documentation alignment**:
   - Updated DX_VISION.md to align with MLP (marked sections as post-MLP)
   - Completely rewrote ROADMAP.md v2.0.0 with MLP phase structure
@@ -97,20 +108,38 @@ pip install -i https://test.pypi.org/simple/ dioxide
 | #24 API Documentation | ✅ DONE | Nov 6, 2025 |
 
 ### 0.0.2-alpha (IN PROGRESS - MLP Realignment)
-**[View milestone →](https://github.com/mikelane/dioxide/milestone/5)**
+**[View milestone →](https://github.com/mikelane/dioxide/milestone/4)**
 
-**Progress**: 0% (0 of 6 issues complete)
+**Progress**: 0% (0 of 11 issues complete)
 
+#### Phase 1: Core API Realignment (Weeks 1-3)
 | Issue | Status | Estimated |
 |-------|--------|-----------|
-| #28 @component.factory and .implements() syntax | ⏳ TODO | 3 days |
-| #29 @profile decorator system | ⏳ TODO | 4 days |
-| #30 container.scan() with package & profile | ⏳ TODO | 2 days |
-| #31 Global singleton container | ⏳ TODO | 1 day |
-| #32 Documentation realignment | ⏳ TODO | 2 days |
-| #33 container[Type] syntax (optional) | ⏳ TODO | 1 day |
+| #65 @component decorator (singleton + factory) | ⏳ TODO | 2 days |
+| #66 @component.implements(Protocol) | ⏳ TODO | 2 days |
+| #68 @profile decorator system | ⏳ TODO | 3 days |
+| #69 container.scan() with package & profile | ⏳ TODO | 2 days |
+| #70 Global singleton container | ⏳ TODO | 1 day |
 
-**Target**: Mid-late November 2025
+#### Phase 2: Lifecycle Management (Weeks 4-5)
+| Issue | Status | Estimated |
+|-------|--------|-----------|
+| #67 Initializable and Disposable protocols | ⏳ TODO | 3 days |
+
+#### Phase 3: Examples & Documentation (Week 6)
+| Issue | Status | Estimated |
+|-------|--------|-----------|
+| #72 Notification service example | ⏳ TODO | 2 days |
+| #73 FastAPI integration example | ⏳ TODO | 1 day |
+| #74 Migration guide (v0.0.1 → v0.0.2) | ⏳ TODO | 1 day |
+| #75 Documentation rewrite with MLP syntax | ⏳ TODO | 2 days |
+
+#### Nice-to-Have
+| Issue | Status | Estimated |
+|-------|--------|-----------|
+| #71 container[Type] syntax | ⏳ TODO | 1 day |
+
+**Target**: Mid-December 2025 (6-7 weeks)
 **Breaking Changes**: YES (acceptable in alpha)
 
 ---
@@ -190,26 +219,39 @@ c16f03e docs: update project tracking to reflect completed work
 
 ## Next Actions
 
-**This Week** (by Nov 13):
+**This Week** (by Nov 15):
 1. ✅ Complete PM assessment (DX_EVALUATION.md)
-2. ✅ Create GitHub issues for MLP realignment (#28-#33)
+2. ✅ Create 11 comprehensive GitHub issues for MLP realignment (#65-#75)
 3. ✅ Delete historical documents
 4. ✅ Update Priority 0 documentation to MLP syntax (ROADMAP, README, DX_VISION)
-5. ⏳ Update CLAUDE.md with MLP syntax (Priority 1)
-6. ⏳ Start implementing `@component.factory` syntax (#28)
+5. ⏳ Move Issue #5 (circular dependencies) to 0.0.4-alpha milestone
+6. ⏳ Start Phase 1: Core API changes (#65, #66, #68, #69, #70)
 
-**Next Sprint (0.0.2-alpha - Weeks 1-2)**:
-1. Implement all core API changes (#28-#31)
-2. Realign all documentation (#32)
-3. Maintain 100% test coverage throughout
-4. Add migration guide from 0.0.1 to 0.0.2
+**Next 3 Weeks (Phase 1 - Core API Realignment)**:
+1. Implement @component decorator improvements (#65)
+2. Implement @component.implements(Protocol) (#66)
+3. Implement @profile decorator system (#68) - CRITICAL
+4. Update container.scan() with package & profile (#69)
+5. Create global singleton container (#70)
+6. Maintain 100% test coverage throughout
+7. Target: Late November 2025
+
+**Weeks 4-5 (Phase 2 - Lifecycle Management)**:
+1. Implement Initializable and Disposable protocols (#67)
+2. Add async context manager support
+3. Update examples
+
+**Week 6 (Phase 3 - Examples & Docs)**:
+1. Create notification service example (#72)
+2. Create FastAPI integration example (#73)
+3. Write migration guide (#74)
+4. Rewrite all documentation (#75)
 5. Release v0.0.2-alpha to Test PyPI
-6. Target: Mid-late November 2025
 
-**Future Sprints** (Post-0.0.2):
-- 0.0.3-alpha: Lifecycle management (`Initializable`, `Disposable`, async context manager)
-- 0.0.4-alpha: Complete example + polish + circular dependency detection
-- 0.1.0-beta: MLP complete, API freeze
+**Future Milestones**:
+- 0.0.3-alpha: Polish and circular dependency detection (#5)
+- 0.0.4-alpha: Beta preparation
+- 0.1.0-beta: MLP complete, API freeze (mid-December 2025)
 
 ---
 
@@ -242,7 +284,7 @@ c16f03e docs: update project tracking to reflect completed work
 
 ---
 
-**Next Status Update**: Friday, Nov 15, 2025 (post API realignment progress)
+**Next Status Update**: Friday, Nov 15, 2025 (Phase 1 progress report)
 
 ---
 
