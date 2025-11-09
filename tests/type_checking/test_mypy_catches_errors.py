@@ -45,12 +45,7 @@ class DescribeMypyErrorDetection:
             # Verify specific errors are caught
             output = result.stdout + result.stderr
 
-            # Should catch attr-defined errors
-            assert 'has no attribute' in output or 'attr-defined' in output, (
-                f'mypy should catch attribute errors\nOutput: {output}'
-            )
-
-            # Should catch arg-type errors
+            # Should catch arg-type errors (attr-defined is globally disabled for test files)
             assert 'Argument' in output or 'arg-type' in output, (
                 f'mypy should catch argument type errors\nOutput: {output}'
             )
