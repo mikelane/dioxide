@@ -196,7 +196,7 @@ class DescribeComponentFactorySyntax:
         """@component.factory creates components with factory scope."""
         _clear_registry()
 
-        @component.factory  # type: ignore[attr-defined]
+        @component.factory
         class RequestHandler:
             pass
 
@@ -213,7 +213,7 @@ class DescribeComponentFactorySyntax:
         """@component.factory adds class to global registry."""
         _clear_registry()
 
-        @component.factory  # type: ignore[attr-defined]
+        @component.factory
         class FactoryService:
             pass
 
@@ -226,7 +226,7 @@ class DescribeComponentFactorySyntax:
         """@component.factory sets __dioxide_scope__ to FACTORY."""
         _clear_registry()
 
-        @component.factory  # type: ignore[attr-defined]
+        @component.factory
         class FactoryService:
             pass
 
@@ -241,7 +241,7 @@ class DescribeComponentFactorySyntax:
         class Database:
             pass
 
-        @component.factory  # type: ignore[attr-defined]
+        @component.factory
         class RequestHandler:
             def __init__(self, db: Database):
                 self.db = db
@@ -265,7 +265,7 @@ class DescribeComponentFactorySyntax:
         class OldSyntax:
             pass
 
-        @component.factory  # type: ignore[attr-defined]
+        @component.factory
         class NewSyntax:
             pass
 
