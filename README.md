@@ -128,11 +128,11 @@ await service.send_welcome("user@example.com")
 
 ### v0.0.2-alpha 🔄 IN PROGRESS (MLP API Realignment)
 - [ ] `@component.factory` and `@component.implements()` syntax
-- [ ] `@profile` decorator system (hybrid approach)
+- [x] `@profile` decorator system (hybrid approach) - ✅ Issue #68
 - [ ] `container.scan()` with package and profile parameters
-- [ ] Global singleton container pattern
+- [x] Global singleton container pattern - ✅ Issue #70
 - [ ] Documentation realignment
-- [ ] Optional: `container[Type]` syntax
+- [x] Optional: `container[Type]` syntax - ✅ Issue #70
 
 ### v0.1.0-beta 🎯 TARGET: Mid-December 2025 (MLP Complete)
 - [ ] Lifecycle protocols (`Initializable`, `Disposable`)
