@@ -437,7 +437,7 @@ class Container:
         """
         return len(self._rust_core)
 
-    def scan(self) -> None:
+    def scan(self, package: str | None = None, profile: str | None = None) -> None:
         """Discover and register all @component decorated classes.
 
         Scans the global component registry for all classes decorated with
@@ -447,14 +447,24 @@ class Container:
         This is the primary method for setting up the container in a
         declarative style. Call it once after all components are imported.
 
+        Args:
+            package: Optional package name to scan. If None, scans all registered
+                components. If provided, only scans components from the specified
+                package. (Not yet implemented - reserved for future use)
+            profile: Optional profile name to filter components. If None, registers
+                all components regardless of profile. If provided, only registers
+                components that have the matching profile in their __dioxide_profiles__
+                attribute. Profile names are normalized to lowercase for matching.
+
         Registration behavior:
             - SINGLETON scope (default): Creates singleton factory with caching
             - FACTORY scope: Creates transient factory for new instances
             - Manual registrations take precedence over @component decorators
             - Already-registered types are silently skipped
+            - Profile filtering applies to components with @profile decorator
 
         Example:
-            >>> from dioxide import Container, component, Scope
+            >>> from dioxide import Container, component, Scope, profile
             >>>
             >>> @component
             ... class Database:
@@ -467,27 +477,42 @@ class Container:
             ...         self.db = db
             >>>
             >>> @component(scope=Scope.FACTORY)
+            >>> @profile.production
             ... class RequestHandler:
             ...     def __init__(self, repo: UserRepository):
             ...         self.repo = repo
             >>>
             >>> container = Container()
-            >>> container.scan()
+            >>> container.scan()  # Scans all components
             >>>
-            >>> # All dependencies auto-injected
-            >>> handler = container.resolve(RequestHandler)
-            >>> assert handler.repo.db.connected
+            >>> # Or with profile filtering
+            >>> prod_container = Container()
+            >>> prod_container.scan(profile='production')  # Only production components
 
         Note:
             - Ensure all component classes are imported before calling scan()
             - Constructor dependencies must have type hints
             - Circular dependencies will cause infinite recursion
             - Manual registrations (register_*) take precedence over scan()
+            - Profile names are case-insensitive (normalized to lowercase)
         """
         from dioxide.decorators import _get_registered_components
+        from dioxide.profile import PROFILE_ATTRIBUTE
         from dioxide.scope import Scope
 
+        # Normalize profile to lowercase if provided
+        normalized_profile = profile.lower() if profile else None
+
         for component_class in _get_registered_components():
+            # Apply profile filtering if profile parameter provided
+            if normalized_profile is not None:
+                # Get component's profiles (if any)
+                component_profiles: frozenset[str] = getattr(component_class, PROFILE_ATTRIBUTE, frozenset())
+
+                # Skip if component doesn't have the requested profile
+                if normalized_profile not in component_profiles:
+                    continue
+
             # Create a factory that auto-injects dependencies
             factory = self._create_auto_injecting_factory(component_class)
 
