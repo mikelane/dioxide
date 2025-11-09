@@ -189,6 +189,99 @@ class DescribeScan:
         assert service1 is not service2
 
 
+class DescribeComponentFactorySyntax:
+    """Tests for @component.factory attribute syntax (MLP API)."""
+
+    def it_supports_factory_attribute_syntax(self) -> None:
+        """@component.factory creates components with factory scope."""
+        _clear_registry()
+
+        @component.factory  # type: ignore[attr-defined]
+        class RequestHandler:
+            pass
+
+        container = Container()
+        container.scan()
+
+        handler1 = container.resolve(RequestHandler)
+        handler2 = container.resolve(RequestHandler)
+
+        # Factory scope creates new instances
+        assert handler1 is not handler2
+
+    def it_registers_factory_components_in_global_registry(self) -> None:
+        """@component.factory adds class to global registry."""
+        _clear_registry()
+
+        @component.factory  # type: ignore[attr-defined]
+        class FactoryService:
+            pass
+
+        from dioxide import _get_registered_components
+
+        registered = _get_registered_components()
+        assert FactoryService in registered
+
+    def it_sets_factory_scope_metadata_on_decorated_class(self) -> None:
+        """@component.factory sets __dioxide_scope__ to FACTORY."""
+        _clear_registry()
+
+        @component.factory  # type: ignore[attr-defined]
+        class FactoryService:
+            pass
+
+        assert hasattr(FactoryService, '__dioxide_scope__')
+        assert FactoryService.__dioxide_scope__ == Scope.FACTORY
+
+    def it_supports_dependency_injection_with_factory_scope(self) -> None:
+        """@component.factory components can have dependencies injected."""
+        _clear_registry()
+
+        @component
+        class Database:
+            pass
+
+        @component.factory  # type: ignore[attr-defined]
+        class RequestHandler:
+            def __init__(self, db: Database):
+                self.db = db
+
+        container = Container()
+        container.scan()
+
+        handler1 = container.resolve(RequestHandler)
+        handler2 = container.resolve(RequestHandler)
+
+        # Factory creates new handlers
+        assert handler1 is not handler2
+        # But singleton dependency is shared
+        assert handler1.db is handler2.db
+
+    def it_maintains_backward_compatibility_with_scope_parameter(self) -> None:
+        """Old @component(scope=Scope.FACTORY) still works alongside new syntax."""
+        _clear_registry()
+
+        @component(scope=Scope.FACTORY)
+        class OldSyntax:
+            pass
+
+        @component.factory  # type: ignore[attr-defined]
+        class NewSyntax:
+            pass
+
+        container = Container()
+        container.scan()
+
+        old1 = container.resolve(OldSyntax)
+        old2 = container.resolve(OldSyntax)
+        new1 = container.resolve(NewSyntax)
+        new2 = container.resolve(NewSyntax)
+
+        # Both syntaxes create factory-scoped components
+        assert old1 is not old2
+        assert new1 is not new2
+
+
 class DescribeContainerBasicOperations:
     """Tests for Container basic operations."""
 

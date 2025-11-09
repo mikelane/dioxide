@@ -6,7 +6,7 @@ found by Container.scan() and registered with their specified lifecycle
 scope (SINGLETON or FACTORY).
 """
 
-from typing import Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from dioxide.scope import Scope
 
@@ -59,8 +59,14 @@ def component(
             ...     def __init__(self):
             ...         self.settings = {'debug': True}
 
-        With FACTORY scope for per-request instances:
+        With FACTORY scope for per-request instances (old syntax):
             >>> @component(scope=Scope.FACTORY)
+            ... class RequestHandler:
+            ...     def __init__(self):
+            ...         self.request_id = id(self)
+
+        With FACTORY scope (MLP attribute syntax):
+            >>> @component.factory
             ... class RequestHandler:
             ...     def __init__(self):
             ...         self.request_id = id(self)
@@ -108,6 +114,34 @@ def component(
     else:
         # Called without arguments: @component
         return decorator(cls)
+
+
+# Add factory attribute for MLP API: @component.factory
+def _factory_decorator(cls: type[T]) -> type[T]:
+    """Factory scope decorator for @component.factory syntax.
+
+    This is the MLP API for creating factory-scoped components.
+    Equivalent to @component(scope=Scope.FACTORY) but more ergonomic.
+
+    Usage:
+        >>> @component.factory
+        ... class RequestHandler:
+        ...     pass
+    """
+    # Store DI metadata on the class
+    cls.__dioxide_scope__ = Scope.FACTORY  # type: ignore[attr-defined]
+    # Add to global registry for auto-discovery
+    _component_registry.add(cls)
+    return cls
+
+
+# Attach factory attribute to component function
+component.factory = _factory_decorator  # type: ignore[attr-defined]
+
+# Expose type annotation for static type checkers
+if TYPE_CHECKING:
+    # Annotate component.factory for mypy
+    component.factory = _factory_decorator  # type: ignore[attr-defined]
 
 
 def _get_registered_components() -> set[type[Any]]:
