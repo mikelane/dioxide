@@ -942,3 +942,4 @@ When working on this project, follow these requirements in order:
 - **Cargo.toml**: Rust configuration
 - **.pre-commit-config.yaml**: Quality checks configuration
 - this project uses uv. Use the uv commands to run pytest and other python cli tools. Avoid `uv pip` commands and use the built-in uv commands instead.
+- do not use `uv pip` commands. Use `uv add`, `uv remove`, and `uv sync` to deal with dependencies. Use groups and/or extras where appropriate.
