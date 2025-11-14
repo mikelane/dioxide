@@ -162,7 +162,7 @@ def _get_registered_components() -> set[type[Any]]:
 
 
 def _clear_registry() -> None:
-    """Clear the component registry.
+    """Clear the component and adapter registries.
 
     Internal function used in test cleanup to reset the global registry
     state between tests. Should not be used in production code.
@@ -171,7 +171,10 @@ def _clear_registry() -> None:
         This is an internal testing API. Clearing the registry does not
         affect already-configured Container instances.
     """
+    from dioxide.adapter import _adapter_registry
+
     _component_registry.clear()
+    _adapter_registry.clear()
 
 
 def implements(
