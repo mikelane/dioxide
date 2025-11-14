@@ -39,6 +39,7 @@ from .decorators import _clear_registry, _get_registered_components, component
 from .profile import profile
 from .profile_enum import Profile
 from .scope import Scope
+from .services import service
 
 __version__ = '0.1.0'
 __all__ = [
@@ -50,4 +51,5 @@ __all__ = [
     'component',
     'container',
     'profile',
+    'service',
 ]
