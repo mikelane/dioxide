@@ -326,3 +326,167 @@ class DescribeContainerBasicOperations:
         container.register_class(Service, Service)
         assert container.is_empty() is False
         assert len(container) == 1
+
+
+class DescribeProfileFiltering:
+    """Tests for container.scan() profile filtering."""
+
+    def it_accepts_profile_enum_production(self) -> None:
+        """Container.scan() accepts Profile.PRODUCTION enum value."""
+        _clear_registry()
+        from dioxide import Profile, profile
+
+        @component
+        @profile.production
+        class ProductionService:
+            pass
+
+        @component
+        @profile.test
+        class TestService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.PRODUCTION)
+
+        # Production service should be registered
+        prod_service = container.resolve(ProductionService)
+        assert isinstance(prod_service, ProductionService)
+
+        # Test service should NOT be registered
+        try:
+            container.resolve(TestService)
+            raise AssertionError('TestService should not be registered in PRODUCTION profile')
+        except KeyError:
+            pass  # Expected - test service not in production profile
+
+    def it_accepts_profile_enum_test(self) -> None:
+        """Container.scan() accepts Profile.TEST enum value."""
+        _clear_registry()
+        from dioxide import Profile, profile
+
+        @component
+        @profile.production
+        class ProductionService:
+            pass
+
+        @component
+        @profile.test
+        class TestService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        # Test service should be registered
+        test_service = container.resolve(TestService)
+        assert isinstance(test_service, TestService)
+
+        # Production service should NOT be registered
+        try:
+            container.resolve(ProductionService)
+            raise AssertionError('ProductionService should not be registered in TEST profile')
+        except KeyError:
+            pass  # Expected - production service not in test profile
+
+    def it_accepts_string_profile_value(self) -> None:
+        """Container.scan() accepts string profile values."""
+        _clear_registry()
+        from dioxide import profile
+
+        @component
+        @profile.production
+        class ProductionService:
+            pass
+
+        @component
+        @profile.test
+        class TestService:
+            pass
+
+        container = Container()
+        container.scan(profile='production')
+
+        # Production service should be registered
+        prod_service = container.resolve(ProductionService)
+        assert isinstance(prod_service, ProductionService)
+
+        # Test service should NOT be registered
+        try:
+            container.resolve(TestService)
+            raise AssertionError('TestService should not be registered with production profile')
+        except KeyError:
+            pass  # Expected
+
+    def it_handles_profile_all_with_enum(self) -> None:
+        """Components with Profile.ALL are available in all profiles."""
+        _clear_registry()
+        from dioxide import Profile, profile
+
+        @component
+        @profile('*')  # Profile.ALL
+        class UniversalService:
+            pass
+
+        @component
+        @profile.production
+        class ProductionService:
+            pass
+
+        # Scan with PRODUCTION profile
+        container = Container()
+        container.scan(profile=Profile.PRODUCTION)
+
+        # Universal service should be registered in PRODUCTION
+        universal = container.resolve(UniversalService)
+        assert isinstance(universal, UniversalService)
+
+        # Production service should also be registered
+        prod = container.resolve(ProductionService)
+        assert isinstance(prod, prod.__class__)
+
+        # Scan with TEST profile
+        _clear_registry()
+
+        @component
+        @profile('*')
+        class UniversalService2:
+            pass
+
+        test_container = Container()
+        test_container.scan(profile=Profile.TEST)
+
+        # Universal service should be registered in TEST too
+        universal2 = test_container.resolve(UniversalService2)
+        assert isinstance(universal2, UniversalService2)
+
+    def it_maintains_backward_compatibility_without_profile(self) -> None:
+        """Container.scan() without profile parameter registers all components."""
+        _clear_registry()
+        from dioxide import profile
+
+        @component
+        @profile.production
+        class ProductionService:
+            pass
+
+        @component
+        @profile.test
+        class TestService:
+            pass
+
+        @component
+        class NoProfileService:
+            pass
+
+        container = Container()
+        container.scan()  # No profile parameter
+
+        # All services should be registered (backward compatibility)
+        prod = container.resolve(ProductionService)
+        test = container.resolve(TestService)
+        no_profile = container.resolve(NoProfileService)
+
+        assert isinstance(prod, ProductionService)
+        assert isinstance(test, TestService)
+        assert isinstance(no_profile, NoProfileService)

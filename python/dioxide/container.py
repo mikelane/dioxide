@@ -6,11 +6,16 @@ The container supports both automatic discovery via @component decorators and
 manual registration for fine-grained control.
 """
 
+from __future__ import annotations
+
 import inspect
 from collections.abc import Callable
-from typing import Any, TypeVar, get_type_hints
+from typing import TYPE_CHECKING, Any, TypeVar, get_type_hints
 
 from dioxide._dioxide_core import Container as RustContainer
+
+if TYPE_CHECKING:
+    from dioxide.profile_enum import Profile
 
 T = TypeVar('T')
 
@@ -437,7 +442,7 @@ class Container:
         """
         return len(self._rust_core)
 
-    def scan(self, package: str | None = None, profile: str | None = None) -> None:
+    def scan(self, package: str | None = None, profile: str | Profile | None = None) -> None:
         """Discover and register all @component decorated classes.
 
         Scans the global component registry for all classes decorated with
@@ -451,10 +456,13 @@ class Container:
             package: Optional package name to scan. If None, scans all registered
                 components. If provided, only scans components from the specified
                 package. (Not yet implemented - reserved for future use)
-            profile: Optional profile name to filter components. If None, registers
-                all components regardless of profile. If provided, only registers
-                components that have the matching profile in their __dioxide_profiles__
-                attribute. Profile names are normalized to lowercase for matching.
+            profile: Optional profile to filter components. Accepts either a Profile
+                enum value (Profile.PRODUCTION, Profile.TEST, etc.) or a string profile
+                name. If None, registers all components regardless of profile. If provided,
+                only registers components that have the matching profile in their
+                __dioxide_profiles__ attribute. Components decorated with Profile.ALL ("*")
+                are registered in all profiles. Profile names are normalized to lowercase
+                for matching.
 
         Registration behavior:
             - SINGLETON scope (default): Creates singleton factory with caching
@@ -464,7 +472,7 @@ class Container:
             - Profile filtering applies to components with @profile decorator
 
         Example:
-            >>> from dioxide import Container, component, Scope, profile
+            >>> from dioxide import Container, Profile, component, Scope, profile
             >>>
             >>> @component
             ... class Database:
@@ -485,9 +493,13 @@ class Container:
             >>> container = Container()
             >>> container.scan()  # Scans all components
             >>>
-            >>> # Or with profile filtering
+            >>> # With Profile enum (recommended)
             >>> prod_container = Container()
-            >>> prod_container.scan(profile='production')  # Only production components
+            >>> prod_container.scan(profile=Profile.PRODUCTION)  # Only production components
+            >>>
+            >>> # Or with string profile (also supported)
+            >>> prod_container2 = Container()
+            >>> prod_container2.scan(profile='production')  # Same as above
 
         Note:
             - Ensure all component classes are imported before calling scan()
@@ -498,10 +510,18 @@ class Container:
         """
         from dioxide.decorators import _get_registered_components
         from dioxide.profile import PROFILE_ATTRIBUTE
+        from dioxide.profile_enum import Profile
         from dioxide.scope import Scope
 
         # Normalize profile to lowercase if provided
-        normalized_profile = profile.lower() if profile else None
+        # Handle both Profile enum and string values
+        if profile is not None:
+            if isinstance(profile, Profile):
+                normalized_profile = profile.value.lower()
+            else:
+                normalized_profile = profile.lower()
+        else:
+            normalized_profile = None
 
         for component_class in _get_registered_components():
             # Apply profile filtering if profile parameter provided
@@ -509,8 +529,9 @@ class Container:
                 # Get component's profiles (if any)
                 component_profiles: frozenset[str] = getattr(component_class, PROFILE_ATTRIBUTE, frozenset())
 
-                # Skip if component doesn't have the requested profile
-                if normalized_profile not in component_profiles:
+                # Skip if component doesn't have the requested profile AND doesn't have Profile.ALL
+                # Profile.ALL ("*") makes a component available in all profiles
+                if normalized_profile not in component_profiles and '*' not in component_profiles:
                     continue
 
             # Create a factory that auto-injects dependencies
