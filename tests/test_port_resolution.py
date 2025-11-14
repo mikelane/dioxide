@@ -202,3 +202,98 @@ class DescribePortResolution:
 
         resolved = container.resolve(EmailPort)
         assert isinstance(resolved, ProductionEmailAdapter)
+
+    def it_resolves_adapter_when_scanning_without_profile(self) -> None:
+        """container.scan() without profile parameter registers adapters."""
+        _clear_registry()
+
+        @adapter.for_(EmailPort, profile='production')
+        class ProductionEmailAdapter:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        # Scan without profile - should register the adapter
+        container = Container()
+        container.scan()  # No profile parameter
+
+        # Should resolve the adapter
+        resolved = container.resolve(EmailPort)
+        assert isinstance(resolved, ProductionEmailAdapter)
+
+    def it_skips_adapter_without_port_attribute_during_scan(self) -> None:
+        """container.scan() skips malformed adapters without __dioxide_port__."""
+        from dioxide.adapter import _adapter_registry
+        from dioxide.profile import PROFILE_ATTRIBUTE
+
+        _clear_registry()
+
+        # Manually add a malformed adapter to the registry (missing __dioxide_port__)
+        # Give it a profile so it passes the profile filter
+        class MalformedAdapter:
+            pass
+
+        setattr(MalformedAdapter, PROFILE_ATTRIBUTE, frozenset(['production']))
+
+        # Temporarily inject into adapter registry
+        _adapter_registry.add(MalformedAdapter)
+
+        try:
+            container = Container()
+            # Should not raise - malformed adapter is skipped
+            container.scan(profile='production')
+        finally:
+            # Clean up
+            _adapter_registry.discard(MalformedAdapter)
+
+    def it_skips_adapter_when_port_already_registered_manually_singleton(self) -> None:
+        """container.scan() skips adapter if port already registered manually (singleton)."""
+        _clear_registry()
+
+        @adapter.for_(EmailPort, profile='production')
+        class ProductionEmailAdapter:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        # Manually register a different implementation first
+        class ManualEmailAdapter:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.register_singleton_factory(EmailPort, lambda: ManualEmailAdapter())
+
+        # Scan should skip ProductionEmailAdapter (manual takes precedence)
+        container.scan(profile='production')
+
+        # Should get the manually registered one
+        resolved = container.resolve(EmailPort)
+        assert isinstance(resolved, ManualEmailAdapter)
+
+    def it_skips_adapter_when_port_already_registered_manually_transient(self) -> None:
+        """container.scan() skips adapter if port already registered manually (transient)."""
+        from dioxide import Scope
+
+        _clear_registry()
+
+        @adapter.for_(EmailPort, profile='production')
+        class ProductionEmailAdapter:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        # Set the adapter to FACTORY scope to test transient path
+        ProductionEmailAdapter.__dioxide_scope__ = Scope.FACTORY
+
+        # Manually register a different implementation first
+        class ManualEmailAdapter:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.register_transient_factory(EmailPort, lambda: ManualEmailAdapter())
+
+        # Scan should skip ProductionEmailAdapter (manual takes precedence)
+        container.scan(profile='production')
+
+        # Should get the manually registered one
+        resolved = container.resolve(EmailPort)
+        assert isinstance(resolved, ManualEmailAdapter)

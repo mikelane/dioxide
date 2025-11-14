@@ -171,6 +171,28 @@ class DescribeScan:
         assert isinstance(service, LegacyService)
         assert service.value == 'legacy'
 
+    def it_handles_components_with_mixed_type_hints(self) -> None:
+        """Components with some parameters lacking type hints skip those parameters."""
+        _clear_registry()
+
+        @component
+        class DependencyService:
+            pass
+
+        @component
+        class MixedService:
+            def __init__(self, typed: DependencyService, untyped=None) -> None:  # type: ignore[no-untyped-def]
+                self.typed = typed
+                self.untyped = untyped
+
+        container = Container()
+        container.scan()
+
+        service = container.resolve(MixedService)
+        assert isinstance(service, MixedService)
+        assert isinstance(service.typed, DependencyService)
+        assert service.untyped is None  # Not injected since no type hint
+
     def it_creates_new_instances_for_factory_scope(self) -> None:
         """Components with factory scope create new instances each time."""
         _clear_registry()
