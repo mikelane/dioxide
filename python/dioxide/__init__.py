@@ -37,11 +37,13 @@ For more information, see the README and documentation.
 from .container import Container, container
 from .decorators import _clear_registry, _get_registered_components, component
 from .profile import profile
+from .profile_enum import Profile
 from .scope import Scope
 
 __version__ = '0.1.0'
 __all__ = [
     'Container',
+    'Profile',
     'Scope',
     '_clear_registry',
     '_get_registered_components',
