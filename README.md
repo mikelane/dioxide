@@ -62,57 +62,78 @@ See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy.
 
 ## Quick Start
 
-**⚠️ Note**: API examples show **target MLP syntax** (v0.1.0-beta). Current v0.0.1-alpha uses different syntax. See [CHANGELOG.md](CHANGELOG.md) for migration guide.
+dioxide embraces **hexagonal architecture** (ports-and-adapters) to make clean, testable code the path of least resistance.
 
 ```python
-from dioxide import container, component, profile
 from typing import Protocol
+from dioxide import Container, Profile, adapter, service
 
-# Define a protocol (the seam)
-class EmailProvider(Protocol):
+# 1. Define port (interface) - your seam
+class EmailPort(Protocol):
     async def send(self, to: str, subject: str, body: str) -> None: ...
 
-# Production implementation
-@component.implements(EmailProvider)
-@profile.production
-class SendGridEmail:
+# 2. Create adapters (implementations) for different environments
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
     async def send(self, to: str, subject: str, body: str) -> None:
-        # Real SendGrid API call
-        pass
+        # Real SendGrid API calls
+        print(f"📧 Sending via SendGrid to {to}: {subject}")
 
-# Test/dev implementation
-@component.implements(EmailProvider)
-@profile("test", "development")
-class FakeEmail:
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
     def __init__(self):
-        self.outbox = []
+        self.sent_emails = []
 
     async def send(self, to: str, subject: str, body: str) -> None:
-        self.outbox.append({"to": to, "subject": subject})
+        self.sent_emails.append({"to": to, "subject": subject, "body": body})
+        print(f"✅ Fake email sent to {to}")
 
-# Business logic depends on protocol, not implementation
-@component
-class NotificationService:
-    def __init__(self, email: EmailProvider):
+# 3. Create service (core business logic) - depends on port, not adapter
+@service
+class UserService:
+    def __init__(self, email: EmailPort):
         self.email = email
 
-    async def send_welcome(self, user_email: str) -> None:
-        await self.email.send(user_email, "Welcome!", "Thanks for signing up!")
+    async def register_user(self, email_addr: str, name: str):
+        # Core logic doesn't know/care which adapter is active
+        await self.email.send(
+            to=email_addr,
+            subject="Welcome!",
+            body=f"Hello {name}, thanks for signing up!"
+        )
 
-# Scan and activate profile
-container.scan("app", profile="production")  # or "test" for testing
+# Production usage
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+user_service = container.resolve(UserService)
+await user_service.register_user("user@example.com", "Alice")
+# 📧 Sends real email via SendGrid
 
-# Use services directly (dependencies auto-injected)
-service = NotificationService()
-await service.send_welcome("user@example.com")
+# Testing - just change the profile!
+test_container = Container()
+test_container.scan(profile=Profile.TEST)
+test_service = test_container.resolve(UserService)
+await test_service.register_user("test@example.com", "Bob")
+
+# Verify in tests (no mocks!)
+fake_email = test_container.resolve(EmailPort)
+assert len(fake_email.sent_emails) == 1
+assert fake_email.sent_emails[0]["to"] == "test@example.com"
 ```
 
-**Key features**:
-- `@component` for singleton components (shared across app)
-- `@component.factory` for per-request components (new instance each time)
-- `@profile` to swap implementations by environment
-- Global singleton container (no manual instantiation)
-- Constructor injection via type hints
+**Why this is powerful**:
+- ✅ **Type-safe**: If mypy passes, your wiring is correct
+- ✅ **Testable**: Fast fakes at the seams, not mocks
+- ✅ **Clean**: Business logic has zero knowledge of infrastructure
+- ✅ **Simple**: One line change to swap implementations (`profile=...`)
+- ✅ **Explicit**: Port definitions make boundaries visible
+
+**Key concepts**:
+- **Ports** (`Protocol`): Define what operations you need (the seam)
+- **Adapters** (`@adapter.for_(Port, profile=...)`): Concrete implementations
+- **Services** (`@service`): Core business logic that depends on ports
+- **Profiles** (`Profile.PRODUCTION`, `Profile.TEST`): Environment selection
+- **Container**: Auto-wires dependencies based on type hints
 
 ## Features
 
