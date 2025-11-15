@@ -15,18 +15,17 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.3
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix, --unsafe-fixes]
         files: ^(python/|tests/)
       - id: ruff-format
         files: ^(python/|tests/)
 
-  # Import sorting
+  # Import sorting (reads config from pyproject.toml)
   - repo: https://github.com/pycqa/isort
     rev: 7.0.0
     hooks:
       - id: isort
-        args: [--profile=black, --line-length=120]
         files: ^(python/|tests/)
 
   # Type checking (strict mode to match CI)
