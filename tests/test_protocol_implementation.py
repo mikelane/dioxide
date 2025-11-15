@@ -324,3 +324,53 @@ class DescribeSingletonAndFactoryScopes:
         assert by_protocol is by_concrete
         assert isinstance(by_protocol, SimpleEmail)
         assert isinstance(by_concrete, SimpleEmail)
+
+    def it_skips_protocol_registration_when_already_registered_manually_singleton(self) -> None:
+        """container.scan() skips protocol if already registered manually (singleton)."""
+        _clear_registry()
+
+        @component.implements(EmailProvider)
+        class AutoRegisteredEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        # Manually register a different implementation for the protocol first
+        class ManualEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.register_singleton_factory(EmailProvider, lambda: ManualEmail())
+
+        # Scan should skip protocol registration (manual takes precedence)
+        container.scan()
+
+        # Should get the manually registered one
+        resolved = container.resolve(EmailProvider)
+        assert isinstance(resolved, ManualEmail)
+
+    def it_skips_protocol_registration_when_already_registered_manually_transient(self) -> None:
+        """container.scan() skips protocol if already registered manually (transient)."""
+        from dioxide import Scope
+
+        _clear_registry()
+
+        @component.implements(EmailProvider, scope=Scope.FACTORY)
+        class AutoRegisteredEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        # Manually register a different implementation for the protocol first
+        class ManualEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.register_transient_factory(EmailProvider, lambda: ManualEmail())
+
+        # Scan should skip protocol registration (manual takes precedence)
+        container.scan()
+
+        # Should get the manually registered one
+        resolved = container.resolve(EmailProvider)
+        assert isinstance(resolved, ManualEmail)

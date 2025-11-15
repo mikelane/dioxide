@@ -443,10 +443,10 @@ class Container:
         return len(self._rust_core)
 
     def scan(self, package: str | None = None, profile: str | Profile | None = None) -> None:
-        """Discover and register all @component decorated classes.
+        """Discover and register all @component and @adapter decorated classes.
 
-        Scans the global component registry for all classes decorated with
-        @component and registers them with the container. Dependencies are
+        Scans the global registries for all classes decorated with @component
+        or @adapter and registers them with the container. Dependencies are
         automatically resolved based on constructor type hints.
 
         This is the primary method for setting up the container in a
@@ -456,58 +456,64 @@ class Container:
             package: Optional package name to scan. If None, scans all registered
                 components. If provided, only scans components from the specified
                 package. (Not yet implemented - reserved for future use)
-            profile: Optional profile to filter components. Accepts either a Profile
-                enum value (Profile.PRODUCTION, Profile.TEST, etc.) or a string profile
-                name. If None, registers all components regardless of profile. If provided,
-                only registers components that have the matching profile in their
-                __dioxide_profiles__ attribute. Components decorated with Profile.ALL ("*")
-                are registered in all profiles. Profile names are normalized to lowercase
-                for matching.
+            profile: Optional profile to filter components/adapters. Accepts either a
+                Profile enum value (Profile.PRODUCTION, Profile.TEST, etc.) or a string
+                profile name. If None, registers all components/adapters regardless of
+                profile. If provided, only registers components/adapters that have the
+                matching profile in their __dioxide_profiles__ attribute. Components/
+                adapters decorated with Profile.ALL ("*") are registered in all profiles.
+                Profile names are normalized to lowercase for matching.
 
         Registration behavior:
             - SINGLETON scope (default): Creates singleton factory with caching
             - FACTORY scope: Creates transient factory for new instances
-            - Manual registrations take precedence over @component decorators
+            - Manual registrations take precedence over @component/@adapter decorators
             - Already-registered types are silently skipped
-            - Profile filtering applies to components with @profile decorator
+            - Profile filtering applies to components/adapters with @profile decorator
+            - Adapters are registered under their port type (Protocol/ABC)
+            - Multiple adapters for same port+profile raises ValueError
 
         Example:
-            >>> from dioxide import Container, Profile, component, Scope, profile
+            >>> from dioxide import Container, Profile, component, adapter, Scope, profile
             >>>
+            >>> # Define a port (Protocol)
+            >>> class EmailPort(Protocol):
+            ...     async def send(self, to: str, subject: str, body: str) -> None: ...
+            >>>
+            >>> # Create adapter for production
+            >>> @adapter.for_(EmailPort, profile='production')
+            ... class SendGridAdapter:
+            ...     async def send(self, to: str, subject: str, body: str) -> None:
+            ...         pass
+            >>>
+            >>> # Create service that depends on port
             >>> @component
-            ... class Database:
-            ...     def __init__(self):
-            ...         self.connected = True
+            ... class UserService:
+            ...     def __init__(self, email: EmailPort):
+            ...         self.email = email
             >>>
-            >>> @component
-            ... class UserRepository:
-            ...     def __init__(self, db: Database):
-            ...         self.db = db
-            >>>
-            >>> @component(scope=Scope.FACTORY)
-            >>> @profile.production
-            ... class RequestHandler:
-            ...     def __init__(self, repo: UserRepository):
-            ...         self.repo = repo
-            >>>
+            >>> # Scan with Profile enum (recommended)
             >>> container = Container()
-            >>> container.scan()  # Scans all components
-            >>>
-            >>> # With Profile enum (recommended)
-            >>> prod_container = Container()
-            >>> prod_container.scan(profile=Profile.PRODUCTION)  # Only production components
+            >>> container.scan(profile=Profile.PRODUCTION)
+            >>> service = container.resolve(UserService)
+            >>> # service.email is a SendGridAdapter instance
             >>>
             >>> # Or with string profile (also supported)
-            >>> prod_container2 = Container()
-            >>> prod_container2.scan(profile='production')  # Same as above
+            >>> container2 = Container()
+            >>> container2.scan(profile='production')  # Same as above
+
+        Raises:
+            ValueError: If multiple adapters are registered for the same port
+                and profile combination (ambiguous registration)
 
         Note:
-            - Ensure all component classes are imported before calling scan()
+            - Ensure all component/adapter classes are imported before calling scan()
             - Constructor dependencies must have type hints
             - Circular dependencies will cause infinite recursion
             - Manual registrations (register_*) take precedence over scan()
             - Profile names are case-insensitive (normalized to lowercase)
         """
+        from dioxide.adapter import _adapter_registry
         from dioxide.decorators import _get_registered_components
         from dioxide.profile import PROFILE_ATTRIBUTE
         from dioxide.profile_enum import Profile
@@ -523,6 +529,62 @@ class Container:
         else:
             normalized_profile = None
 
+        # First, scan adapters and detect ambiguous registrations
+        port_to_adapters: dict[type[Any], list[type[Any]]] = {}
+
+        for adapter_class in _adapter_registry:
+            # Apply profile filtering if profile parameter provided
+            if normalized_profile is not None:
+                # Get adapter's profiles (if any)
+                adapter_profiles: frozenset[str] = getattr(adapter_class, PROFILE_ATTRIBUTE, frozenset())
+
+                # Skip if adapter doesn't have the requested profile
+                if normalized_profile not in adapter_profiles:
+                    continue
+
+            # Get the port this adapter implements
+            port_class = getattr(adapter_class, '__dioxide_port__', None)
+            if port_class is None:
+                # This shouldn't happen if @adapter.for_() was used correctly
+                continue
+
+            # Track adapters per port
+            if port_class not in port_to_adapters:
+                port_to_adapters[port_class] = []
+            port_to_adapters[port_class].append(adapter_class)
+
+        # Check for ambiguous registrations (multiple adapters for same port)
+        for port_class, adapters in port_to_adapters.items():
+            if len(adapters) > 1:
+                adapter_names = ', '.join(cls.__name__ for cls in adapters)
+                profile_str = f" for profile '{normalized_profile}'" if normalized_profile else ''
+                raise ValueError(
+                    f'Ambiguous adapter registration for port {port_class.__name__}{profile_str}: '
+                    f'multiple adapters found ({adapter_names}). '
+                    f'Only one adapter per port+profile combination is allowed.'
+                )
+
+        # Register adapters under their port type
+        for port_class, adapters in port_to_adapters.items():
+            adapter_class = adapters[0]  # Only one adapter per port (checked above)
+
+            # Create a factory that auto-injects dependencies
+            factory = self._create_auto_injecting_factory(adapter_class)
+
+            # Get the scope (adapters default to SINGLETON)
+            scope = getattr(adapter_class, '__dioxide_scope__', Scope.SINGLETON)
+
+            # Register under port type
+            try:
+                if scope == Scope.SINGLETON:
+                    self.register_singleton_factory(port_class, factory)
+                else:
+                    self.register_transient_factory(port_class, factory)
+            except KeyError:
+                # Already registered manually - skip it (manual takes precedence)
+                pass
+
+        # Then, scan components (existing logic)
         for component_class in _get_registered_components():
             # Apply profile filtering if profile parameter provided
             if normalized_profile is not None:
