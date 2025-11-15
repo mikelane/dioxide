@@ -428,74 +428,189 @@ dioxide/
 
 ## Key Components
 
-### @component Decorator
+### Hexagonal Architecture API
 
-The `@component` decorator marks classes for auto-discovery:
+dioxide now uses a hexagonal architecture (ports-and-adapters) API that makes clean architecture patterns explicit and type-safe.
+
+#### @adapter Decorator
+
+The `@adapter.for_(Port, profile=...)` decorator marks concrete implementations (adapters) for abstract ports (Protocols/ABCs):
 
 ```python
-from dioxide import component, profile
 from typing import Protocol
+from dioxide import adapter, Profile
 
-# Singleton component (default) - shared across app
+# Define port (interface)
+class EmailPort(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
+
+# Production adapter
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    async def send(self, to: str, subject: str, body: str) -> None:
+        # Real SendGrid API calls
+        pass
+
+# Test adapter (fake)
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    def __init__(self):
+        self.sent_emails = []
+
+    async def send(self, to: str, subject: str, body: str) -> None:
+        self.sent_emails.append({"to": to, "subject": subject, "body": body})
+
+# Development adapter
+@adapter.for_(EmailPort, profile=['development', 'ci'])
+class LoggingEmailAdapter:
+    async def send(self, to: str, subject: str, body: str) -> None:
+        print(f"Email to {to}: {subject}")
+```
+
+**Implementation**: `python/dioxide/adapter.py`
+
+**How it works**:
+1. `@adapter.for_(Port, profile=...)` - Registers adapter for a port with profile(s)
+2. Port can be any Protocol or ABC
+3. Profile can be a string, Profile enum, or list of profiles
+4. Multiple adapters can implement the same port for different profiles
+5. `container.scan(profile=...)` activates the matching adapter
+
+#### @service Decorator
+
+The `@service` decorator marks core business logic classes that depend on ports:
+
+```python
+from dioxide import service
+
+@service
+class UserService:
+    def __init__(self, email: EmailPort, db: DatabasePort):
+        self.email = email
+        self.db = db
+
+    async def register_user(self, email_addr: str, name: str):
+        # Core logic - doesn't know which adapters are active
+        user = await self.db.create_user(name, email_addr)
+        await self.email.send(email_addr, "Welcome!", f"Hello {name}")
+        return user
+```
+
+**Implementation**: `python/dioxide/services.py`
+
+**How it works**:
+1. `@service` - Registers as SINGLETON (always shared across app)
+2. Available in ALL profiles (doesn't vary by environment)
+3. Dependencies injected via constructor type hints
+4. Services depend on ports (interfaces), not concrete adapters
+
+#### Profile Enum
+
+The `Profile` enum defines standard environment profiles:
+
+```python
+from dioxide import Profile
+
+# Standard profiles
+Profile.PRODUCTION  # Production environment
+Profile.TEST        # Test environment
+Profile.DEVELOPMENT # Development environment
+Profile.STAGING     # Staging environment
+Profile.CI          # CI environment
+Profile.ALL         # Available in all environments (use '*')
+```
+
+**Implementation**: `python/dioxide/profile_enum.py`
+
+**How it works**:
+1. String-based enum for consistency (`Profile.PRODUCTION.value == 'production'`)
+2. Case-insensitive matching (normalized to lowercase)
+3. `Profile.ALL` (`'*'`) matches all environments
+4. Custom profiles supported (pass string to `@adapter.for_()`)
+
+### Legacy @component Decorator
+
+The old `@component` decorator is deprecated in favor of the hexagonal architecture API:
+
+```python
+# OLD (deprecated) - still works but not recommended
+from dioxide import component
+
 @component
 class UserService:
     pass
 
-# Factory component - new instance each time
-@component.factory
-class RequestHandler:
+# NEW (hexagonal architecture) - use this instead
+from dioxide import service
+
+@service
+class UserService:
     pass
-
-# Protocol implementation with profile
-class EmailProvider(Protocol):
-    async def send(self, to: str, subject: str, body: str) -> None: ...
-
-@component.implements(EmailProvider)
-@profile.production
-class SendGridEmail:
-    async def send(self, to: str, subject: str, body: str) -> None:
-        pass  # Real implementation
 ```
 
-**Implementation**: `python/dioxide/decorators.py` (MLP realignment in progress)
+**Note**: `@component` is maintained for backward compatibility but all new code should use `@service` or `@adapter.for_()`.
 
-**How it works**:
-1. `@component` - Registers as SINGLETON (default scope)
-2. `@component.factory` - Registers as FACTORY scope (new instance each call)
-3. `@component.implements(Protocol)` - Registers concrete implementation for protocol
-4. `@profile` - Associates component with environment profile (production, test, dev)
-5. `container.scan()` discovers all registered classes by profile
+### Container (Profile-Based Dependency Injection)
 
-### Container (Global Singleton Pattern)
-
-MLP uses a global singleton container for simplicity and ergonomics:
+dioxide provides a Container class that supports profile-based dependency injection:
 
 ```python
-from dioxide import container, component, profile
+from dioxide import Container, Profile, adapter, service
+from typing import Protocol
 
-# Scan and activate a profile
-container.scan("app", profile="production")  # or "test", "development"
+# Define port
+class EmailPort(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
 
-# Resolve with automatic dependency injection
-controller = container.resolve(UserController)  # Dependencies auto-injected
+# Define adapters
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    pass
 
-# Alternative syntax (optional)
-controller = container[UserController]
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    pass
+
+# Define service
+@service
+class UserService:
+    def __init__(self, email: EmailPort):
+        self.email = email
+
+# Production container
+prod_container = Container()
+prod_container.scan(profile=Profile.PRODUCTION)
+prod_service = prod_container.resolve(UserService)
+# UserService gets SendGridAdapter
+
+# Test container
+test_container = Container()
+test_container.scan(profile=Profile.TEST)
+test_service = test_container.resolve(UserService)
+# UserService gets FakeEmailAdapter
+
+# Port-based resolution
+email_adapter = prod_container.resolve(EmailPort)
+# Returns SendGridAdapter (the active adapter for this profile)
+
+# Alternative syntax
+service = prod_container[UserService]  # Same as resolve()
 ```
 
 **Features**:
-- **Global singleton**: No manual container instantiation (`from dioxide import container`)
-- **Profile selection**: Scan with `profile` parameter to activate environment-specific implementations
-- **Auto-discovery**: Finds all `@component` decorated classes in package
+- **Profile-based scanning**: `container.scan(profile=...)` activates profile-specific adapters
+- **Port-based resolution**: `container.resolve(Port)` returns the active adapter for that port
 - **Type-safe resolution**: `container.resolve(Type)` with full mypy support
-- **Dependency injection**: Inspects `__init__` type hints and auto-injects dependencies
+- **Automatic dependency injection**: Inspects `__init__` type hints and auto-injects dependencies
+- **Bracket syntax**: `container[Type]` as alternative to `resolve(Type)`
 
-**Implementation**: `python/dioxide/container.py` (MLP realignment in progress)
+**Implementation**: `python/dioxide/container.py`
 
 **Important details**:
-- SINGLETON components shared across entire app lifecycle
-- FACTORY components create new instance for each resolution
-- Profile system enables clean swapping of implementations (e.g., DB → in-memory for tests)
+- Services and adapters are SINGLETON by default (one instance per container)
+- Each container instance maintains separate singleton instances
+- Profile determines which adapters are active for a given container
+- Services depend on ports (Protocols), container injects active adapter
 
 ### Rust Container
 
