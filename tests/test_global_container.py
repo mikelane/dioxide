@@ -11,7 +11,10 @@ class DescribeGlobalContainerSingleton:
 
     def it_provides_singleton_instance(self) -> None:
         """Container is a Container instance."""
-        from dioxide import Container, container
+        from dioxide import (
+            Container,
+            container,
+        )
 
         assert isinstance(container, Container)
 
@@ -114,15 +117,9 @@ class DescribeGlobalContainerFunctionality:
 
     def setup_method(self) -> None:
         """Clear the component registry before each test."""
-        from dioxide import _clear_registry
-
-        _clear_registry()
 
     def teardown_method(self) -> None:
         """Clear the component registry after each test."""
-        from dioxide import _clear_registry
-
-        _clear_registry()
 
     def it_resolves_components_via_singleton(self) -> None:
         """Global container can resolve components after scan."""
@@ -174,19 +171,16 @@ class DescribeGetItemSyntax:
 
     def setup_method(self) -> None:
         """Clear the component registry before each test."""
-        from dioxide import _clear_registry
-
-        _clear_registry()
 
     def teardown_method(self) -> None:
         """Clear the component registry after each test."""
-        from dioxide import _clear_registry
-
-        _clear_registry()
 
     def it_resolves_via_bracket_notation(self) -> None:
         """Container supports container[Type] syntax."""
-        from dioxide import Container, component
+        from dioxide import (
+            Container,
+            component,
+        )
 
         @component
         class BracketService:
@@ -202,7 +196,10 @@ class DescribeGetItemSyntax:
 
     def it_is_equivalent_to_resolve(self) -> None:
         """container[Type] returns same instance as container.resolve(Type)."""
-        from dioxide import Container, component
+        from dioxide import (
+            Container,
+            component,
+        )
 
         @component
         class SameService:
@@ -240,7 +237,10 @@ class DescribeBackwardCompatibility:
 
     def it_supports_old_pattern_with_container_class(self) -> None:
         """Old v0.0.1-alpha pattern still works."""
-        from dioxide import Container, component
+        from dioxide import (
+            Container,
+            component,
+        )
 
         @component
         class OldService:

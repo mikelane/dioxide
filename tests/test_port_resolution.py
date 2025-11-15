@@ -5,12 +5,18 @@ to resolve implementations (adapters) based on their port (Protocol/ABC) and
 active profile, rather than just concrete class types.
 """
 
-from abc import ABC, abstractmethod
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from typing import Protocol
 
 import pytest
 
-from dioxide import Container, _clear_registry, adapter
+from dioxide import (
+    Container,
+    adapter,
+)
 
 
 class EmailPort(Protocol):
@@ -35,7 +41,6 @@ class DescribePortResolution:
 
     def it_resolves_protocol_adapter_for_active_profile(self) -> None:
         """container.resolve(EmailPort) returns adapter for active profile."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionEmailAdapter:
@@ -58,7 +63,6 @@ class DescribePortResolution:
 
     def it_resolves_different_adapter_for_different_profile(self) -> None:
         """container.resolve(Port) returns different adapter for different profile."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionEmailAdapter:
@@ -84,7 +88,6 @@ class DescribePortResolution:
 
     def it_resolves_abc_adapter_for_active_profile(self) -> None:
         """container.resolve(ABC) returns adapter for active profile."""
-        _clear_registry()
 
         @adapter.for_(StoragePort, profile='production')
         class PostgresAdapter(StoragePort):
@@ -105,7 +108,6 @@ class DescribePortResolution:
 
     def it_raises_on_port_without_adapter_for_profile(self) -> None:
         """container.resolve(Port) raises if no adapter for active profile."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionEmailAdapter:
@@ -124,7 +126,6 @@ class DescribePortResolution:
 
     def it_raises_on_multiple_adapters_for_same_port_and_profile(self) -> None:
         """container.resolve(Port) raises if multiple adapters for port+profile."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class SendGridAdapter:
@@ -148,7 +149,6 @@ class DescribePortResolution:
 
     def it_resolves_singleton_adapter_returns_same_instance(self) -> None:
         """container.resolve(Port) returns same instance for singleton adapters."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionEmailAdapter:
@@ -166,7 +166,6 @@ class DescribePortResolution:
 
     def it_resolves_adapter_with_multiple_profiles(self) -> None:
         """container.resolve(Port) works with adapter having multiple profiles."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile=['test', 'development'])
         class FakeEmailAdapter:
@@ -190,7 +189,6 @@ class DescribePortResolution:
 
     def it_resolves_port_case_insensitive_profile(self) -> None:
         """container.resolve(Port) normalizes profile names to lowercase."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='PRODUCTION')
         class ProductionEmailAdapter:
@@ -205,7 +203,6 @@ class DescribePortResolution:
 
     def it_resolves_adapter_when_scanning_without_profile(self) -> None:
         """container.scan() without profile parameter registers adapters."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionEmailAdapter:
@@ -224,8 +221,6 @@ class DescribePortResolution:
         """container.scan() skips malformed adapters without __dioxide_port__."""
         from dioxide.adapter import _adapter_registry
         from dioxide.profile import PROFILE_ATTRIBUTE
-
-        _clear_registry()
 
         # Manually add a malformed adapter to the registry (missing __dioxide_port__)
         # Give it a profile so it passes the profile filter
@@ -247,7 +242,6 @@ class DescribePortResolution:
 
     def it_skips_adapter_when_port_already_registered_manually_singleton(self) -> None:
         """container.scan() skips adapter if port already registered manually (singleton)."""
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionEmailAdapter:
@@ -272,8 +266,6 @@ class DescribePortResolution:
     def it_skips_adapter_when_port_already_registered_manually_transient(self) -> None:
         """container.scan() skips adapter if port already registered manually (transient)."""
         from dioxide import Scope
-
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionEmailAdapter:

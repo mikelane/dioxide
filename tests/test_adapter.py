@@ -7,10 +7,6 @@ hexagonal/ports-and-adapters architecture patterns.
 
 from typing import Protocol
 
-import pytest
-
-from dioxide import _clear_registry
-
 
 class EmailPort(Protocol):
     """Test protocol for email functionality."""
@@ -37,8 +33,6 @@ class DescribeAdapterDecorator:
     def it_registers_with_port_and_profile(self) -> None:
         """@adapter.for() registers implementation for port + profile."""
         from dioxide import adapter
-
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionAdapter:
@@ -76,19 +70,24 @@ class DescribeAdapterDecorator:
         assert 'test' in MultiProfileAdapter.__dioxide_profiles__
         assert 'development' in MultiProfileAdapter.__dioxide_profiles__
 
-    def it_raises_on_missing_profile(self) -> None:
-        """@adapter.for() raises TypeError if profile not provided."""
+    def it_defaults_to_all_profiles_when_profile_omitted(self) -> None:
+        """@adapter.for() defaults to '*' (all profiles) when profile is omitted."""
         from dioxide import adapter
 
-        with pytest.raises(TypeError, match='profile'):
-
-            @adapter.for_(EmailPort)  # type: ignore[call-arg]
-            class NoProfileAdapter:
+        @adapter.for_(EmailPort)
+        class DefaultProfileAdapter:
+            async def send(self, to: str, subject: str, body: str) -> None:
                 pass
+
+        assert hasattr(DefaultProfileAdapter, '__dioxide_profiles__')
+        assert '*' in DefaultProfileAdapter.__dioxide_profiles__
 
     def it_defaults_to_singleton_scope(self) -> None:
         """@adapter.for() uses SINGLETON scope by default."""
-        from dioxide import Scope, adapter
+        from dioxide import (
+            Scope,
+            adapter,
+        )
 
         @adapter.for_(EmailPort, profile='production')
         class SingletonAdapter:
