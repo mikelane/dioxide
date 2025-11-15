@@ -68,12 +68,10 @@ class AdapterDecorator:
             port: The Protocol or ABC that this adapter implements
             profile: Profile name(s) - string or list of strings.
                      Normalized to lowercase for consistency.
+                     Defaults to '*' (all profiles) if not specified.
 
         Returns:
             Decorator function that marks the class as an adapter
-
-        Raises:
-            TypeError: If profile parameter is not provided
 
         Example:
             >>> @adapter.for_(EmailPort, profile='production')
@@ -82,6 +80,10 @@ class AdapterDecorator:
             >>>
             >>> @adapter.for_(EmailPort, profile=['test', 'development'])
             ... class FakeAdapter:
+            ...     pass
+            >>>
+            >>> @adapter.for_(EmailPort)  # Available in all profiles
+            ... class ConsoleAdapter:
             ...     pass
         """
 
