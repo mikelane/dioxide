@@ -6,7 +6,12 @@ found by Container.scan() and registered with their specified lifecycle
 scope (SINGLETON or FACTORY).
 """
 
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+    overload,
+)
 
 from dioxide.scope import Scope
 
