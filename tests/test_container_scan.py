@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from dioxide import Container, Scope, component, profile
-from dioxide.decorators import _clear_registry
+from dioxide import (
+    Container,
+    Scope,
+    component,
+    profile,
+)
 
 
 class DescribeContainerScanWithPackageParameter:
@@ -13,7 +17,6 @@ class DescribeContainerScanWithPackageParameter:
 
     def setup_method(self) -> None:
         """Clear component registry before each test."""
-        _clear_registry()
 
     def it_scans_all_components_when_package_is_none(self) -> None:
         """scan() with no package parameter scans all registered components."""
@@ -39,7 +42,6 @@ class DescribeContainerScanWithProfileParameter:
 
     def setup_method(self) -> None:
         """Clear component registry before each test."""
-        _clear_registry()
 
     def it_scans_all_components_when_profile_is_none(self) -> None:
         """scan() with no profile parameter scans all components regardless of profile."""
@@ -169,7 +171,6 @@ class DescribeContainerScanBackwardCompatibility:
 
     def setup_method(self) -> None:
         """Clear component registry before each test."""
-        _clear_registry()
 
     def it_maintains_backward_compatibility_with_no_parameters(self) -> None:
         """scan() with no parameters works as before (scans all components)."""
@@ -226,7 +227,6 @@ class DescribeContainerScanCombinedParameters:
 
     def setup_method(self) -> None:
         """Clear component registry before each test."""
-        _clear_registry()
 
     def it_applies_both_package_and_profile_filters(self) -> None:
         """scan('pkg', profile='prod') filters by both package and profile."""

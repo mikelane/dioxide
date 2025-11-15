@@ -9,8 +9,6 @@ from typing import Protocol
 
 import pytest
 
-from dioxide import _clear_registry
-
 
 class EmailPort(Protocol):
     """Test protocol for email functionality."""
@@ -37,8 +35,6 @@ class DescribeAdapterDecorator:
     def it_registers_with_port_and_profile(self) -> None:
         """@adapter.for() registers implementation for port + profile."""
         from dioxide import adapter
-
-        _clear_registry()
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionAdapter:
@@ -88,7 +84,10 @@ class DescribeAdapterDecorator:
 
     def it_defaults_to_singleton_scope(self) -> None:
         """@adapter.for() uses SINGLETON scope by default."""
-        from dioxide import Scope, adapter
+        from dioxide import (
+            Scope,
+            adapter,
+        )
 
         @adapter.for_(EmailPort, profile='production')
         class SingletonAdapter:

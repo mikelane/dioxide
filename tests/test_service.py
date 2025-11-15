@@ -6,7 +6,11 @@ The @service decorator is used for core domain logic that:
 - Supports constructor-based dependency injection
 """
 
-from dioxide import Container, _clear_registry, _get_registered_components, service
+from dioxide import (
+    Container,
+    _get_registered_components,
+    service,
+)
 
 
 class DescribeServiceDecorator:
@@ -23,7 +27,6 @@ class DescribeServiceDecorator:
 
     def it_registers_class_globally(self) -> None:
         """Decorator adds class to global registry."""
-        _clear_registry()
 
         @service
         class TestService:
@@ -34,7 +37,6 @@ class DescribeServiceDecorator:
 
     def it_creates_singleton_instances(self) -> None:
         """Decorator creates singleton (shared) instances."""
-        _clear_registry()
 
         @service
         class SingletonService:
@@ -50,7 +52,6 @@ class DescribeServiceDecorator:
 
     def it_supports_dependency_injection(self) -> None:
         """Decorator supports constructor injection."""
-        _clear_registry()
 
         @service
         class DependencyService:
@@ -69,7 +70,6 @@ class DescribeServiceDecorator:
 
     def it_preserves_the_original_class(self) -> None:
         """Decorator returns the original class unchanged."""
-        _clear_registry()
 
         @service
         class OriginalService:
@@ -82,7 +82,6 @@ class DescribeServiceDecorator:
 
     def it_supports_classes_with_init(self) -> None:
         """Decorator works with classes that have __init__."""
-        _clear_registry()
 
         @service
         class ServiceWithInit:
@@ -97,7 +96,6 @@ class DescribeServiceDecorator:
 
     def it_supports_classes_without_init(self) -> None:
         """Decorator works with classes without __init__."""
-        _clear_registry()
 
         @service
         class ServiceWithoutInit:
