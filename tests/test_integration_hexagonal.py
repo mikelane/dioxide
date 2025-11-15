@@ -831,7 +831,14 @@ class DescribeErrorScenarios:
         with pytest.raises((RecursionError, RuntimeError, KeyError)):
             container.resolve(ServiceA)
 
-    @pytest.mark.parametrize('profile', [Profile.PRODUCTION, Profile.TEST, Profile.DEVELOPMENT])
+    @pytest.mark.parametrize(
+        'profile',
+        [
+            pytest.param(Profile.PRODUCTION, id='production'),
+            pytest.param(Profile.TEST, id='test'),
+            pytest.param(Profile.DEVELOPMENT, id='development'),
+        ],
+    )
     def it_handles_port_without_profile_decorator(self, profile: Profile) -> None:
         """Adapters without profile decorator are available in all profiles."""
         _clear_registry()
