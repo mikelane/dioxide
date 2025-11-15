@@ -738,12 +738,8 @@ class DescribeErrorScenarios:
         container.scan(profile=Profile.TEST)
 
         # Should raise when trying to resolve service with missing adapter
-        try:
+        with pytest.raises(KeyError, match='(EmailPort|email)'):
             container.resolve(UserService)
-            raise AssertionError('Should have raised KeyError for missing EmailPort adapter')
-        except KeyError as e:
-            # Verify error message is helpful
-            assert 'EmailPort' in str(e) or 'email' in str(e).lower()
 
     def it_raises_error_when_adapter_profile_does_not_match(self) -> None:
         """Container raises error when adapter profile doesn't match scan profile."""
@@ -778,12 +774,9 @@ class DescribeErrorScenarios:
         container = Container()
         container.scan(profile=Profile.TEST)
 
-        # Should raise when trying to resolve service
-        try:
+        # Should raise when trying to resolve service (profile mismatch)
+        with pytest.raises(KeyError):
             container.resolve(DataService)
-            raise AssertionError('Should have raised error for profile mismatch')
-        except KeyError:
-            pass  # Expected
 
     def it_handles_missing_service_dependency_gracefully(self) -> None:
         """Container raises clear error when service dependency is missing."""
@@ -805,12 +798,9 @@ class DescribeErrorScenarios:
         container = Container()
         container.scan(profile=Profile.TEST)
 
-        # Should raise when trying to resolve
-        try:
+        # Should raise when trying to resolve (missing dependency)
+        with pytest.raises(KeyError, match='ServiceB'):
             container.resolve(ServiceA)
-            raise AssertionError('Should have raised error for missing ServiceB')
-        except KeyError as e:
-            assert 'ServiceB' in str(e)
 
     def it_detects_circular_dependencies(self) -> None:
         """Container detects and reports circular dependencies."""
@@ -836,11 +826,8 @@ class DescribeErrorScenarios:
         container.scan(profile=Profile.TEST)
 
         # Should detect circular dependency
-        try:
+        with pytest.raises((RecursionError, RuntimeError, KeyError)):
             container.resolve(ServiceA)
-            raise AssertionError('Should have detected circular dependency')
-        except (RecursionError, RuntimeError, KeyError):
-            pass  # Expected - circular dependency detected
 
     def it_handles_port_without_profile_decorator(self) -> None:
         """Adapters without profile decorator are available in all profiles."""
