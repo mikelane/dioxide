@@ -708,3 +708,269 @@ class DescribeComplexDependencyChains:
         assert len(event_bus.events) == 2
         assert 'USER_REGISTERED:alice' in event_bus.events
         assert 'AUDIT:USER_REGISTRATION:alice' in event_bus.events
+
+
+class DescribeErrorScenarios:
+    """Integration tests for error handling in hexagonal architecture."""
+
+    def it_raises_error_when_no_adapter_registered_for_port(self) -> None:
+        """Container raises clear error when port has no adapter."""
+        _clear_registry()
+
+        # Define port but NO adapter
+        class EmailPort(Protocol):
+            """Port for sending emails."""
+
+            def send(self, to: str, subject: str, body: str) -> None:
+                """Send an email."""
+                ...
+
+        # Service depending on port
+        @service
+        class UserService:
+            """User service using email port."""
+
+            def __init__(self, email: EmailPort) -> None:
+                self.email = email
+
+        # Scan container
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        # Should raise when trying to resolve service with missing adapter
+        try:
+            container.resolve(UserService)
+            raise AssertionError('Should have raised KeyError for missing EmailPort adapter')
+        except KeyError as e:
+            # Verify error message is helpful
+            assert 'EmailPort' in str(e) or 'email' in str(e).lower()
+
+    def it_raises_error_when_adapter_profile_does_not_match(self) -> None:
+        """Container raises error when adapter profile doesn't match scan profile."""
+        _clear_registry()
+
+        # Port
+        class DatabasePort(Protocol):
+            """Port for database access."""
+
+            def query(self, sql: str) -> list[str]:
+                """Execute query."""
+                ...
+
+        # Adapter only for PRODUCTION profile
+        @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+        class PostgresAdapter:
+            """Postgres adapter."""
+
+            def query(self, sql: str) -> list[str]:
+                """Execute SQL."""
+                return []
+
+        # Service
+        @service
+        class DataService:
+            """Data service."""
+
+            def __init__(self, db: DatabasePort) -> None:
+                self.db = db
+
+        # Scan with TEST profile - adapter is PRODUCTION only
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        # Should raise when trying to resolve service
+        try:
+            container.resolve(DataService)
+            raise AssertionError('Should have raised error for profile mismatch')
+        except KeyError:
+            pass  # Expected
+
+    def it_handles_missing_service_dependency_gracefully(self) -> None:
+        """Container raises clear error when service dependency is missing."""
+        _clear_registry()
+
+        # Service A depends on non-existent Service B
+        class ServiceB:
+            """Service B (not decorated)."""
+
+            pass
+
+        @service
+        class ServiceA:
+            """Service A depending on unregistered service."""
+
+            def __init__(self, service_b: ServiceB) -> None:
+                self.service_b = service_b
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        # Should raise when trying to resolve
+        try:
+            container.resolve(ServiceA)
+            raise AssertionError('Should have raised error for missing ServiceB')
+        except KeyError as e:
+            assert 'ServiceB' in str(e)
+
+    def it_detects_circular_dependencies(self) -> None:
+        """Container detects and reports circular dependencies."""
+        _clear_registry()
+
+        # Circular dependency: A → B → A
+        # Note: Forward references needed for circular dependencies
+        @service
+        class ServiceA:
+            """Service A."""
+
+            def __init__(self, service_b: 'ServiceB') -> None:
+                self.service_b = service_b
+
+        @service
+        class ServiceB:
+            """Service B."""
+
+            def __init__(self, service_a: ServiceA) -> None:
+                self.service_a = service_a
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        # Should detect circular dependency
+        try:
+            container.resolve(ServiceA)
+            raise AssertionError('Should have detected circular dependency')
+        except (RecursionError, RuntimeError, KeyError):
+            pass  # Expected - circular dependency detected
+
+    def it_handles_port_without_profile_decorator(self) -> None:
+        """Adapters without profile decorator are available in all profiles."""
+        _clear_registry()
+
+        # Port
+        class LoggerPort(Protocol):
+            """Port for logging."""
+
+            def log(self, message: str) -> None:
+                """Log a message."""
+                ...
+
+        # Adapter without profile (should be available in all profiles)
+        @adapter.for_(LoggerPort)
+        class ConsoleLogger:
+            """Console logger available in all profiles."""
+
+            def __init__(self) -> None:
+                self.logs: list[str] = []
+
+            def log(self, message: str) -> None:
+                """Store log."""
+                self.logs.append(message)
+
+        @service
+        class Service:
+            """Service using logger."""
+
+            def __init__(self, logger: LoggerPort) -> None:
+                self.logger = logger
+
+        # Should work with any profile
+        for prof in [Profile.PRODUCTION, Profile.TEST, Profile.DEVELOPMENT]:
+            container = Container()
+            container.scan(profile=prof)
+
+            service = container.resolve(Service)
+            logger = container.resolve(LoggerPort)
+
+            assert isinstance(logger, ConsoleLogger)
+            assert service.logger is logger
+
+            _clear_registry()
+
+            # Re-register for next iteration
+            @adapter.for_(LoggerPort)
+            class ConsoleLogger2:
+                """Console logger."""
+
+                def __init__(self) -> None:
+                    self.logs: list[str] = []
+
+                def log(self, message: str) -> None:
+                    """Store log."""
+                    self.logs.append(message)
+
+            @service
+            class Service2:
+                """Service."""
+
+                def __init__(self, logger: LoggerPort) -> None:
+                    self.logger = logger
+
+    def it_handles_multiple_adapters_for_same_port_different_profiles(self) -> None:
+        """Multiple adapters for same port with different profiles coexist."""
+        _clear_registry()
+
+        # Port
+        class StoragePort(Protocol):
+            """Port for storage."""
+
+            def save(self, data: str) -> None:
+                """Save data."""
+                ...
+
+        # Production adapter
+        @adapter.for_(StoragePort, profile=Profile.PRODUCTION)
+        class S3Storage:
+            """S3 storage for production."""
+
+            def __init__(self) -> None:
+                self.saved_data: list[str] = []
+
+            def save(self, data: str) -> None:
+                """Save to S3."""
+                self.saved_data.append(f's3:{data}')
+
+        # Test adapter
+        @adapter.for_(StoragePort, profile=Profile.TEST)
+        class InMemoryStorage:
+            """In-memory storage for testing."""
+
+            def __init__(self) -> None:
+                self.saved_data: list[str] = []
+
+            def save(self, data: str) -> None:
+                """Save to memory."""
+                self.saved_data.append(f'memory:{data}')
+
+        @service
+        class FileService:
+            """File service."""
+
+            def __init__(self, storage: StoragePort) -> None:
+                self.storage = storage
+
+        # Production container gets S3
+        prod_container = Container()
+        prod_container.scan(profile=Profile.PRODUCTION)
+        prod_service = prod_container.resolve(FileService)
+        prod_storage = prod_container.resolve(StoragePort)
+
+        assert isinstance(prod_storage, S3Storage)
+        assert prod_service.storage is prod_storage
+
+        prod_service.storage.save('file1')
+        assert prod_storage.saved_data == ['s3:file1']
+
+        # Test container gets InMemory
+        test_container = Container()
+        test_container.scan(profile=Profile.TEST)
+        test_service = test_container.resolve(FileService)
+        test_storage = test_container.resolve(StoragePort)
+
+        assert isinstance(test_storage, InMemoryStorage)
+        assert test_service.storage is test_storage
+
+        test_service.storage.save('file2')
+        assert test_storage.saved_data == ['memory:file2']
+
+        # Verify isolation
+        assert prod_storage.saved_data == ['s3:file1']  # Unchanged
