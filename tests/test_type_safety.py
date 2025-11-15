@@ -1,6 +1,10 @@
 """Runtime tests for type safety and type inference."""
 
-from dioxide import Container, Scope, component
+from dioxide import (
+    Container,
+    Scope,
+    component,
+)
 
 
 class DescribeContainerResolveTypeInference:
@@ -91,9 +95,6 @@ class DescribeConstructorInjectionTypeSafety:
 
     def it_resolves_correctly_typed_dependencies(self) -> None:
         """Dependencies are resolved with correct types."""
-        from dioxide.decorators import _clear_registry
-
-        _clear_registry()
 
         @component
         class Database:

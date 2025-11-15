@@ -1,6 +1,9 @@
 """Tests for manual provider registration."""
 
-from dioxide import Container, component
+from dioxide import (
+    Container,
+    component,
+)
 
 
 class DescribeRegisterSingleton:

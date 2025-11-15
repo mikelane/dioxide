@@ -10,7 +10,12 @@ support, including:
 
 from typing import Protocol
 
-from dioxide import Container, Profile, _clear_registry, adapter, profile, service
+from dioxide import (
+    Container,
+    Profile,
+    adapter,
+    service,
+)
 
 
 class DescribeHexagonalArchitectureBasicEndToEnd:
@@ -18,7 +23,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
 
     def it_swaps_adapters_by_profile(self) -> None:
         """Production profile uses real adapter, test profile uses fake."""
-        _clear_registry()
 
         # Define port (interface)
         class EmailPort(Protocol):
@@ -89,7 +93,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
 
     def it_injects_port_implementation_into_service(self) -> None:
         """Services receive port implementations automatically."""
-        _clear_registry()
 
         # Define port
         class LoggerPort(Protocol):
@@ -140,7 +143,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
 
     def it_supports_singleton_adapters_across_services(self) -> None:
         """Multiple services share same singleton adapter instance."""
-        _clear_registry()
 
         # Define port
         class CachePort(Protocol):
@@ -205,7 +207,6 @@ class DescribeMultiPortServiceDependencies:
 
     def it_injects_multiple_ports_into_single_service(self) -> None:
         """Service can depend on multiple different ports."""
-        _clear_registry()
 
         # Define two ports
         class EmailPort(Protocol):
@@ -285,7 +286,6 @@ class DescribeMultiPortServiceDependencies:
 
     def it_handles_service_with_port_and_regular_dependencies(self) -> None:
         """Service can mix port dependencies with regular component dependencies."""
-        _clear_registry()
 
         # Port
         class LoggerPort(Protocol):
@@ -347,7 +347,6 @@ class DescribeMultiPortServiceDependencies:
 
     def it_supports_multiple_services_sharing_multiple_ports(self) -> None:
         """Multiple services can share multiple singleton port adapters."""
-        _clear_registry()
 
         # Define ports
         class DatabasePort(Protocol):
@@ -433,7 +432,6 @@ class DescribeComplexDependencyChains:
 
     def it_resolves_service_depending_on_service_depending_on_port(self) -> None:
         """Service A → Service B → Port creates complete chain."""
-        _clear_registry()
 
         # Port
         class DatabasePort(Protocol):
@@ -517,7 +515,6 @@ class DescribeComplexDependencyChains:
 
     def it_handles_multi_level_service_chains_with_multiple_ports(self) -> None:
         """Complex chain: Service A → Service B → (Port1 + Port2)."""
-        _clear_registry()
 
         # Two ports
         class LoggerPort(Protocol):
@@ -625,7 +622,6 @@ class DescribeComplexDependencyChains:
 
     def it_resolves_diamond_dependency_with_ports(self) -> None:
         """Diamond dependency: Service A → (Service B + Service C) → Port."""
-        _clear_registry()
 
         # Shared port
         class EventPort(Protocol):
@@ -675,9 +671,7 @@ class DescribeComplexDependencyChains:
         class ApplicationOrchestrator:
             """Application orchestrator."""
 
-            def __init__(
-                self, user_events: UserEventService, audit: AuditService
-            ) -> None:
+            def __init__(self, user_events: UserEventService, audit: AuditService) -> None:
                 self.user_events = user_events
                 self.audit = audit
 

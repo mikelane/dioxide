@@ -1,6 +1,10 @@
 """Tests for @component decorator and auto-discovery."""
 
-from dioxide import Container, Scope, component
+from dioxide import (
+    Container,
+    Scope,
+    component,
+)
 
 
 def _clear_registry() -> None:
@@ -25,7 +29,6 @@ class DescribeComponentDecorator:
 
     def it_registers_the_decorated_class(self) -> None:
         """Decorator adds class to global registry."""
-        _clear_registry()
 
         @component
         class UserService:
@@ -38,7 +41,6 @@ class DescribeComponentDecorator:
 
     def it_can_be_applied_with_parentheses(self) -> None:
         """Decorator can be applied with parentheses and scope argument."""
-        _clear_registry()
 
         @component()
         class DefaultScopeService:
@@ -60,7 +62,6 @@ class DescribeScan:
 
     def it_registers_all_component_classes(self) -> None:
         """Scan finds and registers all @component decorated classes."""
-        _clear_registry()
 
         @component
         class ServiceA:
@@ -81,7 +82,6 @@ class DescribeScan:
 
     def it_auto_injects_dependencies_from_type_hints(self) -> None:
         """Scan resolves dependencies based on type hints."""
-        _clear_registry()
 
         @component
         class UserService:
@@ -102,7 +102,6 @@ class DescribeScan:
 
     def it_returns_same_instance_for_singleton_scope(self) -> None:
         """Components use singleton scope by default."""
-        _clear_registry()
 
         @component
         class UserService:
@@ -118,7 +117,6 @@ class DescribeScan:
 
     def it_matches_the_developer_experience_example(self) -> None:
         """Integration test matching exact example from DEVELOPER_EXPERIENCE.md."""
-        _clear_registry()
 
         @component
         class UserService:
@@ -142,7 +140,6 @@ class DescribeScan:
 
     def it_handles_components_without_init_parameters(self) -> None:
         """Components without __init__ parameters are registered correctly."""
-        _clear_registry()
 
         @component
         class SimpleService:
@@ -157,7 +154,6 @@ class DescribeScan:
 
     def it_handles_components_without_type_hints(self) -> None:
         """Components with __init__ but no type hints are registered."""
-        _clear_registry()
 
         @component
         class LegacyService:
@@ -173,7 +169,6 @@ class DescribeScan:
 
     def it_handles_components_with_mixed_type_hints(self) -> None:
         """Components with some parameters lacking type hints skip those parameters."""
-        _clear_registry()
 
         @component
         class DependencyService:
@@ -195,7 +190,6 @@ class DescribeScan:
 
     def it_creates_new_instances_for_factory_scope(self) -> None:
         """Components with factory scope create new instances each time."""
-        _clear_registry()
 
         @component(scope=Scope.FACTORY)
         class FactoryService:
@@ -216,7 +210,6 @@ class DescribeComponentFactorySyntax:
 
     def it_supports_factory_attribute_syntax(self) -> None:
         """@component.factory creates components with factory scope."""
-        _clear_registry()
 
         @component.factory
         class RequestHandler:
@@ -233,7 +226,6 @@ class DescribeComponentFactorySyntax:
 
     def it_registers_factory_components_in_global_registry(self) -> None:
         """@component.factory adds class to global registry."""
-        _clear_registry()
 
         @component.factory
         class FactoryService:
@@ -246,7 +238,6 @@ class DescribeComponentFactorySyntax:
 
     def it_sets_factory_scope_metadata_on_decorated_class(self) -> None:
         """@component.factory sets __dioxide_scope__ to FACTORY."""
-        _clear_registry()
 
         @component.factory
         class FactoryService:
@@ -257,7 +248,6 @@ class DescribeComponentFactorySyntax:
 
     def it_supports_dependency_injection_with_factory_scope(self) -> None:
         """@component.factory components can have dependencies injected."""
-        _clear_registry()
 
         @component
         class Database:
@@ -281,7 +271,6 @@ class DescribeComponentFactorySyntax:
 
     def it_maintains_backward_compatibility_with_scope_parameter(self) -> None:
         """Old @component(scope=Scope.FACTORY) still works alongside new syntax."""
-        _clear_registry()
 
         @component(scope=Scope.FACTORY)
         class OldSyntax:
@@ -355,8 +344,10 @@ class DescribeProfileFiltering:
 
     def it_accepts_profile_enum_production(self) -> None:
         """Container.scan() accepts Profile.PRODUCTION enum value."""
-        _clear_registry()
-        from dioxide import Profile, profile
+        from dioxide import (
+            Profile,
+            profile,
+        )
 
         @component
         @profile.production
@@ -384,8 +375,10 @@ class DescribeProfileFiltering:
 
     def it_accepts_profile_enum_test(self) -> None:
         """Container.scan() accepts Profile.TEST enum value."""
-        _clear_registry()
-        from dioxide import Profile, profile
+        from dioxide import (
+            Profile,
+            profile,
+        )
 
         @component
         @profile.production
@@ -413,7 +406,6 @@ class DescribeProfileFiltering:
 
     def it_accepts_string_profile_value(self) -> None:
         """Container.scan() accepts string profile values."""
-        _clear_registry()
         from dioxide import profile
 
         @component
@@ -442,8 +434,10 @@ class DescribeProfileFiltering:
 
     def it_handles_profile_all_with_enum(self) -> None:
         """Components with Profile.ALL are available in all profiles."""
-        _clear_registry()
-        from dioxide import Profile, profile
+        from dioxide import (
+            Profile,
+            profile,
+        )
 
         @component
         @profile('*')  # Profile.ALL
@@ -468,7 +462,6 @@ class DescribeProfileFiltering:
         assert isinstance(prod, prod.__class__)
 
         # Scan with TEST profile
-        _clear_registry()
 
         @component
         @profile('*')
@@ -484,7 +477,6 @@ class DescribeProfileFiltering:
 
     def it_maintains_backward_compatibility_without_profile(self) -> None:
         """Container.scan() without profile parameter registers all components."""
-        _clear_registry()
         from dioxide import profile
 
         @component
