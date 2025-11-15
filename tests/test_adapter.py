@@ -7,8 +7,6 @@ hexagonal/ports-and-adapters architecture patterns.
 
 from typing import Protocol
 
-import pytest
-
 
 class EmailPort(Protocol):
     """Test protocol for email functionality."""
@@ -72,15 +70,17 @@ class DescribeAdapterDecorator:
         assert 'test' in MultiProfileAdapter.__dioxide_profiles__
         assert 'development' in MultiProfileAdapter.__dioxide_profiles__
 
-    def it_raises_on_missing_profile(self) -> None:
-        """@adapter.for() raises TypeError if profile not provided."""
+    def it_defaults_to_all_profiles_when_profile_omitted(self) -> None:
+        """@adapter.for() defaults to '*' (all profiles) when profile is omitted."""
         from dioxide import adapter
 
-        with pytest.raises(TypeError, match='profile'):
-
-            @adapter.for_(EmailPort)  # type: ignore[call-arg]
-            class NoProfileAdapter:
+        @adapter.for_(EmailPort)
+        class DefaultProfileAdapter:
+            async def send(self, to: str, subject: str, body: str) -> None:
                 pass
+
+        assert hasattr(DefaultProfileAdapter, '__dioxide_profiles__')
+        assert '*' in DefaultProfileAdapter.__dioxide_profiles__
 
     def it_defaults_to_singleton_scope(self) -> None:
         """@adapter.for() uses SINGLETON scope by default."""
