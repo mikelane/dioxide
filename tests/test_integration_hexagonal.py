@@ -831,7 +831,8 @@ class DescribeErrorScenarios:
         with pytest.raises((RecursionError, RuntimeError, KeyError)):
             container.resolve(ServiceA)
 
-    def it_handles_port_without_profile_decorator(self) -> None:
+    @pytest.mark.parametrize('profile', [Profile.PRODUCTION, Profile.TEST, Profile.DEVELOPMENT])
+    def it_handles_port_without_profile_decorator(self, profile: Profile) -> None:
         """Adapters without profile decorator are available in all profiles."""
         _clear_registry()
 
@@ -863,36 +864,14 @@ class DescribeErrorScenarios:
                 self.logger = logger
 
         # Should work with any profile
-        for prof in [Profile.PRODUCTION, Profile.TEST, Profile.DEVELOPMENT]:
-            container = Container()
-            container.scan(profile=prof)
+        container = Container()
+        container.scan(profile=profile)
 
-            service = container.resolve(Service)
-            logger = container.resolve(LoggerPort)
+        service = container.resolve(Service)
+        logger = container.resolve(LoggerPort)
 
-            assert isinstance(logger, ConsoleLogger)
-            assert service.logger is logger
-
-            _clear_registry()
-
-            # Re-register for next iteration
-            @adapter.for_(LoggerPort)
-            class ConsoleLogger2:
-                """Console logger."""
-
-                def __init__(self) -> None:
-                    self.logs: list[str] = []
-
-                def log(self, message: str) -> None:
-                    """Store log."""
-                    self.logs.append(message)
-
-            @service
-            class Service2:
-                """Service."""
-
-                def __init__(self, logger: LoggerPort) -> None:
-                    self.logger = logger
+        assert isinstance(logger, ConsoleLogger)
+        assert service.logger is logger
 
     def it_handles_multiple_adapters_for_same_port_different_profiles(self) -> None:
         """Multiple adapters for same port with different profiles coexist."""
