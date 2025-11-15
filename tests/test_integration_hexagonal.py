@@ -15,12 +15,17 @@ import pytest
 from dioxide import Container, Profile, _clear_registry, adapter, profile, service
 
 
+@pytest.fixture(autouse=True)
+def clear_registry() -> None:
+    """Clear the component registry before each test to ensure test isolation."""
+    _clear_registry()
+
+
 class DescribeHexagonalArchitectureBasicEndToEnd:
     """Basic end-to-end integration tests for hexagonal architecture."""
 
     def it_swaps_adapters_by_profile(self) -> None:
         """Production profile uses real adapter, test profile uses fake."""
-        _clear_registry()
 
         # Define port (interface)
         class EmailPort(Protocol):
@@ -91,7 +96,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
 
     def it_injects_port_implementation_into_service(self) -> None:
         """Services receive port implementations automatically."""
-        _clear_registry()
 
         # Define port
         class LoggerPort(Protocol):
@@ -142,7 +146,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
 
     def it_supports_singleton_adapters_across_services(self) -> None:
         """Multiple services share same singleton adapter instance."""
-        _clear_registry()
 
         # Define port
         class CachePort(Protocol):
@@ -207,7 +210,6 @@ class DescribeMultiPortServiceDependencies:
 
     def it_injects_multiple_ports_into_single_service(self) -> None:
         """Service can depend on multiple different ports."""
-        _clear_registry()
 
         # Define two ports
         class EmailPort(Protocol):
@@ -287,7 +289,6 @@ class DescribeMultiPortServiceDependencies:
 
     def it_handles_service_with_port_and_regular_dependencies(self) -> None:
         """Service can mix port dependencies with regular component dependencies."""
-        _clear_registry()
 
         # Port
         class LoggerPort(Protocol):
@@ -349,7 +350,6 @@ class DescribeMultiPortServiceDependencies:
 
     def it_supports_multiple_services_sharing_multiple_ports(self) -> None:
         """Multiple services can share multiple singleton port adapters."""
-        _clear_registry()
 
         # Define ports
         class DatabasePort(Protocol):
@@ -435,7 +435,6 @@ class DescribeComplexDependencyChains:
 
     def it_resolves_service_depending_on_service_depending_on_port(self) -> None:
         """Service A → Service B → Port creates complete chain."""
-        _clear_registry()
 
         # Port
         class DatabasePort(Protocol):
@@ -519,7 +518,6 @@ class DescribeComplexDependencyChains:
 
     def it_handles_multi_level_service_chains_with_multiple_ports(self) -> None:
         """Complex chain: Service A → Service B → (Port1 + Port2)."""
-        _clear_registry()
 
         # Two ports
         class LoggerPort(Protocol):
@@ -627,7 +625,6 @@ class DescribeComplexDependencyChains:
 
     def it_resolves_diamond_dependency_with_ports(self) -> None:
         """Diamond dependency: Service A → (Service B + Service C) → Port."""
-        _clear_registry()
 
         # Shared port
         class EventPort(Protocol):
@@ -717,7 +714,6 @@ class DescribeErrorScenarios:
 
     def it_raises_error_when_no_adapter_registered_for_port(self) -> None:
         """Container raises clear error when port has no adapter."""
-        _clear_registry()
 
         # Define port but NO adapter
         class EmailPort(Protocol):
@@ -745,7 +741,6 @@ class DescribeErrorScenarios:
 
     def it_raises_error_when_adapter_profile_does_not_match(self) -> None:
         """Container raises error when adapter profile doesn't match scan profile."""
-        _clear_registry()
 
         # Port
         class DatabasePort(Protocol):
@@ -782,7 +777,6 @@ class DescribeErrorScenarios:
 
     def it_handles_missing_service_dependency_gracefully(self) -> None:
         """Container raises clear error when service dependency is missing."""
-        _clear_registry()
 
         # Service A depends on non-existent Service B
         class ServiceB:
@@ -806,7 +800,6 @@ class DescribeErrorScenarios:
 
     def it_detects_circular_dependencies(self) -> None:
         """Container detects and reports circular dependencies."""
-        _clear_registry()
 
         # Circular dependency: A → B → A
         # Note: Forward references needed for circular dependencies
@@ -841,7 +834,6 @@ class DescribeErrorScenarios:
     )
     def it_handles_port_without_profile_decorator(self, profile: Profile) -> None:
         """Adapters without profile decorator are available in all profiles."""
-        _clear_registry()
 
         # Port
         class LoggerPort(Protocol):
@@ -882,7 +874,6 @@ class DescribeErrorScenarios:
 
     def it_handles_multiple_adapters_for_same_port_different_profiles(self) -> None:
         """Multiple adapters for same port with different profiles coexist."""
-        _clear_registry()
 
         # Port
         class StoragePort(Protocol):
