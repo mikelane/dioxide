@@ -28,7 +28,11 @@ Example:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+)
 
 from dioxide.scope import Scope
 
@@ -56,7 +60,7 @@ class AdapterDecorator:
         self,
         port: type[Any],
         *,
-        profile: str | list[str],
+        profile: str | list[str] = '*',
     ) -> Callable[[type[T]], type[T]]:
         """Register an adapter for a port with profile(s).
 
@@ -64,12 +68,10 @@ class AdapterDecorator:
             port: The Protocol or ABC that this adapter implements
             profile: Profile name(s) - string or list of strings.
                      Normalized to lowercase for consistency.
+                     Defaults to '*' (all profiles) if not specified.
 
         Returns:
             Decorator function that marks the class as an adapter
-
-        Raises:
-            TypeError: If profile parameter is not provided
 
         Example:
             >>> @adapter.for_(EmailPort, profile='production')
@@ -78,6 +80,10 @@ class AdapterDecorator:
             >>>
             >>> @adapter.for_(EmailPort, profile=['test', 'development'])
             ... class FakeAdapter:
+            ...     pass
+            >>>
+            >>> @adapter.for_(EmailPort)  # Available in all profiles
+            ... class ConsoleAdapter:
             ...     pass
         """
 

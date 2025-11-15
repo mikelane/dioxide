@@ -10,6 +10,8 @@ support, including:
 
 from typing import Protocol
 
+import pytest
+
 from dioxide import (
     Container,
     Profile,
@@ -671,9 +673,7 @@ class DescribeComplexDependencyChains:
         class ApplicationOrchestrator:
             """Application orchestrator."""
 
-            def __init__(
-                self, user_events: UserEventService, audit: AuditService
-            ) -> None:
+            def __init__(self, user_events: UserEventService, audit: AuditService) -> None:
                 self.user_events = user_events
                 self.audit = audit
 
@@ -733,7 +733,7 @@ class DescribeErrorScenarios:
         container.scan(profile=Profile.TEST)
 
         # Should raise when trying to resolve service with missing adapter
-        with pytest.raises(KeyError, match='(EmailPort|email)'):
+        with pytest.raises(KeyError, match=r'(EmailPort|email)'):
             container.resolve(UserService)
 
     def it_raises_error_when_adapter_profile_does_not_match(self) -> None:
@@ -863,11 +863,11 @@ class DescribeErrorScenarios:
         container = Container()
         container.scan(profile=profile)
 
-        service = container.resolve(Service)
+        svc = container.resolve(Service)
         logger = container.resolve(LoggerPort)
 
         assert isinstance(logger, ConsoleLogger)
-        assert service.logger is logger
+        assert svc.logger is logger
 
     def it_handles_multiple_adapters_for_same_port_different_profiles(self) -> None:
         """Multiple adapters for same port with different profiles coexist."""
