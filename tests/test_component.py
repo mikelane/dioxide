@@ -7,13 +7,6 @@ from dioxide import (
 )
 
 
-def _clear_registry() -> None:
-    """Clear the component registry between tests."""
-    from dioxide import _clear_registry as clear
-
-    clear()
-
-
 class DescribeComponentDecorator:
     """Tests for @component decorator functionality."""
 
