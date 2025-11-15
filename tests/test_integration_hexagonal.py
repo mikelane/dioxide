@@ -426,3 +426,285 @@ class DescribeMultiPortServiceDependencies:
         # Verify shared state across services
         user_repo.cache.set('shared-key', 'shared-value')
         assert product_repo.cache.get('shared-key') == 'shared-value'
+
+
+class DescribeComplexDependencyChains:
+    """Integration tests for complex service dependency chains."""
+
+    def it_resolves_service_depending_on_service_depending_on_port(self) -> None:
+        """Service A → Service B → Port creates complete chain."""
+        _clear_registry()
+
+        # Port
+        class DatabasePort(Protocol):
+            """Port for database access."""
+
+            def save(self, data: str) -> None:
+                """Save data."""
+                ...
+
+            def load(self) -> list[str]:
+                """Load data."""
+                ...
+
+        # Adapter
+        @adapter.for_(DatabasePort, profile=Profile.TEST)
+        class InMemoryDatabase:
+            """In-memory database."""
+
+            def __init__(self) -> None:
+                self.data: list[str] = []
+
+            def save(self, data: str) -> None:
+                """Store data."""
+                self.data.append(data)
+
+            def load(self) -> list[str]:
+                """Return all data."""
+                return self.data.copy()
+
+        # Service B (depends on port)
+        @service
+        class UserRepository:
+            """User repository depending on database port."""
+
+            def __init__(self, db: DatabasePort) -> None:
+                self.db = db
+
+            def create_user(self, username: str) -> None:
+                """Create user."""
+                self.db.save(f'user:{username}')
+
+            def get_users(self) -> list[str]:
+                """Get all users."""
+                return self.db.load()
+
+        # Service A (depends on Service B)
+        @service
+        class UserController:
+            """User controller depending on repository."""
+
+            def __init__(self, repository: UserRepository) -> None:
+                self.repository = repository
+
+            def register_user(self, username: str) -> None:
+                """Register a user."""
+                self.repository.create_user(username)
+
+        # Resolve entire chain
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        controller = container.resolve(UserController)
+        repository = container.resolve(UserRepository)
+        db_adapter = container.resolve(DatabasePort)
+
+        # Verify chain
+        assert isinstance(db_adapter, InMemoryDatabase)
+        assert isinstance(repository, UserRepository)
+        assert isinstance(controller, UserController)
+        assert controller.repository is repository
+        assert repository.db is db_adapter
+
+        # Verify functionality through chain
+        controller.register_user('alice')
+        controller.register_user('bob')
+
+        users = repository.get_users()
+        assert len(users) == 2
+        assert 'user:alice' in users
+        assert 'user:bob' in users
+
+    def it_handles_multi_level_service_chains_with_multiple_ports(self) -> None:
+        """Complex chain: Service A → Service B → (Port1 + Port2)."""
+        _clear_registry()
+
+        # Two ports
+        class LoggerPort(Protocol):
+            """Port for logging."""
+
+            def log(self, message: str) -> None:
+                """Log a message."""
+                ...
+
+        class CachePort(Protocol):
+            """Port for caching."""
+
+            def get(self, key: str) -> str | None:
+                """Get cached value."""
+                ...
+
+            def set(self, key: str, value: str) -> None:
+                """Set cached value."""
+                ...
+
+        # Adapters
+        @adapter.for_(LoggerPort, profile=Profile.TEST)
+        class InMemoryLogger:
+            """In-memory logger."""
+
+            def __init__(self) -> None:
+                self.logs: list[str] = []
+
+            def log(self, message: str) -> None:
+                """Store log."""
+                self.logs.append(message)
+
+        @adapter.for_(CachePort, profile=Profile.TEST)
+        class InMemoryCache:
+            """In-memory cache."""
+
+            def __init__(self) -> None:
+                self.cache: dict[str, str] = {}
+
+            def get(self, key: str) -> str | None:
+                """Get from cache."""
+                return self.cache.get(key)
+
+            def set(self, key: str, value: str) -> None:
+                """Set in cache."""
+                self.cache[key] = value
+
+        # Service B (depends on both ports)
+        @service
+        class DataService:
+            """Data service with logging and caching."""
+
+            def __init__(self, logger: LoggerPort, cache: CachePort) -> None:
+                self.logger = logger
+                self.cache = cache
+
+            def get_data(self, key: str) -> str:
+                """Get data with caching and logging."""
+                cached = self.cache.get(key)
+                if cached:
+                    self.logger.log(f'Cache hit: {key}')
+                    return cached
+
+                self.logger.log(f'Cache miss: {key}')
+                value = f'computed-{key}'
+                self.cache.set(key, value)
+                return value
+
+        # Service A (depends on Service B)
+        @service
+        class ApiController:
+            """API controller depending on data service."""
+
+            def __init__(self, data_service: DataService) -> None:
+                self.data_service = data_service
+
+            def handle_request(self, key: str) -> str:
+                """Handle API request."""
+                return self.data_service.get_data(key)
+
+        # Resolve entire chain
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        controller = container.resolve(ApiController)
+        data_service = container.resolve(DataService)
+        logger = container.resolve(LoggerPort)
+        cache = container.resolve(CachePort)
+
+        # Verify chain structure
+        assert controller.data_service is data_service
+        assert data_service.logger is logger
+        assert data_service.cache is cache
+        assert isinstance(logger, InMemoryLogger)
+        assert isinstance(cache, InMemoryCache)
+
+        # Verify functionality
+        result1 = controller.handle_request('key1')
+        assert result1 == 'computed-key1'
+        assert 'Cache miss: key1' in logger.logs
+
+        result2 = controller.handle_request('key1')
+        assert result2 == 'computed-key1'
+        assert 'Cache hit: key1' in logger.logs
+
+    def it_resolves_diamond_dependency_with_ports(self) -> None:
+        """Diamond dependency: Service A → (Service B + Service C) → Port."""
+        _clear_registry()
+
+        # Shared port
+        class EventPort(Protocol):
+            """Port for event publishing."""
+
+            def publish(self, event: str) -> None:
+                """Publish an event."""
+                ...
+
+        # Adapter
+        @adapter.for_(EventPort, profile=Profile.TEST)
+        class InMemoryEventBus:
+            """In-memory event bus."""
+
+            def __init__(self) -> None:
+                self.events: list[str] = []
+
+            def publish(self, event: str) -> None:
+                """Store event."""
+                self.events.append(event)
+
+        # Two services depending on same port
+        @service
+        class UserEventService:
+            """User event service."""
+
+            def __init__(self, events: EventPort) -> None:
+                self.events = events
+
+            def user_registered(self, username: str) -> None:
+                """Publish user registered event."""
+                self.events.publish(f'USER_REGISTERED:{username}')
+
+        @service
+        class AuditService:
+            """Audit service."""
+
+            def __init__(self, events: EventPort) -> None:
+                self.events = events
+
+            def log_action(self, action: str) -> None:
+                """Publish audit event."""
+                self.events.publish(f'AUDIT:{action}')
+
+        # Top-level service depending on both
+        @service
+        class ApplicationOrchestrator:
+            """Application orchestrator."""
+
+            def __init__(
+                self, user_events: UserEventService, audit: AuditService
+            ) -> None:
+                self.user_events = user_events
+                self.audit = audit
+
+            def register_user(self, username: str) -> None:
+                """Register user with events and audit."""
+                self.user_events.user_registered(username)
+                self.audit.log_action(f'USER_REGISTRATION:{username}')
+
+        # Resolve diamond dependency
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        orchestrator = container.resolve(ApplicationOrchestrator)
+        user_events = container.resolve(UserEventService)
+        audit = container.resolve(AuditService)
+        event_bus = container.resolve(EventPort)
+
+        # Verify diamond structure - both services share same port instance
+        assert orchestrator.user_events is user_events
+        assert orchestrator.audit is audit
+        assert user_events.events is event_bus
+        assert audit.events is event_bus
+        assert isinstance(event_bus, InMemoryEventBus)
+
+        # Verify functionality - both services publish to same event bus
+        orchestrator.register_user('alice')
+
+        assert len(event_bus.events) == 2
+        assert 'USER_REGISTERED:alice' in event_bus.events
+        assert 'AUDIT:USER_REGISTRATION:alice' in event_bus.events
