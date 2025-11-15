@@ -10,22 +10,12 @@ support, including:
 
 from typing import Protocol
 
-import pytest
-
 from dioxide import (
     Container,
     Profile,
-    _clear_registry,
     adapter,
-    profile,
     service,
 )
-
-
-@pytest.fixture(autouse=True)
-def clear_registry() -> None:
-    """Clear the component registry before each test to ensure test isolation."""
-    _clear_registry()
 
 
 class DescribeHexagonalArchitectureBasicEndToEnd:
