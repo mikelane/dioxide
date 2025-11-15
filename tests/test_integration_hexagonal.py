@@ -10,7 +10,12 @@ support, including:
 
 from typing import Protocol
 
-from dioxide import Container, Profile, _clear_registry, adapter, profile, service
+from dioxide import (
+    Container,
+    Profile,
+    adapter,
+    service,
+)
 
 
 class DescribeHexagonalArchitectureBasicEndToEnd:
@@ -18,7 +23,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
 
     def it_swaps_adapters_by_profile(self) -> None:
         """Production profile uses real adapter, test profile uses fake."""
-        _clear_registry()
 
         # Define port (interface)
         class EmailPort(Protocol):
@@ -89,7 +93,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
 
     def it_injects_port_implementation_into_service(self) -> None:
         """Services receive port implementations automatically."""
-        _clear_registry()
 
         # Define port
         class LoggerPort(Protocol):
@@ -140,7 +143,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
 
     def it_supports_singleton_adapters_across_services(self) -> None:
         """Multiple services share same singleton adapter instance."""
-        _clear_registry()
 
         # Define port
         class CachePort(Protocol):
