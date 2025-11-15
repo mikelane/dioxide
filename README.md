@@ -147,13 +147,14 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 - [x] 100% test coverage
 - [x] Full CI/CD automation
 
-### v0.0.2-alpha 🔄 IN PROGRESS (MLP API Realignment)
-- [x] `@component.implements(Protocol)` syntax - ✅ Issue #66
-- [x] `@profile` decorator system (hybrid approach) - ✅ Issue #68
-- [ ] `@component.factory` attribute syntax - Issue #65
-- [ ] `container.scan()` with package and profile parameters - Issue #69
+### v0.0.2-alpha 🔄 IN PROGRESS (Hexagonal Architecture API)
+- [x] `@adapter.for_(Port, profile=...)` decorator for hexagonal architecture - ✅ Issue #100
+- [x] `@service` decorator for core business logic - ✅ Issue #100
+- [x] `Profile` enum (PRODUCTION, TEST, DEVELOPMENT, etc.) - ✅ Issue #68
+- [x] `container.scan(profile=...)` with profile filtering - ✅ Issue #104
+- [x] Port-based resolution (`container.resolve(Port)` returns active adapter) - ✅ Issue #104
 - [x] Global singleton container pattern - ✅ Issue #70
-- [ ] Documentation realignment
+- [ ] Documentation realignment - Issue #100 (in progress)
 - [x] Optional: `container[Type]` syntax - ✅ Issue #70
 
 ### v0.1.0-beta 🎯 TARGET: Mid-December 2025 (MLP Complete)
