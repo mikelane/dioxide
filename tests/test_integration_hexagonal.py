@@ -12,7 +12,14 @@ from typing import Protocol
 
 import pytest
 
-from dioxide import Container, Profile, _clear_registry, adapter, profile, service
+from dioxide import (
+    Container,
+    Profile,
+    _clear_registry,
+    adapter,
+    profile,
+    service,
+)
 
 
 @pytest.fixture(autouse=True)
