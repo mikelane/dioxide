@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Replace generic KeyError with descriptive AdapterNotFoundError and ServiceNotFoundError (#114)
+  - AdapterNotFoundError raised when resolving a port (Protocol/ABC) with no matching adapter
+  - ServiceNotFoundError raised when resolving a service/component that cannot be found
+  - Error messages include active profile, available adapters/services, and helpful hints
+  - Improved developer experience with actionable error messages
+
 ## [0.1.0] - 2025-02-05
 
 ### Added

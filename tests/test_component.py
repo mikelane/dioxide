@@ -353,10 +353,12 @@ class DescribeProfileFiltering:
         assert isinstance(prod_service, ProductionService)
 
         # Test service should NOT be registered
+        from dioxide.exceptions import ServiceNotFoundError
+
         try:
             container.resolve(TestService)
             raise AssertionError('TestService should not be registered in PRODUCTION profile')
-        except KeyError:
+        except ServiceNotFoundError:
             pass  # Expected - test service not in production profile
 
     def it_accepts_profile_enum_test(self) -> None:
@@ -380,10 +382,12 @@ class DescribeProfileFiltering:
         assert isinstance(test_service, TestService)
 
         # Production service should NOT be registered
+        from dioxide.exceptions import ServiceNotFoundError
+
         try:
             container.resolve(ProductionService)
             raise AssertionError('ProductionService should not be registered in TEST profile')
-        except KeyError:
+        except ServiceNotFoundError:
             pass  # Expected - production service not in test profile
 
     def it_accepts_string_profile_value(self) -> None:
@@ -407,10 +411,12 @@ class DescribeProfileFiltering:
         assert isinstance(prod_service, ProductionService)
 
         # Test service should NOT be registered
+        from dioxide.exceptions import ServiceNotFoundError
+
         try:
             container.resolve(TestService)
             raise AssertionError('TestService should not be registered with production profile')
-        except KeyError:
+        except ServiceNotFoundError:
             pass  # Expected
 
     def it_handles_profile_all_with_enum(self) -> None:
