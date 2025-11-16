@@ -117,12 +117,16 @@ class DescribePortResolution:
         container = Container()
         container.scan(profile='test')  # No test adapter registered
 
-        with pytest.raises(KeyError) as exc_info:
+        # Import the new exception type
+        from dioxide.exceptions import AdapterNotFoundError
+
+        with pytest.raises(AdapterNotFoundError) as exc_info:
             container.resolve(EmailPort)
 
         # Error should mention port and profile
         error_msg = str(exc_info.value)
-        assert 'EmailPort' in error_msg or 'port' in error_msg.lower()
+        assert 'EmailPort' in error_msg
+        assert 'test' in error_msg.lower()
 
     def it_raises_on_multiple_adapters_for_same_port_and_profile(self) -> None:
         """container.resolve(Port) raises if multiple adapters for port+profile."""

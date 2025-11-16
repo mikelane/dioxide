@@ -18,6 +18,10 @@ from typing import (
 )
 
 from dioxide._dioxide_core import Container as RustContainer
+from dioxide.exceptions import (
+    AdapterNotFoundError,
+    ServiceNotFoundError,
+)
 
 if TYPE_CHECKING:
     from dioxide.profile_enum import Profile
@@ -107,6 +111,7 @@ class Container:
             >>> assert container.is_empty()
         """
         self._rust_core = RustContainer()
+        self._active_profile: str | None = None  # Track active profile for error messages
 
     def register_instance(self, component_type: type[T], instance: T) -> None:
         """Register a pre-created instance for a given type.
@@ -342,7 +347,10 @@ class Container:
             instance is created on each call.
 
         Raises:
-            KeyError: If the type is not registered in this container.
+            AdapterNotFoundError: If the type is a port (Protocol/ABC) and no
+                adapter is registered for the current profile.
+            ServiceNotFoundError: If the type is a service/component that cannot
+                be resolved (not registered or has unresolvable dependencies).
 
         Example:
             >>> from dioxide import Container, component
@@ -366,7 +374,146 @@ class Container:
             Type annotations in constructors enable automatic dependency
             injection. The container recursively resolves all dependencies.
         """
-        return self._rust_core.resolve(component_type)
+        try:
+            return self._rust_core.resolve(component_type)
+        except KeyError as e:
+            # Determine if this is a port (Protocol/ABC) or a service/component
+            is_port = self._is_port(component_type)
+
+            if is_port:
+                # Build helpful error message for missing adapter
+                error_msg = self._build_adapter_not_found_message(component_type)
+                raise AdapterNotFoundError(error_msg) from e
+            else:
+                # Build helpful error message for missing service/component
+                error_msg = self._build_service_not_found_message(component_type)
+                raise ServiceNotFoundError(error_msg) from e
+
+    def _is_port(self, cls: type[Any]) -> bool:
+        """Check if a type is a port (Protocol or ABC).
+
+        Args:
+            cls: The type to check.
+
+        Returns:
+            True if the type is a Protocol or ABC, False otherwise.
+        """
+        # Check if it's a Protocol
+        if hasattr(cls, '_is_protocol') and cls._is_protocol:
+            return True
+
+        # Check if it's a subclass of Protocol (via __mro__)
+        if hasattr(cls, '__mro__'):
+            for base in cls.__mro__:
+                if getattr(base, '__name__', None) == 'Protocol':
+                    return True
+
+        # Check if it's an ABC
+        try:
+            from abc import ABC
+
+            if issubclass(cls, ABC):
+                return True
+        except TypeError:
+            pass
+
+        return False
+
+    def _build_adapter_not_found_message(self, port_type: type[Any]) -> str:
+        """Build helpful error message for missing adapter.
+
+        Args:
+            port_type: The port type that couldn't be resolved.
+
+        Returns:
+            A detailed error message with context and hints.
+        """
+        from dioxide.adapter import _adapter_registry
+
+        port_name = port_type.__name__
+        profile_str = f" '{self._active_profile}'" if self._active_profile else ' (no profile active)'
+
+        # Find all adapters for this port (across all profiles)
+        adapters_for_port = []
+        for adapter_class in _adapter_registry:
+            if hasattr(adapter_class, '__dioxide_port__'):
+                if adapter_class.__dioxide_port__ is port_type:
+                    adapter_name = adapter_class.__name__
+                    profiles: frozenset[str] = getattr(adapter_class, '__dioxide_profiles__', frozenset())
+                    profile_list = ', '.join(sorted(profiles)) if profiles else 'no profiles'
+                    adapters_for_port.append(f'{adapter_name} (profiles: {profile_list})')
+
+        if adapters_for_port:
+            available_adapters = '\n  '.join(adapters_for_port)
+            hint = (
+                f'\n\nAvailable adapters for {port_name}:\n  {available_adapters}\n\n'
+                f'Hint: Add an adapter for profile{profile_str}:\n'
+                f'  @adapter.for_({port_name}, profile={self._active_profile or "your_profile"!r})'
+            )
+        else:
+            hint = (
+                f'\n\nNo adapters registered for {port_name}.\n\n'
+                f'Hint: Register an adapter:\n'
+                f'  @adapter.for_({port_name}, profile={self._active_profile or "your_profile"!r})\n'
+                f'  class YourAdapter:\n'
+                f'      ...'
+            )
+
+        return f'No adapter registered for port {port_name} with profile{profile_str}.{hint}'
+
+    def _build_service_not_found_message(self, service_type: type[Any]) -> str:
+        """Build helpful error message for missing service/component.
+
+        Args:
+            service_type: The service type that couldn't be resolved.
+
+        Returns:
+            A detailed error message with context and hints.
+        """
+        service_name = service_type.__name__
+        profile_str = f" '{self._active_profile}'" if self._active_profile else ''
+
+        # Check if it's decorated with @service or @component
+        from dioxide.decorators import _get_registered_components
+
+        registered_components = list(_get_registered_components())
+        is_registered = service_type in registered_components
+
+        if is_registered:
+            # Service is registered but has unresolvable dependency
+            # Try to identify the missing dependency
+            try:
+                init_signature = inspect.signature(service_type.__init__)
+                type_hints = get_type_hints(service_type.__init__, globalns=service_type.__init__.__globals__)
+                dependencies = [
+                    (param_name, type_hints[param_name].__name__)
+                    for param_name in init_signature.parameters
+                    if param_name != 'self' and param_name in type_hints
+                ]
+
+                if dependencies:
+                    deps_str = ', '.join(f'{name}: {type_name}' for name, type_name in dependencies)
+                    hint = (
+                        f'\n\n{service_name} has dependencies: {deps_str}\n\n'
+                        f'One or more dependencies could not be resolved.\n'
+                        f'Check that all dependencies are registered with @service or @adapter.for_().'
+                    )
+                else:
+                    hint = f'\n\nCheck the {service_name} constructor dependencies.'
+            except (ValueError, AttributeError, NameError):
+                hint = f'\n\nCheck the {service_name} constructor dependencies.'
+        else:
+            # Service is not registered at all
+            hint = (
+                f'\n\n{service_name} is not registered in the container.\n\n'
+                f'Hint: Register the service:\n'
+                f'  @service  # or @component\n'
+                f'  class {service_name}:\n'
+                f'      ...'
+            )
+
+        profile_context = f' (active profile: {profile_str})' if profile_str else ''
+        return f'Cannot resolve {service_name}{profile_context}.{hint}'
 
     def __getitem__(self, component_type: type[T]) -> T:
         """Resolve a component using bracket syntax.
@@ -533,6 +680,9 @@ class Container:
                 normalized_profile = profile.lower()
         else:
             normalized_profile = None
+
+        # Track active profile for error messages
+        self._active_profile = normalized_profile
 
         # First, scan adapters and detect ambiguous registrations
         port_to_adapters: dict[type[Any], list[type[Any]]] = {}

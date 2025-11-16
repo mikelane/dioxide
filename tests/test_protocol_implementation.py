@@ -149,7 +149,8 @@ class DescribeProtocolResolutionEdgeCases:
     """Tests for edge cases in protocol resolution."""
 
     def it_raises_error_when_protocol_not_registered(self) -> None:
-        """Container raises KeyError when protocol has no implementations."""
+        """Container raises AdapterNotFoundError when protocol has no implementations."""
+        from dioxide.exceptions import AdapterNotFoundError
 
         class UnusedProtocol(Protocol):
             def method(self) -> None: ...
@@ -157,11 +158,11 @@ class DescribeProtocolResolutionEdgeCases:
         container = Container()
         container.scan()
 
-        # Attempting to resolve unregistered protocol should raise KeyError
+        # Attempting to resolve unregistered protocol should raise AdapterNotFoundError
         try:
             container.resolve(UnusedProtocol)
-            raise AssertionError('Expected KeyError')
-        except KeyError:
+            raise AssertionError('Expected AdapterNotFoundError')
+        except AdapterNotFoundError:
             pass
 
     def it_resolves_concrete_class_directly_without_protocol(self) -> None:
