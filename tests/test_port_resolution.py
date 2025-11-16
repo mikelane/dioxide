@@ -15,8 +15,12 @@ import pytest
 
 from dioxide import (
     Container,
+    Scope,
     adapter,
 )
+from dioxide.adapter import _adapter_registry
+from dioxide.exceptions import AdapterNotFoundError
+from dioxide.profile import PROFILE_ATTRIBUTE
 
 
 class EmailPort(Protocol):
@@ -116,9 +120,6 @@ class DescribePortResolution:
 
         container = Container()
         container.scan(profile='test')  # No test adapter registered
-
-        # Import the new exception type
-        from dioxide.exceptions import AdapterNotFoundError
 
         with pytest.raises(AdapterNotFoundError) as exc_info:
             container.resolve(EmailPort)
@@ -223,8 +224,6 @@ class DescribePortResolution:
 
     def it_skips_adapter_without_port_attribute_during_scan(self) -> None:
         """container.scan() skips malformed adapters without __dioxide_port__."""
-        from dioxide.adapter import _adapter_registry
-        from dioxide.profile import PROFILE_ATTRIBUTE
 
         # Manually add a malformed adapter to the registry (missing __dioxide_port__)
         # Give it a profile so it passes the profile filter
@@ -269,7 +268,6 @@ class DescribePortResolution:
 
     def it_skips_adapter_when_port_already_registered_manually_transient(self) -> None:
         """container.scan() skips adapter if port already registered manually (transient)."""
-        from dioxide import Scope
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionEmailAdapter:

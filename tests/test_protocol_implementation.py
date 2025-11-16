@@ -4,8 +4,12 @@ from typing import Protocol
 
 from dioxide import (
     Container,
+    Scope,
+    _get_registered_components,
     component,
+    profile,
 )
+from dioxide.exceptions import AdapterNotFoundError
 
 
 class EmailProvider(Protocol):
@@ -38,8 +42,6 @@ class DescribeComponentImplements:
         class SendGridEmail:
             async def send(self, to: str, subject: str, body: str) -> None:
                 pass
-
-        from dioxide import _get_registered_components
 
         registered = _get_registered_components()
         assert SendGridEmail in registered
@@ -87,16 +89,12 @@ class DescribeComponentImplements:
             async def send(self, to: str, subject: str, body: str) -> None:
                 self.sent_emails.append({'to': to, 'subject': subject, 'body': body})
 
-        from dioxide import _get_registered_components
-
         registered = _get_registered_components()
         assert SendGridEmail in registered
         assert InMemoryEmail in registered
 
     def it_can_be_combined_with_scope_parameter(self) -> None:
         """Decorator can be combined with scope parameter."""
-
-        from dioxide import Scope
 
         @component.implements(EmailProvider, scope=Scope.FACTORY)
         class SendGridEmail:
@@ -112,8 +110,6 @@ class DescribeProtocolResolutionWithProfiles:
 
     def it_resolves_protocol_based_on_active_profile(self) -> None:
         """Container resolves protocol to profile-specific implementation."""
-
-        from dioxide import profile
 
         @component.implements(EmailProvider)
         @profile.production
@@ -132,7 +128,6 @@ class DescribeProtocolResolutionWithProfiles:
 
         # This will require container.scan() to support profile parameter
         # For now, just verify both are registered
-        from dioxide import _get_registered_components
 
         registered = _get_registered_components()
         assert SendGridEmail in registered
@@ -150,7 +145,6 @@ class DescribeProtocolResolutionEdgeCases:
 
     def it_raises_error_when_protocol_not_registered(self) -> None:
         """Container raises AdapterNotFoundError when protocol has no implementations."""
-        from dioxide.exceptions import AdapterNotFoundError
 
         class UnusedProtocol(Protocol):
             def method(self) -> None: ...
@@ -271,8 +265,6 @@ class DescribeSingletonAndFactoryScopes:
     def it_resolves_factory_protocol_implementation_to_different_instances(self) -> None:
         """Protocol resolution respects FACTORY scope."""
 
-        from dioxide import Scope
-
         @component.implements(EmailProvider, scope=Scope.FACTORY)
         class FactoryEmail:
             async def send(self, to: str, subject: str, body: str) -> None:
@@ -333,7 +325,6 @@ class DescribeSingletonAndFactoryScopes:
 
     def it_skips_protocol_registration_when_already_registered_manually_transient(self) -> None:
         """container.scan() skips protocol if already registered manually (transient)."""
-        from dioxide import Scope
 
         @component.implements(EmailProvider, scope=Scope.FACTORY)
         class AutoRegisteredEmail:
