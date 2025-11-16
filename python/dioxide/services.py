@@ -70,6 +70,8 @@ def service(cls: type[T]) -> type[T]:
     """
     # Store DI metadata on the class
     cls.__dioxide_scope__ = Scope.SINGLETON  # type: ignore[attr-defined]
+    # Services are available in ALL profiles (use "*" wildcard)
+    cls.__dioxide_profiles__ = frozenset(['*'])  # type: ignore[attr-defined]
     # Add to global registry for auto-discovery
     _component_registry.add(cls)
     return cls

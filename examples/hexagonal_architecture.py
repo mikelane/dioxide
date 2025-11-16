@@ -83,9 +83,9 @@ class ConsoleEmailAdapter:
         print(f"   Body: {body}")
 
 
-@adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+@adapter.for_(DatabasePort, profile=[Profile.PRODUCTION, Profile.DEVELOPMENT])
 class PostgresAdapter:
-    """Production database adapter using PostgreSQL."""
+    """Production and development database adapter using PostgreSQL."""
 
     def __init__(self) -> None:
         self.next_id = 1
