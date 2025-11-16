@@ -45,6 +45,8 @@ pip install dioxide
 - **Current Work**: v0.0.2-alpha - MLP API Realignment (breaking changes)
 - **Next Milestone**: v0.1.0-beta - MLP Complete (API freeze) - Mid-December 2025
 
+**Migrating from v0.0.1-alpha?** See [MIGRATION.md](MIGRATION.md) for the complete migration guide.
+
 See [ROADMAP.md](ROADMAP.md) for detailed timeline and [Issues](https://github.com/mikelane/dioxide/issues) for current work.
 
 ## Vision
