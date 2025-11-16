@@ -10,7 +10,12 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, TypeVar, get_type_hints
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+    get_type_hints,
+)
 
 from dioxide._dioxide_core import Container as RustContainer
 
@@ -538,8 +543,8 @@ class Container:
                 # Get adapter's profiles (if any)
                 adapter_profiles: frozenset[str] = getattr(adapter_class, PROFILE_ATTRIBUTE, frozenset())
 
-                # Skip if adapter doesn't have the requested profile
-                if normalized_profile not in adapter_profiles:
+                # Skip if adapter doesn't have the requested profile AND doesn't have '*' (all profiles)
+                if normalized_profile not in adapter_profiles and '*' not in adapter_profiles:
                     continue
 
             # Get the port this adapter implements

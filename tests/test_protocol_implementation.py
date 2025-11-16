@@ -2,14 +2,10 @@
 
 from typing import Protocol
 
-from dioxide import Container, component
-
-
-def _clear_registry() -> None:
-    """Clear the component registry between tests."""
-    from dioxide import _clear_registry as clear
-
-    clear()
+from dioxide import (
+    Container,
+    component,
+)
 
 
 class EmailProvider(Protocol):
@@ -25,7 +21,6 @@ class DescribeComponentImplements:
 
     def it_can_decorate_a_class_implementing_a_protocol(self) -> None:
         """Decorator can mark a class as implementing a protocol."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class SendGridEmail:
@@ -38,7 +33,6 @@ class DescribeComponentImplements:
 
     def it_registers_the_implementation_in_the_component_registry(self) -> None:
         """Decorator adds implementation to global registry."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class SendGridEmail:
@@ -52,7 +46,6 @@ class DescribeComponentImplements:
 
     def it_stores_protocol_metadata_on_the_class(self) -> None:
         """Decorator attaches protocol metadata to the class."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class SendGridEmail:
@@ -65,7 +58,6 @@ class DescribeComponentImplements:
 
     def it_allows_container_to_resolve_protocol_to_implementation(self) -> None:
         """Container resolves protocol type to its implementation."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class SendGridEmail:
@@ -81,7 +73,6 @@ class DescribeComponentImplements:
 
     def it_supports_multiple_implementations_of_same_protocol(self) -> None:
         """Multiple classes can implement the same protocol."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class SendGridEmail:
@@ -104,7 +95,6 @@ class DescribeComponentImplements:
 
     def it_can_be_combined_with_scope_parameter(self) -> None:
         """Decorator can be combined with scope parameter."""
-        _clear_registry()
 
         from dioxide import Scope
 
@@ -122,7 +112,6 @@ class DescribeProtocolResolutionWithProfiles:
 
     def it_resolves_protocol_based_on_active_profile(self) -> None:
         """Container resolves protocol to profile-specific implementation."""
-        _clear_registry()
 
         from dioxide import profile
 
@@ -161,7 +150,6 @@ class DescribeProtocolResolutionEdgeCases:
 
     def it_raises_error_when_protocol_not_registered(self) -> None:
         """Container raises KeyError when protocol has no implementations."""
-        _clear_registry()
 
         class UnusedProtocol(Protocol):
             def method(self) -> None: ...
@@ -178,7 +166,6 @@ class DescribeProtocolResolutionEdgeCases:
 
     def it_resolves_concrete_class_directly_without_protocol(self) -> None:
         """Container can still resolve concrete classes without protocol."""
-        _clear_registry()
 
         @component
         class ConcreteService:
@@ -196,7 +183,6 @@ class DescribeDependencyInjectionWithProtocols:
 
     def it_injects_protocol_implementation_into_dependent_component(self) -> None:
         """Container injects protocol implementation when component depends on protocol."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class SimpleEmail:
@@ -218,7 +204,6 @@ class DescribeDependencyInjectionWithProtocols:
 
     def it_injects_multiple_protocol_implementations(self) -> None:
         """Container can inject multiple different protocols into a single component."""
-        _clear_registry()
 
         class StorageBackend(Protocol):
             """Protocol for storage operations."""
@@ -267,7 +252,6 @@ class DescribeSingletonAndFactoryScopes:
 
     def it_resolves_singleton_protocol_implementation_to_same_instance(self) -> None:
         """Protocol resolution respects SINGLETON scope."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class SingletonEmail:
@@ -285,7 +269,6 @@ class DescribeSingletonAndFactoryScopes:
 
     def it_resolves_factory_protocol_implementation_to_different_instances(self) -> None:
         """Protocol resolution respects FACTORY scope."""
-        _clear_registry()
 
         from dioxide import Scope
 
@@ -305,7 +288,6 @@ class DescribeSingletonAndFactoryScopes:
 
     def it_can_resolve_both_concrete_class_and_protocol(self) -> None:
         """Implementation can be resolved both by concrete type and protocol."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class SimpleEmail:
@@ -327,7 +309,6 @@ class DescribeSingletonAndFactoryScopes:
 
     def it_skips_protocol_registration_when_already_registered_manually_singleton(self) -> None:
         """container.scan() skips protocol if already registered manually (singleton)."""
-        _clear_registry()
 
         @component.implements(EmailProvider)
         class AutoRegisteredEmail:
@@ -352,8 +333,6 @@ class DescribeSingletonAndFactoryScopes:
     def it_skips_protocol_registration_when_already_registered_manually_transient(self) -> None:
         """container.scan() skips protocol if already registered manually (transient)."""
         from dioxide import Scope
-
-        _clear_registry()
 
         @component.implements(EmailProvider, scope=Scope.FACTORY)
         class AutoRegisteredEmail:

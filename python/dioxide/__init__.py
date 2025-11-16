@@ -35,8 +35,15 @@ For more information, see the README and documentation.
 """
 
 from .adapter import adapter
-from .container import Container, container
-from .decorators import _clear_registry, _get_registered_components, component
+from .container import (
+    Container,
+    container,
+)
+from .decorators import (
+    _clear_registry,
+    _get_registered_components,
+    component,
+)
 from .profile import profile
 from .profile_enum import Profile
 from .scope import Scope

@@ -28,7 +28,11 @@ Example:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+)
 
 from dioxide.scope import Scope
 
@@ -56,7 +60,7 @@ class AdapterDecorator:
         self,
         port: type[Any],
         *,
-        profile: str | list[str],
+        profile: str | list[str] = '*',
     ) -> Callable[[type[T]], type[T]]:
         """Register an adapter for a port with profile(s).
 
