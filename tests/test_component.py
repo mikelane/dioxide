@@ -2,8 +2,11 @@
 
 from dioxide import (
     Container,
+    Profile,
     Scope,
+    _get_registered_components,
     component,
+    profile,
 )
 
 
@@ -27,8 +30,6 @@ class DescribeComponentDecorator:
         class UserService:
             pass
 
-        from dioxide import _get_registered_components
-
         registered = _get_registered_components()
         assert UserService in registered
 
@@ -42,8 +43,6 @@ class DescribeComponentDecorator:
         @component(scope=Scope.FACTORY)
         class FactoryService:
             pass
-
-        from dioxide import _get_registered_components
 
         registered = _get_registered_components()
         assert DefaultScopeService in registered
@@ -224,8 +223,6 @@ class DescribeComponentFactorySyntax:
         class FactoryService:
             pass
 
-        from dioxide import _get_registered_components
-
         registered = _get_registered_components()
         assert FactoryService in registered
 
@@ -337,10 +334,6 @@ class DescribeProfileFiltering:
 
     def it_accepts_profile_enum_production(self) -> None:
         """Container.scan() accepts Profile.PRODUCTION enum value."""
-        from dioxide import (
-            Profile,
-            profile,
-        )
 
         @component
         @profile.production
@@ -368,10 +361,6 @@ class DescribeProfileFiltering:
 
     def it_accepts_profile_enum_test(self) -> None:
         """Container.scan() accepts Profile.TEST enum value."""
-        from dioxide import (
-            Profile,
-            profile,
-        )
 
         @component
         @profile.production
@@ -399,7 +388,6 @@ class DescribeProfileFiltering:
 
     def it_accepts_string_profile_value(self) -> None:
         """Container.scan() accepts string profile values."""
-        from dioxide import profile
 
         @component
         @profile.production
@@ -427,10 +415,6 @@ class DescribeProfileFiltering:
 
     def it_handles_profile_all_with_enum(self) -> None:
         """Components with Profile.ALL are available in all profiles."""
-        from dioxide import (
-            Profile,
-            profile,
-        )
 
         @component
         @profile('*')  # Profile.ALL
@@ -470,7 +454,6 @@ class DescribeProfileFiltering:
 
     def it_maintains_backward_compatibility_without_profile(self) -> None:
         """Container.scan() without profile parameter registers all components."""
-        from dioxide import profile
 
         @component
         @profile.production
