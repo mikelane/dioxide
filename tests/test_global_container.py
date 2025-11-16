@@ -22,8 +22,10 @@ class DescribeGlobalContainerSingleton:
     def it_maintains_singleton_across_imports(self) -> None:
         """Same container instance is returned on multiple imports."""
         # Import container multiple times to verify singleton
-        c1 = container
-        c2 = container
+        # isort: off
+        from dioxide import container as c1  # noqa: PLC0415
+        from dioxide import container as c2  # noqa: PLC0415
+        # isort: on
 
         assert c1 is c2
 

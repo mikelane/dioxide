@@ -8,6 +8,7 @@ from dioxide import (
     component,
     profile,
 )
+from dioxide.exceptions import ServiceNotFoundError
 
 
 class DescribeComponentDecorator:
@@ -353,8 +354,6 @@ class DescribeProfileFiltering:
         assert isinstance(prod_service, ProductionService)
 
         # Test service should NOT be registered
-        from dioxide.exceptions import ServiceNotFoundError
-
         try:
             container.resolve(TestService)
             raise AssertionError('TestService should not be registered in PRODUCTION profile')
@@ -382,8 +381,6 @@ class DescribeProfileFiltering:
         assert isinstance(test_service, TestService)
 
         # Production service should NOT be registered
-        from dioxide.exceptions import ServiceNotFoundError
-
         try:
             container.resolve(ProductionService)
             raise AssertionError('ProductionService should not be registered in TEST profile')
@@ -411,8 +408,6 @@ class DescribeProfileFiltering:
         assert isinstance(prod_service, ProductionService)
 
         # Test service should NOT be registered
-        from dioxide.exceptions import ServiceNotFoundError
-
         try:
             container.resolve(TestService)
             raise AssertionError('TestService should not be registered with production profile')

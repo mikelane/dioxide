@@ -8,6 +8,7 @@ support, including:
 - Profile swapping for testing
 """
 
+import asyncio
 from typing import Protocol
 
 from dioxide import (
@@ -82,8 +83,6 @@ class DescribeHexagonalArchitectureBasicEndToEnd:
         assert test_service.email is fake_adapter
 
         # Use service and verify fake captures emails
-        import asyncio
-
         asyncio.run(test_service.register('test@example.com'))
 
         assert len(fake_adapter.sent_emails) == 1
