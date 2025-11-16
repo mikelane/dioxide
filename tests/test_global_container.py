@@ -5,56 +5,49 @@ while keeping the Container class available for advanced scenarios like
 testing isolation or multi-tenant applications.
 """
 
+from dioxide import (
+    Container,
+    component,
+    container,
+)
+
 
 class DescribeGlobalContainerSingleton:
     """Tests for the global singleton container instance."""
 
     def it_provides_singleton_instance(self) -> None:
         """Container is a Container instance."""
-        from dioxide import (
-            Container,
-            container,
-        )
-
         assert isinstance(container, Container)
 
     def it_maintains_singleton_across_imports(self) -> None:
         """Same container instance is returned on multiple imports."""
-        from dioxide import container as c1
-        from dioxide import container as c2
+        # Import container multiple times to verify singleton
+        c1 = container
+        c2 = container
 
         assert c1 is c2
 
     def it_has_empty_registry_initially(self) -> None:
         """Global container starts with empty registry."""
-
         # Create a fresh container to test the initial state
-        from dioxide import Container
-
         fresh = Container()
         assert fresh.is_empty()
         assert len(fresh) == 0
 
     def it_supports_scan_method(self) -> None:
         """Global container has scan() method."""
-        from dioxide import container
-
         # Should have the scan method
         assert hasattr(container, 'scan')
         assert callable(container.scan)
 
     def it_supports_resolve_method(self) -> None:
         """Global container has resolve() method."""
-        from dioxide import container
-
         # Should have the resolve method
         assert hasattr(container, 'resolve')
         assert callable(container.resolve)
 
     def it_supports_registration_methods(self) -> None:
         """Global container has all registration methods."""
-        from dioxide import container
-
         # Check all registration methods exist
         registration_methods = [
             'register_instance',
@@ -74,8 +67,6 @@ class DescribeContainerClass:
 
     def it_allows_creating_multiple_instances(self) -> None:
         """Container class creates separate instances."""
-        from dioxide import Container
-
         c1 = Container()
         c2 = Container()
 
@@ -85,8 +76,6 @@ class DescribeContainerClass:
 
     def it_creates_isolated_registries(self) -> None:
         """Each Container instance has its own isolated registry."""
-        from dioxide import Container
-
         c1 = Container()
         c2 = Container()
 
@@ -106,8 +95,6 @@ class DescribeContainerClass:
 
     def it_is_available_for_import(self) -> None:
         """Container class can be imported from dioxide."""
-        from dioxide import Container
-
         assert Container is not None
         assert callable(Container)
 
@@ -123,7 +110,6 @@ class DescribeGlobalContainerFunctionality:
 
     def it_resolves_components_via_singleton(self) -> None:
         """Global container can resolve components after scan."""
-        from dioxide import component
 
         @component
         class TestDatabase:
@@ -131,8 +117,6 @@ class DescribeGlobalContainerFunctionality:
                 self.connected = True
 
         # Create a fresh container for this test to avoid state pollution
-        from dioxide import Container
-
         test_container = Container()
         test_container.scan()
 
@@ -142,7 +126,6 @@ class DescribeGlobalContainerFunctionality:
 
     def it_handles_dependency_injection(self) -> None:
         """Global container auto-injects dependencies."""
-        from dioxide import component
 
         @component
         class Database:
@@ -155,8 +138,6 @@ class DescribeGlobalContainerFunctionality:
                 self.db = db
 
         # Use a fresh container to avoid state pollution
-        from dioxide import Container
-
         test_container = Container()
         test_container.scan()
 
@@ -177,10 +158,6 @@ class DescribeGetItemSyntax:
 
     def it_resolves_via_bracket_notation(self) -> None:
         """Container supports container[Type] syntax."""
-        from dioxide import (
-            Container,
-            component,
-        )
 
         @component
         class BracketService:
@@ -196,10 +173,6 @@ class DescribeGetItemSyntax:
 
     def it_is_equivalent_to_resolve(self) -> None:
         """container[Type] returns same instance as container.resolve(Type)."""
-        from dioxide import (
-            Container,
-            component,
-        )
 
         @component
         class SameService:
@@ -214,7 +187,6 @@ class DescribeGetItemSyntax:
 
     def it_works_with_global_container(self) -> None:
         """Bracket syntax works with global singleton container."""
-        from dioxide import component
 
         @component
         class GlobalService:
@@ -222,8 +194,6 @@ class DescribeGetItemSyntax:
                 self.value = 42
 
         # Need a fresh container to avoid test pollution
-        from dioxide import Container
-
         fresh = Container()
         fresh.scan()
         service = fresh[GlobalService]
@@ -237,10 +207,6 @@ class DescribeBackwardCompatibility:
 
     def it_supports_old_pattern_with_container_class(self) -> None:
         """Old v0.0.1-alpha pattern still works."""
-        from dioxide import (
-            Container,
-            component,
-        )
 
         @component
         class OldService:

@@ -7,6 +7,11 @@ hexagonal/ports-and-adapters architecture patterns.
 
 from typing import Protocol
 
+from dioxide import (
+    Scope,
+    adapter,
+)
+
 
 class EmailPort(Protocol):
     """Test protocol for email functionality."""
@@ -21,7 +26,6 @@ class DescribeAdapterDecorator:
 
     def it_requires_port_and_profile_parameters(self) -> None:
         """@adapter.for() requires port and profile parameters."""
-        from dioxide import adapter
 
         @adapter.for_(EmailPort, profile='production')
         class TestAdapter:
@@ -32,7 +36,6 @@ class DescribeAdapterDecorator:
 
     def it_registers_with_port_and_profile(self) -> None:
         """@adapter.for() registers implementation for port + profile."""
-        from dioxide import adapter
 
         @adapter.for_(EmailPort, profile='production')
         class ProductionAdapter:
@@ -47,7 +50,6 @@ class DescribeAdapterDecorator:
 
     def it_accepts_string_profile(self) -> None:
         """@adapter.for() accepts string profiles for custom environments."""
-        from dioxide import adapter
 
         @adapter.for_(EmailPort, profile='staging')
         class StagingAdapter:
@@ -59,7 +61,6 @@ class DescribeAdapterDecorator:
 
     def it_supports_multiple_profiles_list(self) -> None:
         """@adapter.for() accepts list of profiles."""
-        from dioxide import adapter
 
         @adapter.for_(EmailPort, profile=['test', 'development'])
         class MultiProfileAdapter:
@@ -72,7 +73,6 @@ class DescribeAdapterDecorator:
 
     def it_defaults_to_all_profiles_when_profile_omitted(self) -> None:
         """@adapter.for() defaults to '*' (all profiles) when profile is omitted."""
-        from dioxide import adapter
 
         @adapter.for_(EmailPort)
         class DefaultProfileAdapter:
@@ -84,10 +84,6 @@ class DescribeAdapterDecorator:
 
     def it_defaults_to_singleton_scope(self) -> None:
         """@adapter.for() uses SINGLETON scope by default."""
-        from dioxide import (
-            Scope,
-            adapter,
-        )
 
         @adapter.for_(EmailPort, profile='production')
         class SingletonAdapter:
@@ -99,7 +95,6 @@ class DescribeAdapterDecorator:
 
     def it_normalizes_profiles_to_lowercase(self) -> None:
         """@adapter.for() normalizes profile names to lowercase."""
-        from dioxide import adapter
 
         @adapter.for_(EmailPort, profile='PRODUCTION')
         class UppercaseAdapter:
@@ -111,7 +106,6 @@ class DescribeAdapterDecorator:
 
     def it_deduplicates_profile_list(self) -> None:
         """@adapter.for() deduplicates repeated profiles."""
-        from dioxide import adapter
 
         @adapter.for_(EmailPort, profile=['test', 'TEST', 'test'])
         class DuplicateAdapter:

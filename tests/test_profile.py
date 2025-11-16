@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from dioxide import profile
+from dioxide import (
+    component,
+    profile,
+)
 
 
 class DescribeProfileDecorator:
@@ -187,7 +190,6 @@ class DescribeProfileDecoratorWithComponent:
 
     def it_works_with_component_decorator(self) -> None:
         """@profile and @component can be stacked."""
-        from dioxide import component
 
         @component
         @profile.production

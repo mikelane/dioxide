@@ -1,19 +1,20 @@
 """Smoke test for installed dioxide package."""
 
+import dioxide
+from dioxide import (
+    Container,
+    Scope,
+    component,
+)
+
 
 def test_import() -> None:
     """Test that dioxide can be imported."""
-    import dioxide
-
     assert dioxide is not None
 
 
 def test_core_functionality() -> None:
     """Test basic DI functionality works."""
-    from dioxide import (
-        Container,
-        component,
-    )
 
     @component
     class Service:
@@ -34,11 +35,6 @@ def test_core_functionality() -> None:
 
 def test_singleton_scope() -> None:
     """Test singleton scope works correctly."""
-    from dioxide import (
-        Container,
-        Scope,
-        component,
-    )
 
     @component(scope=Scope.SINGLETON)
     class SingletonService:
@@ -55,11 +51,6 @@ def test_singleton_scope() -> None:
 
 def test_factory_scope() -> None:
     """Test factory scope works correctly."""
-    from dioxide import (
-        Container,
-        Scope,
-        component,
-    )
 
     @component(scope=Scope.FACTORY)
     class FactoryService:

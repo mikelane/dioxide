@@ -6,6 +6,7 @@ found by Container.scan() and registered with their specified lifecycle
 scope (SINGLETON or FACTORY).
 """
 
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -39,6 +40,11 @@ def component(
     scope: Scope = Scope.SINGLETON,
 ) -> type[T] | Any:
     """Mark a class as a dependency injection component.
+
+    .. deprecated:: 0.0.2-alpha
+        The @component decorator is deprecated and will be removed in v0.1.0-beta.
+        Use @service for core domain logic or @adapter.for_(Port, profile=...)
+        for boundary implementations. See MIGRATION.md for migration guide.
 
     This decorator enables automatic discovery and registration with the
     Container. When Container.scan() is called, all @component decorated
@@ -106,6 +112,14 @@ def component(
     """
 
     def decorator(target_cls: type[T]) -> type[T]:
+        # Emit deprecation warning
+        warnings.warn(
+            '@component is deprecated and will be removed in v0.1.0-beta. '
+            'Use @service for core domain logic or @adapter.for_(Port, profile=...) '
+            'for boundary implementations. See MIGRATION.md for details.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
         # Store DI metadata on the class
         target_cls.__dioxide_scope__ = scope  # type: ignore[attr-defined]
         # Add to global registry for auto-discovery
@@ -118,12 +132,34 @@ def component(
         return decorator
     else:
         # Called without arguments: @component
-        return decorator(cls)
+        # Need to emit warning here with correct stacklevel for this path
+        warnings.warn(
+            '@component is deprecated and will be removed in v0.1.0-beta. '
+            'Use @service for core domain logic or @adapter.for_(Port, profile=...) '
+            'for boundary implementations. See MIGRATION.md for details.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        # Wrap decorator to skip the warning since we already emitted it
+        def decorator_no_warn(target_cls: type[T]) -> type[T]:
+            # Store DI metadata on the class
+            target_cls.__dioxide_scope__ = scope  # type: ignore[attr-defined]
+            # Add to global registry for auto-discovery
+            _component_registry.add(target_cls)
+            return target_cls
+
+        return decorator_no_warn(cls)
 
 
 # Add factory attribute for MLP API: @component.factory
 def _factory_decorator(cls: type[T]) -> type[T]:
     """Factory scope decorator for @component.factory syntax.
+
+    .. deprecated:: 0.0.2-alpha
+        The @component.factory decorator is deprecated and will be removed in v0.1.0-beta.
+        Use @service for core domain logic or @adapter.for_(Port, profile=...)
+        for boundary implementations. See MIGRATION.md for migration guide.
 
     This is the MLP API for creating factory-scoped components.
     Equivalent to @component(scope=Scope.FACTORY) but more ergonomic.
@@ -133,6 +169,14 @@ def _factory_decorator(cls: type[T]) -> type[T]:
         ... class RequestHandler:
         ...     pass
     """
+    # Emit deprecation warning
+    warnings.warn(
+        '@component.factory is deprecated and will be removed in v0.1.0-beta. '
+        'Use @service for core domain logic or @adapter.for_(Port, profile=...) '
+        'for boundary implementations. See MIGRATION.md for details.',
+        DeprecationWarning,
+        stacklevel=2,
+    )
     # Store DI metadata on the class
     cls.__dioxide_scope__ = Scope.FACTORY  # type: ignore[attr-defined]
     # Add to global registry for auto-discovery
@@ -189,6 +233,11 @@ def implements(
 ) -> Any:
     """Mark a class as implementing a protocol.
 
+    .. deprecated:: 0.0.2-alpha
+        The @component.implements() decorator is deprecated and will be removed in v0.1.0-beta.
+        Use @adapter.for_(Port, profile=...) for boundary implementations.
+        See MIGRATION.md for migration guide.
+
     This decorator marks a concrete class as an implementation of a protocol,
     enabling protocol-based dependency resolution. The container will register
     the implementation so it can be resolved by the protocol type.
@@ -242,6 +291,14 @@ def implements(
     """
 
     def decorator(target_cls: type[T]) -> type[T]:
+        # Emit deprecation warning
+        warnings.warn(
+            '@component.implements() is deprecated and will be removed in v0.1.0-beta. '
+            'Use @adapter.for_(Port, profile=...) for boundary implementations. '
+            'See MIGRATION.md for details.',
+            DeprecationWarning,
+            stacklevel=2,
+        )
         # Store protocol metadata on the class
         target_cls.__dioxide_implements__ = protocol_class  # type: ignore[attr-defined]
         # Store DI scope metadata
