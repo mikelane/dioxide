@@ -54,3 +54,16 @@ class DescribeLifecycleDecorator:
             class Database:
                 async def initialize(self) -> None:
                     pass
+
+    def it_validates_dispose_is_async(self) -> None:
+        """Decorator raises TypeError if dispose() is not async."""
+
+        with pytest.raises(TypeError, match=r'dispose.*must be async'):
+
+            @lifecycle
+            class Database:
+                async def initialize(self) -> None:
+                    pass
+
+                def dispose(self) -> None:  # Not async!
+                    pass
