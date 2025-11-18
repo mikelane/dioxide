@@ -54,8 +54,9 @@ Provide a **fast, type-safe, Pythonic** dependency injection framework that make
 ### Current Status (Nov 2025)
 
 - **v0.0.1-alpha**: ✅ RELEASED (Nov 6, 2025) to Test PyPI
-- **v0.0.2-alpha**: 🔄 IN PROGRESS - MLP API Realignment
-- **Target for MLP Complete (0.1.0-beta)**: Mid-December 2025 (4-6 weeks)
+- **v0.0.2-alpha**: ✅ COMPLETE (Nov 16, 2025) - Hexagonal Architecture API
+- **v0.0.3-alpha**: 🔄 IN PROGRESS - Lifecycle Management
+- **Target for MLP Complete (0.1.0-beta)**: Mid-December 2025
 
 ### Philosophy
 
@@ -106,78 +107,84 @@ We follow **MLP-first development**:
 
 ---
 
-### 0.0.2-alpha 🔄 IN PROGRESS
+### 0.0.2-alpha ✅ COMPLETE
 
-**Target**: Week of Nov 18, 2025
-**Theme**: "MLP API Realignment"
-**Status**: Sprint planning complete, 6 issues created
+**Completed**: Nov 16, 2025
+**Theme**: "Hexagonal Architecture API"
+**Status**: All features implemented and documented
 
-**Breaking Changes** (acceptable in alpha):
-- `@component(scope=Scope.FACTORY)` → `@component.factory`
-- `container = Container()` → `from dioxide import container` (global singleton)
-- `container.scan()` → `container.scan("app", profile="production")`
-- Add `@component.implements(Protocol)` for multiple implementations
+**Breaking Changes Implemented**:
+- `@component` → `@service` for core business logic
+- `@component` → `@adapter.for_(Port, profile=...)` for infrastructure adapters
+- `Profile` enum instead of string profiles
+- `container.scan(profile=...)` with Profile enum
+- Global singleton `container` available as import
 
-**Core Features**:
-- [ ] `@component.factory` and `@component.implements()` syntax (#28)
-- [ ] `@profile` decorator system (hybrid approach) (#29)
-- [ ] Update `container.scan()` with package and profile parameters (#30)
-- [ ] Global singleton container pattern (#31)
-- [ ] Documentation realignment (#32)
-- [ ] Optional: `container[Type]` syntax (#33)
+**Core Features Delivered**:
+- ✅ `@adapter.for_(Port, profile=Profile.PRODUCTION)` decorator (#100)
+- ✅ `@service` decorator for core domain logic (#100)
+- ✅ `Profile` enum (PRODUCTION, TEST, DEVELOPMENT, etc.) (#68)
+- ✅ `container.scan(profile=...)` with profile filtering (#104)
+- ✅ Port-based resolution (`container.resolve(Port)`) (#104)
+- ✅ Global singleton container pattern (#70)
+- ✅ Documentation realignment (#100)
+- ✅ Optional: `container[Type]` syntax (#70)
+- ✅ Migration guide (MIGRATION.md) (#101)
 
 **Infrastructure**:
-- [ ] Update all tests to use new API
-- [ ] Maintain 100% test coverage
-- [ ] Update README with MLP syntax
-- [ ] Create migration guide from 0.0.1 to 0.0.2
+- ✅ Updated all tests to use new API
+- ✅ Maintained 100% test coverage
+- ✅ Updated README with hexagonal architecture examples
+- ✅ Created comprehensive migration guide
+- ✅ Updated MLP_VISION.md with actual API
 
-**Success Criteria**:
-- API matches MLP_VISION.md specification
-- All 6 milestone issues (#28-#33) complete
-- 100% test coverage maintained
-- Published to Test PyPI
-- Breaking changes documented
-
-**Estimated Effort**: 2-3 weeks
-
-**Critical Path**:
-1. Implement `@component.factory` syntax (#28) - 3 days
-2. Implement `@profile` system (#29) - 4 days
-3. Update `container.scan()` (#30) - 2 days
-4. Global singleton container (#31) - 1 day
-5. Documentation realignment (#32) - 2 days
-6. Optional sugar syntax (#33) - 1 day
+**What We Shipped**:
+- Complete hexagonal architecture API
+- 11 issues closed (Epic #96 + 10 sub-issues)
+- 11 PRs merged (Nov 11-16, 2025)
+- Deprecation warnings for old `@component` API
+- Better error messages for missing adapters
 
 ---
 
-### 0.0.3-alpha 📋 PLANNED
+### 0.0.3-alpha 🔄 IN PROGRESS
 
 **Target**: Week of Nov 25, 2025
 **Theme**: "Lifecycle Management"
+**Status**: Sprint starting
 
 **Features**:
-- `Initializable` protocol for async initialization
-- `Disposable` protocol for cleanup
-- Async context manager support (`async with container:`)
-- Lifecycle hooks called in dependency order
-- Graceful shutdown in reverse dependency order
+- [ ] `Initializable` protocol for async initialization (#67)
+- [ ] `Disposable` protocol for cleanup (#67)
+- [ ] Async context manager support (`async with container:`) (#67)
+- [ ] Lifecycle hooks called in dependency order (#67)
+- [ ] Graceful shutdown in reverse dependency order (#4)
 
 **API**:
 ```python
-from dioxide import component, Initializable, Disposable
+from dioxide import service, adapter, Profile
+from typing import Protocol
 
-@component
-class Database(Initializable, Disposable):
-    async def initialize(self) -> None:
+# Service with lifecycle
+@service
+class Database:
+    async def __aenter__(self):
         self.engine = create_async_engine(self.config.database_url)
+        return self
 
-    async def dispose(self) -> None:
+    async def __aexit__(self, *args):
         await self.engine.dispose()
+
+# Or using protocols
+class Initializable(Protocol):
+    async def initialize(self) -> None: ...
+
+class Disposable(Protocol):
+    async def dispose(self) -> None: ...
 
 # Usage
 async with container:
-    app = container[Application]
+    app = container.resolve(Application)
     await app.run()
 # All dispose() methods called automatically
 ```

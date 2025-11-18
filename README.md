@@ -42,7 +42,8 @@ pip install dioxide
 **⚠️ ALPHA**: dioxide is in active alpha development. API changes expected between releases.
 
 - **Latest Release**: [v0.0.1-alpha](https://github.com/mikelane/dioxide/releases/tag/v0.0.1-alpha) (Nov 6, 2025) - Published to Test PyPI
-- **Current Work**: v0.0.2-alpha - MLP API Realignment (breaking changes)
+- **Current Work**: v0.0.3-alpha - Lifecycle Management (Initializable/Disposable protocols)
+- **Completed**: v0.0.2-alpha - Hexagonal Architecture API (Nov 16, 2025) ✅
 - **Next Milestone**: v0.1.0-beta - MLP Complete (API freeze) - Mid-December 2025
 
 **Migrating from v0.0.1-alpha?** See [MIGRATION.md](MIGRATION.md) for the complete migration guide.
@@ -149,23 +150,31 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 - [x] 100% test coverage
 - [x] Full CI/CD automation
 
-### v0.0.2-alpha 🔄 IN PROGRESS (Hexagonal Architecture API)
+### v0.0.2-alpha ✅ COMPLETE (Nov 16, 2025) - Hexagonal Architecture API
 - [x] `@adapter.for_(Port, profile=...)` decorator for hexagonal architecture - ✅ Issue #100
 - [x] `@service` decorator for core business logic - ✅ Issue #100
 - [x] `Profile` enum (PRODUCTION, TEST, DEVELOPMENT, etc.) - ✅ Issue #68
 - [x] `container.scan(profile=...)` with profile filtering - ✅ Issue #104
 - [x] Port-based resolution (`container.resolve(Port)` returns active adapter) - ✅ Issue #104
 - [x] Global singleton container pattern - ✅ Issue #70
-- [ ] Documentation realignment - Issue #100 (in progress)
+- [x] Documentation realignment - ✅ Issue #100
 - [x] Optional: `container[Type]` syntax - ✅ Issue #70
+- [x] Migration guide (MIGRATION.md) - ✅ Issue #101
+
+### v0.0.3-alpha 🔄 IN PROGRESS (Lifecycle Management)
+- [ ] Lifecycle protocols (`Initializable`, `Disposable`) - Issue #67
+- [ ] Graceful shutdown of singleton resources - Issue #4
+- [ ] Async context manager support (`async with container:`)
+- [ ] Initialize components in dependency order
+- [ ] Dispose components in reverse dependency order
 
 ### v0.1.0-beta 🎯 TARGET: Mid-December 2025 (MLP Complete)
-- [ ] Lifecycle protocols (`Initializable`, `Disposable`)
 - [ ] Circular dependency detection at startup
 - [ ] Excellent error messages with suggestions
 - [ ] Complete example application
 - [ ] FastAPI integration example
 - [ ] Testing guide (fakes > mocks philosophy)
+- [ ] Package scanning with type hints
 - [ ] API frozen (no breaking changes until 2.0)
 
 ### Post-MLP Features (v0.2.0+)

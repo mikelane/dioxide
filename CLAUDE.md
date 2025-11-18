@@ -5,14 +5,14 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 ## Project Overview
 
 **dioxide** is a fast, Rust-backed declarative dependency injection framework for Python that combines:
-- **Declarative Python API** - Simple `@component` decorators and type hints
+- **Hexagonal Architecture API** - `@adapter.for_()` and `@service` decorators with type hints
 - **Rust-backed performance** - Fast container operations via PyO3
 - **Type safety** - Full support for mypy and type checkers
 - **Clean architecture** - Encourages loose coupling and testability
 
 **Note**: The package was recently renamed from `rivet_di` to `dioxide`. All references in code, tests, and documentation have been updated to use `dioxide`.
 
-**⚠️ API IN TRANSITION**: dioxide is currently undergoing MLP API realignment (v0.0.2-alpha). The current codebase uses v0.0.1-alpha syntax, but documentation has been updated to show target MLP syntax. Expect breaking changes as we implement the MLP Vision.
+**✅ v0.0.2-alpha COMPLETE** (Nov 16, 2025): Hexagonal architecture API fully implemented. All documentation has been updated to reflect the actual API.
 
 ## MLP Vision: The North Star
 
@@ -22,8 +22,8 @@ The MLP Vision document is the **canonical design reference** for Dioxide. It de
 
 - **The North Star**: Make the Dependency Inversion Principle feel inevitable
 - **Guiding Principles**: 7 core principles that guide ALL decisions (type-safe, explicit, fails fast, etc.)
-- **Core API Design**: `@component`, `@profile`, container, lifecycle protocols
-- **Profile System**: Hybrid approach (common + custom profiles via `__getattr__`)
+- **Core API Design**: `@adapter.for_()`, `@service`, `Profile` enum, container, lifecycle protocols
+- **Profile System**: Profile enum (PRODUCTION, TEST, DEVELOPMENT, etc.)
 - **Testing Philosophy**: Fakes at the seams, NOT mocks
 - **What We're NOT Building**: Explicit exclusions list for MLP scope
 - **Decision Framework**: 5 questions to ask when making choices
@@ -874,29 +874,39 @@ git commit -m "add new feature"
 
 **Result**: No confusion about what's done vs. what's pending.
 
-## Current Status: MLP API Realignment (v0.0.2-alpha)
+## Current Status: Lifecycle Management (v0.0.3-alpha)
 
-**⚠️ IMPORTANT**: dioxide is currently undergoing MLP API realignment. The v0.0.1-alpha API is being replaced with the MLP Vision API.
+**✅ v0.0.2-alpha COMPLETE** (Nov 16, 2025): Hexagonal architecture API fully implemented and documented.
 
 ### Recent Milestones
 
 **v0.0.1-alpha (Released Nov 6, 2025)** ✅
 - First public release to Test PyPI
-- Basic `@component` decorator with `@component(scope=...)` syntax
+- Basic `@component` decorator (deprecated in v0.0.2)
 - `Container().scan()` auto-discovery
 - 100% test coverage
 - Full CI/CD automation
 
-**v0.0.2-alpha (In Progress - MLP Realignment)** 🔄
-- Breaking API changes to align with MLP Vision
-- New syntax: `@component.factory`, `@component.implements(Protocol)`
-- Profile system: `@profile.production`, `@profile("test", "development")`
+**v0.0.2-alpha (COMPLETE Nov 16, 2025)** ✅
+- Hexagonal architecture API implemented
+- `@adapter.for_(Port, profile=Profile.PRODUCTION)` decorator
+- `@service` decorator for core domain logic
+- `Profile` enum (PRODUCTION, TEST, DEVELOPMENT, STAGING, CI, ALL)
+- Port-based resolution (`container.resolve(Port)`)
 - Global singleton container: `from dioxide import container`
-- Updated `container.scan("package", profile="...")`
+- Migration guide (MIGRATION.md)
+- Complete documentation alignment
+
+**v0.0.3-alpha (In Progress)** 🔄
+- Lifecycle protocols (`Initializable`, `Disposable`)
+- Graceful shutdown of singleton resources
+- Async context manager support
+- Initialize components in dependency order
+- Dispose components in reverse dependency order
 
 **Timeline to MLP Complete**:
-- **Nov 2025**: v0.0.2-alpha (API realignment) ← **WE ARE HERE**
-- **Dec 2025**: v0.0.3-alpha (lifecycle management), v0.0.4-alpha (polish)
+- **Nov 2025**: v0.0.3-alpha (lifecycle management) ← **WE ARE HERE**
+- **Dec 2025**: v0.0.4-alpha (polish & examples)
 - **Mid-Dec 2025**: v0.1.0-beta (MLP complete, API freeze)
 
 See [ROADMAP.md](ROADMAP.md) and [docs/MLP_VISION.md](docs/MLP_VISION.md) for details.
