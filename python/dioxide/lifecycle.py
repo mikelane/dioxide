@@ -22,6 +22,9 @@ def lifecycle(cls: T) -> T:
     Returns:
         The class with _dioxide_lifecycle attribute set
 
+    Raises:
+        TypeError: If the class does not implement initialize() method
+
     Example:
         >>> @service
         ... @lifecycle
@@ -32,5 +35,10 @@ def lifecycle(cls: T) -> T:
         ...     async def dispose(self) -> None:
         ...         await self.engine.dispose()
     """
+    # Validate that initialize() method exists
+    if not hasattr(cls, 'initialize'):
+        msg = f'{cls.__name__} must implement initialize() method'
+        raise TypeError(msg)
+
     cls._dioxide_lifecycle = True  # type: ignore[attr-defined]
     return cls

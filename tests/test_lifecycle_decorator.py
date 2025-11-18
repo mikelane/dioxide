@@ -1,5 +1,7 @@
 """Tests for the @lifecycle decorator."""
 
+import pytest
+
 from dioxide import lifecycle
 
 
@@ -19,3 +21,13 @@ class DescribeLifecycleDecorator:
 
         assert hasattr(Database, '_dioxide_lifecycle')
         assert Database._dioxide_lifecycle is True
+
+    def it_validates_initialize_method_exists(self) -> None:
+        """Decorator raises TypeError if initialize() method is missing."""
+
+        with pytest.raises(TypeError, match=r'must implement.*initialize'):
+
+            @lifecycle
+            class Database:
+                async def dispose(self) -> None:
+                    pass
