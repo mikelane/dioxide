@@ -418,6 +418,7 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "mypy" },
     { name = "python-semantic-release" },
     { name = "twine" },
 ]
@@ -442,6 +443,7 @@ provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "mypy", specifier = ">=1.18.2" },
     { name = "python-semantic-release", specifier = ">=10.4.1" },
     { name = "twine", specifier = ">=6.2.0" },
 ]
