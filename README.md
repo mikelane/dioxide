@@ -138,6 +138,48 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 - **Profiles** (`Profile.PRODUCTION`, `Profile.TEST`): Environment selection
 - **Container**: Auto-wires dependencies based on type hints
 
+## Lifecycle Management
+
+Services and adapters can opt into lifecycle management using the `@lifecycle` decorator for components that need initialization and cleanup:
+
+```python
+from dioxide import service, lifecycle
+
+@service
+@lifecycle
+class Database:
+    """Service with async initialization and cleanup."""
+
+    def __init__(self, config: AppConfig):
+        self.config = config
+        self.engine = None
+
+    async def initialize(self) -> None:
+        """Called automatically when container starts."""
+        self.engine = create_async_engine(self.config.database_url)
+        print(f"Connected to {self.config.database_url}")
+
+    async def dispose(self) -> None:
+        """Called automatically when container stops."""
+        if self.engine:
+            await self.engine.dispose()
+            print("Database connection closed")
+
+# Future: Container lifecycle support (v0.0.3-alpha Phase 2)
+# async with container:
+#     app = container.resolve(Application)
+#     await app.run()  # Database initialized before use
+# # Database disposed after exit
+```
+
+**Why `@lifecycle`?**
+- ✅ **Optional**: Only components that need it use lifecycle (test fakes typically don't!)
+- ✅ **Validated**: Decorator ensures `initialize()` and `dispose()` methods exist and are async
+- ✅ **Consistent**: Matches dioxide's decorator-based API (`@service`, `@adapter.for_()`)
+- ✅ **Type-safe**: Type stubs provide IDE autocomplete and mypy validation
+
+**Status**: Decorator implemented (v0.0.3-alpha Phase 1). Container integration coming in Phase 2.
+
 ## Features
 
 ### v0.0.1-alpha ✅ RELEASED (Nov 6, 2025)

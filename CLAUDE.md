@@ -550,6 +550,47 @@ class UserService:
 
 **Note**: `@component` is maintained for backward compatibility but all new code should use `@service` or `@adapter.for_()`.
 
+### @lifecycle Decorator
+
+The `@lifecycle` decorator enables opt-in lifecycle management for services and adapters that need initialization and cleanup:
+
+```python
+from dioxide import service, lifecycle
+
+@service
+@lifecycle
+class Database:
+    """Service with async initialization and cleanup."""
+
+    def __init__(self, config: AppConfig):
+        self.config = config
+        self.engine = None
+
+    async def initialize(self) -> None:
+        """Called automatically when container starts (Phase 2)."""
+        self.engine = create_async_engine(self.config.database_url)
+        logger.info(f"Connected to {self.config.database_url}")
+
+    async def dispose(self) -> None:
+        """Called automatically when container stops (Phase 2)."""
+        if self.engine:
+            await self.engine.dispose()
+            logger.info("Database connection closed")
+```
+
+**Implementation**: `python/dioxide/lifecycle.py`
+
+**How it works**:
+1. `@lifecycle` - Marks class for lifecycle management with `_dioxide_lifecycle = True`
+2. Validates `initialize()` and `dispose()` methods exist at decoration time
+3. Validates both methods are async coroutines
+4. Raises `TypeError` with clear error if validation fails
+5. Works with `@service` and `@adapter.for_()` decorators
+
+**Type safety**: Type stubs (`lifecycle.pyi`) provide IDE autocomplete and mypy validation of method signatures.
+
+**Status**: Decorator implemented (v0.0.3-alpha Phase 1). Container integration (`container.start()`, `container.stop()`, `async with container`) coming in Phase 2.
+
 ### Container (Profile-Based Dependency Injection)
 
 dioxide provides a Container class that supports profile-based dependency injection:
