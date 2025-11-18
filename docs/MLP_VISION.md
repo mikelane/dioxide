@@ -262,16 +262,17 @@ async def main():
 3. **Auto-injection** - Just call constructors
 4. **Lifecycle management** - Async context manager
 
-### Lifecycle: Protocols Over Decorators
+### Lifecycle: The `@lifecycle` Decorator
 
-Components can implement lifecycle protocols for initialization and cleanup.
+Services and adapters can use the `@lifecycle` decorator to opt into initialization and cleanup.
 
 ```python
-from dioxide import component, Initializable, Disposable
+from dioxide import service, lifecycle
 
-@component
-class Database(Initializable, Disposable):
-    """Component with lifecycle management."""
+@service
+@lifecycle
+class Database:
+    """Service with lifecycle management."""
 
     def __init__(self, config: AppConfig):
         self.config = config
@@ -289,12 +290,28 @@ class Database(Initializable, Disposable):
             logger.info("Database connection closed")
 ```
 
-**Why protocols instead of decorators?**
+**Why `@lifecycle` decorator?**
 
-- Type-checker validates signatures
-- IDE provides autocomplete
-- Well-known method names (`initialize`, `dispose`)
-- Explicit over magical
+- **Consistent with dioxide API** - Everything uses decorators (`@adapter.for_()`, `@service`, `@lifecycle`)
+- **Explicit** - Clear at a glance which components have lifecycle
+- **Type-safe** - Type checkers validate `initialize()` and `dispose()` signatures via stub files
+- **Optional** - Only components that need lifecycle use it (test fakes typically don't!)
+
+**Usage:**
+
+```python
+from dioxide import Container, Profile
+
+async def main():
+    container = Container()
+    container.scan(profile=Profile.PRODUCTION)
+
+    async with container:
+        # All @lifecycle components initialized here (in dependency order)
+        app = container.resolve(Application)
+        await app.run()
+    # All @lifecycle components disposed here (in reverse order)
+```
 
 ---
 
@@ -1364,12 +1381,12 @@ How do we know Dioxide MLP is successful?
 
 Before calling this "loveable", we must have:
 
-- ✅ `@component` decorator (singleton + factory)
-- ✅ `@component.implements(Protocol)` for multiple implementations
-- ✅ `@profile` system with common + custom profiles
+- ✅ `@adapter.for_(Port, profile=...)` for hexagonal architecture
+- ✅ `@service` decorator for core domain logic
+- ✅ `Profile` enum system (PRODUCTION, TEST, DEVELOPMENT, etc.)
 - ✅ Constructor injection (type-hint based)
 - ✅ Container scanning with profile selection
-- ✅ Lifecycle protocols (`Initializable`, `Disposable`)
+- ✅ `@lifecycle` decorator for initialization and cleanup
 - ✅ Circular dependency detection at startup
 - ✅ Missing dependency errors at startup
 - ✅ FastAPI integration example
@@ -1383,28 +1400,31 @@ Before calling this "loveable", we must have:
 
 ## Implementation Roadmap
 
-### Phase 1: Core DI (Weeks 1-2)
+### Phase 1: Core DI (Weeks 1-2) ✅ COMPLETE
 
-- [ ] `@component` decorator (singleton only)
-- [ ] Container scanning
-- [ ] Constructor injection via type hints
-- [ ] Dependency graph validation
-- [ ] Circular dependency detection
-- [ ] Basic error messages
+- [x] `@service` decorator for core domain logic
+- [x] Container scanning
+- [x] Constructor injection via type hints
+- [x] Dependency graph validation
+- [x] Circular dependency detection
+- [x] Basic error messages
 
-### Phase 2: Profiles (Week 3)
+### Phase 2: Hexagonal Architecture (Week 3) ✅ COMPLETE
 
-- [ ] `@profile` marker with hybrid approach
-- [ ] Profile-based component activation
-- [ ] `@component.implements(Protocol)`
-- [ ] Multiple implementations support
+- [x] `@adapter.for_(Port, profile=...)` decorator
+- [x] `Profile` enum (PRODUCTION, TEST, DEVELOPMENT, etc.)
+- [x] Profile-based adapter activation
+- [x] Port-based resolution (`container.resolve(Port)`)
+- [x] Multiple adapter implementations per port
 
-### Phase 3: Lifecycle (Week 4)
+### Phase 3: Lifecycle (Week 4) 🔄 IN PROGRESS
 
-- [ ] `Initializable` protocol
-- [ ] `Disposable` protocol
-- [ ] Async context manager support
-- [ ] `@component.factory` scope
+- [ ] `@lifecycle` decorator
+- [ ] `async def initialize()` support
+- [ ] `async def dispose()` support
+- [ ] Async context manager support (`async with container`)
+- [ ] Initialization in dependency order
+- [ ] Disposal in reverse dependency order
 
 ### Phase 4: Polish (Week 5)
 

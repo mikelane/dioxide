@@ -154,47 +154,73 @@ We follow **MLP-first development**:
 **Status**: Sprint starting
 
 **Features**:
-- [ ] `Initializable` protocol for async initialization (#67)
-- [ ] `Disposable` protocol for cleanup (#67)
+- [ ] `@lifecycle` decorator for opt-in lifecycle management (#67)
+- [ ] `async def initialize()` support for async initialization (#67)
+- [ ] `async def dispose()` support for cleanup (#67)
 - [ ] Async context manager support (`async with container:`) (#67)
-- [ ] Lifecycle hooks called in dependency order (#67)
-- [ ] Graceful shutdown in reverse dependency order (#4)
+- [ ] Initialize in dependency order, dispose in reverse order (#67)
+- [ ] Graceful shutdown of singleton resources (#4)
 
 **API**:
 ```python
-from dioxide import service, adapter, Profile
-from typing import Protocol
+from dioxide import service, lifecycle, adapter, Container, Profile
 
 # Service with lifecycle
 @service
+@lifecycle
 class Database:
-    async def __aenter__(self):
+    def __init__(self, config: AppConfig):
+        self.config = config
+        self.engine = None
+
+    async def initialize(self) -> None:
+        """Called automatically when container starts."""
         self.engine = create_async_engine(self.config.database_url)
-        return self
 
-    async def __aexit__(self, *args):
-        await self.engine.dispose()
+    async def dispose(self) -> None:
+        """Called automatically when container stops."""
+        if self.engine:
+            await self.engine.dispose()
 
-# Or using protocols
-class Initializable(Protocol):
-    async def initialize(self) -> None: ...
+# Adapter with lifecycle (production only!)
+@adapter.for_(CachePort, profile=Profile.PRODUCTION)
+@lifecycle
+class RedisAdapter:
+    async def initialize(self) -> None:
+        self.client = await aioredis.create_redis_pool(...)
 
-class Disposable(Protocol):
-    async def dispose(self) -> None: ...
+    async def dispose(self) -> None:
+        if self.client:
+            self.client.close()
+            await self.client.wait_closed()
+
+# Test adapter - no lifecycle needed!
+@adapter.for_(CachePort, profile=Profile.TEST)
+class InMemoryCacheAdapter:
+    def __init__(self):
+        self.store = {}  # Just works, no setup/teardown!
 
 # Usage
-async with container:
-    app = container.resolve(Application)
-    await app.run()
-# All dispose() methods called automatically
+async def main():
+    container = Container()
+    container.scan(profile=Profile.PRODUCTION)
+
+    async with container:
+        # All @lifecycle components initialized (in dependency order)
+        app = container.resolve(Application)
+        await app.run()
+    # All @lifecycle components disposed (in reverse order)
 ```
 
 **Success Criteria**:
-- Lifecycle protocols implemented
-- Initialize/dispose called in correct order
-- Async context manager works
+- `@lifecycle` decorator implemented and registered with container
+- `initialize()` and `dispose()` methods called in correct order
+- Async context manager works (`async with container`)
+- Manual control works (`await container.start()` / `await container.stop()`)
+- Type checking validates method signatures via stub files
 - No resource leaks
-- Documented with examples
+- Documented with examples showing test fakes don't need lifecycle
+- Test suite demonstrates pattern
 
 **Estimated Effort**: 1 week
 

@@ -162,7 +162,7 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 - [x] Migration guide (MIGRATION.md) - ✅ Issue #101
 
 ### v0.0.3-alpha 🔄 IN PROGRESS (Lifecycle Management)
-- [ ] Lifecycle protocols (`Initializable`, `Disposable`) - Issue #67
+- [ ] `@lifecycle` decorator for opt-in lifecycle management - Issue #67
 - [ ] Graceful shutdown of singleton resources - Issue #4
 - [ ] Async context manager support (`async with container:`)
 - [ ] Initialize components in dependency order
