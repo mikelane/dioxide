@@ -871,7 +871,7 @@ async def main():
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 # ============================================================================
-# tests/test_notification.py - Testing
+# tests/conftest.py - Shared test fixtures
 # ============================================================================
 import pytest
 from dioxide import Container, Profile
@@ -883,44 +883,83 @@ def container():
     c.scan(profile=Profile.TEST)
     return c
 
-async def test_welcome_email_sent(container):
-    # Arrange - Use fake adapters
-    users = container.resolve(UserRepository)  # Gets InMemoryUserRepositoryAdapter
-    users.seed(User(id=1, email="alice@example.com", name="Alice"))
+@pytest.fixture
+def fake_users(container) -> InMemoryUserRepositoryAdapter:
+    """Get the fake user repository adapter."""
+    return container.resolve(UserRepository)
 
-    clock = container.resolve(Clock)  # Gets FakeClockAdapter
-    clock.set_time(datetime(2024, 1, 1, tzinfo=UTC))
+@pytest.fixture
+def fake_email(container) -> FakeEmailAdapter:
+    """Get the fake email adapter."""
+    return container.resolve(EmailProvider)
+
+@pytest.fixture
+def fake_clock(container) -> FakeClockAdapter:
+    """Get the fake clock adapter."""
+    return container.resolve(Clock)
+
+@pytest.fixture
+def notification_service(container) -> NotificationService:
+    """Get the notification service with all fakes injected."""
+    return container.resolve(NotificationService)
+
+# ============================================================================
+# tests/test_notification.py - Testing
+# ============================================================================
+import pytest
+from datetime import datetime, UTC
+
+async def test_welcome_email_sent(
+    notification_service,
+    fake_users,
+    fake_email,
+    fake_clock
+):
+    """Sends welcome email to new user."""
+    # Arrange
+    fake_users.seed(User(id=1, email="alice@example.com", name="Alice"))
+    fake_clock.set_time(datetime(2024, 1, 1, tzinfo=UTC))
 
     # Act
-    service = container.resolve(NotificationService)
-    result = await service.send_welcome_email(1)
+    result = await notification_service.send_welcome_email(1)
 
-    # Assert - Verify fake captured the send
+    # Assert
     assert result is True
-    email = container.resolve(EmailProvider)  # Gets FakeEmailAdapter
-    assert len(email.outbox) == 1
-    assert email.outbox[0]["to"] == "alice@example.com"
+    assert len(fake_email.outbox) == 1
+    assert fake_email.outbox[0]["to"] == "alice@example.com"
+    assert fake_email.outbox[0]["subject"] == "Welcome!"
 
-async def test_throttling(container):
-    # Arrange
-    users = container.resolve(UserRepository)
-    users.seed(User(
+async def test_throttling(
+    notification_service,
+    fake_users,
+    fake_email,
+    fake_clock
+):
+    """Does not send welcome email if already sent within 30 days."""
+    # Arrange - User already received welcome email
+    fake_users.seed(User(
         id=1,
         email="alice@example.com",
+        name="Alice",
         last_welcome_sent=datetime(2024, 1, 1, tzinfo=UTC)
     ))
-
-    clock = container.resolve(Clock)
-    clock.set_time(datetime(2024, 1, 15, tzinfo=UTC))  # 14 days later
+    fake_clock.set_time(datetime(2024, 1, 15, tzinfo=UTC))  # 14 days later
 
     # Act
-    service = container.resolve(NotificationService)
-    result = await service.send_welcome_email(1)
+    result = await notification_service.send_welcome_email(1)
 
     # Assert - Throttled, no email sent
     assert result is False
-    email = container.resolve(EmailProvider)
-    assert len(email.outbox) == 0
+    assert len(fake_email.outbox) == 0
+
+async def test_user_not_found(notification_service, fake_email):
+    """Returns False when user does not exist."""
+    # Act
+    result = await notification_service.send_welcome_email(999)
+
+    # Assert
+    assert result is False
+    assert len(fake_email.outbox) == 0
 
 # ============================================================================
 # dev.py - Local development
