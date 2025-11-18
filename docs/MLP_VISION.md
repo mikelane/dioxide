@@ -909,7 +909,7 @@ def notification_service(container) -> NotificationService:
 import pytest
 from datetime import datetime, UTC
 
-async def test_welcome_email_sent(
+async def it_sends_welcome_email(
     notification_service,
     fake_users,
     fake_email,
@@ -929,7 +929,7 @@ async def test_welcome_email_sent(
     assert fake_email.outbox[0]["to"] == "alice@example.com"
     assert fake_email.outbox[0]["subject"] == "Welcome!"
 
-async def test_throttling(
+async def it_throttles_when_already_sent_within_30_days(
     notification_service,
     fake_users,
     fake_email,
@@ -952,7 +952,7 @@ async def test_throttling(
     assert result is False
     assert len(fake_email.outbox) == 0
 
-async def test_user_not_found(notification_service, fake_email):
+async def it_returns_false_when_user_not_found(notification_service, fake_email):
     """Returns False when user does not exist."""
     # Act
     result = await notification_service.send_welcome_email(999)
