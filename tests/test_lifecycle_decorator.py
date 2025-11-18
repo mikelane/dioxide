@@ -1,8 +1,12 @@
 """Tests for the @lifecycle decorator."""
 
+from typing import Protocol
+
 import pytest
 
 from dioxide import (
+    Profile,
+    adapter,
     lifecycle,
     service,
 )
@@ -85,3 +89,24 @@ class DescribeLifecycleDecorator:
 
         assert hasattr(Database, '_dioxide_lifecycle')
         assert Database._dioxide_lifecycle is True
+
+    def it_works_with_adapter_decorator(self) -> None:
+        """Decorator can be stacked with @adapter.for_() decorator."""
+
+        class CachePort(Protocol):
+            async def get(self, key: str) -> str | None: ...
+
+        @adapter.for_(CachePort, profile=Profile.PRODUCTION)
+        @lifecycle
+        class RedisAdapter:
+            async def initialize(self) -> None:
+                pass
+
+            async def dispose(self) -> None:
+                pass
+
+            async def get(self, key: str) -> str | None:
+                return None
+
+        assert hasattr(RedisAdapter, '_dioxide_lifecycle')
+        assert RedisAdapter._dioxide_lifecycle is True
