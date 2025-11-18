@@ -2,7 +2,10 @@
 
 import pytest
 
-from dioxide import lifecycle
+from dioxide import (
+    lifecycle,
+    service,
+)
 
 
 class DescribeLifecycleDecorator:
@@ -67,3 +70,18 @@ class DescribeLifecycleDecorator:
 
                 def dispose(self) -> None:  # Not async!
                     pass
+
+    def it_works_with_service_decorator(self) -> None:
+        """Decorator can be stacked with @service decorator."""
+
+        @service
+        @lifecycle
+        class Database:
+            async def initialize(self) -> None:
+                pass
+
+            async def dispose(self) -> None:
+                pass
+
+        assert hasattr(Database, '_dioxide_lifecycle')
+        assert Database._dioxide_lifecycle is True
