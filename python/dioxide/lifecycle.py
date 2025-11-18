@@ -4,6 +4,7 @@ The @lifecycle decorator enables opt-in lifecycle management for components
 that need initialization and cleanup.
 """
 
+import inspect
 from typing import TypeVar
 
 T = TypeVar('T', bound=type)
@@ -38,6 +39,12 @@ def lifecycle(cls: T) -> T:
     # Validate that initialize() method exists
     if not hasattr(cls, 'initialize'):
         msg = f'{cls.__name__} must implement initialize() method'
+        raise TypeError(msg)
+
+    # Validate that initialize() is async
+    init_method = cls.initialize
+    if not inspect.iscoroutinefunction(init_method):
+        msg = f'{cls.__name__}.initialize() must be async'
         raise TypeError(msg)
 
     cls._dioxide_lifecycle = True  # type: ignore[attr-defined]
