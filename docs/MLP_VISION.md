@@ -136,44 +136,103 @@ container.auto_configure()
 
 ## Core API Design
 
-### The @component Decorator
+### Hexagonal Architecture: Ports and Adapters
 
-The foundation of Dioxide. Marks classes for dependency injection.
+Dioxide makes hexagonal architecture explicit through distinct decorators for different architectural layers.
+
+#### The @service Decorator
+
+Marks **core domain logic** - business rules that don't depend on external systems.
 
 ```python
-from dioxide import component
+from dioxide import service
 
-# Simple component (singleton by default)
-@component
-class UserRepository:
-    def __init__(self, db: Database):
+# Core business logic (singleton by default)
+@service
+class UserService:
+    def __init__(self, email: EmailPort, db: UserRepository):
+        self.email = email  # Depends on PORTS, not concrete adapters
         self.db = db
 
-# Factory scope (new instance each time)
-@component.factory
-class RequestHandler:
-    def __init__(self, service: UserService):
-        self.service = service
-
-# Implementing a protocol (for multiple implementations)
-from typing import Protocol
-
-class EmailProvider(Protocol):
-    async def send(self, to: str, subject: str, body: str) -> None: ...
-
-@component.implements(EmailProvider)
-class SendGridEmail:
-    async def send(self, to: str, subject: str, body: str) -> None:
-        # Implementation
-        pass
+    async def register_user(self, email_addr: str, name: str):
+        # Pure business logic - doesn't know about SendGrid or Postgres
+        user = await self.db.save({"email": email_addr, "name": name})
+        await self.email.send(to=email_addr, subject="Welcome!", body=f"Hello {name}!")
+        return user
 ```
 
 **Key behaviors:**
-
-1. **Singleton by default** - One instance shared across application
+1. **Always singleton** - One instance shared across application
 2. **Constructor injection** - Dependencies resolved from type hints
-3. **Type-safe** - mypy validates all dependencies exist
-4. **Lazy initialization** - Components created on first use
+3. **Depends on ports** - Uses Protocol/ABC types, not concrete implementations
+4. **Profile-agnostic** - Same service in all environments
+
+#### The @adapter.for_() Decorator
+
+Marks **boundary implementations** - adapters that connect to external systems.
+
+```python
+from typing import Protocol
+from dioxide import adapter, Profile
+
+# Port (interface) - defines the seam
+class EmailPort(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
+
+# Production adapter - real SendGrid
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    async def send(self, to: str, subject: str, body: str) -> None:
+        # Real SendGrid API calls
+        pass
+
+# Test adapter - fake for testing
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    def __init__(self):
+        self.sent_emails = []
+
+    async def send(self, to: str, subject: str, body: str) -> None:
+        self.sent_emails.append({"to": to, "subject": subject, "body": body})
+
+# Development adapter - console logging
+@adapter.for_(EmailPort, profile=Profile.DEVELOPMENT)
+class ConsoleEmailAdapter:
+    async def send(self, to: str, subject: str, body: str) -> None:
+        print(f"📧 To: {to}, Subject: {subject}")
+```
+
+**Key behaviors:**
+1. **Profile-specific** - Different adapter per environment
+2. **Implements a port** - Satisfies Protocol/ABC contract
+3. **Singleton by default** - One instance per profile
+4. **Type-safe** - Must implement all port methods
+
+#### Architecture Layers
+
+```
+┌─────────────────────────────────────┐
+│   @service (Core Domain Logic)     │  ← Business rules
+│   - UserService                    │  ← Profile-agnostic
+│   - OrderService                   │  ← Depends on ports
+└──────────────┬──────────────────────┘
+               │ depends on
+               ▼
+┌─────────────────────────────────────┐
+│   Ports (Protocols/ABCs)            │  ← Interfaces/contracts
+│   - EmailPort                       │  ← No decorators!
+│   - UserRepository                  │  ← Just type definitions
+└──────────────┬──────────────────────┘
+               │ implemented by
+               ▼
+┌─────────────────────────────────────┐
+│   @adapter.for_(Port, profile=...)  │  ← Boundary implementations
+│   - SendGridAdapter                 │  ← Profile-specific
+│   - FakeEmailAdapter                │  ← Swappable
+└─────────────────────────────────────┘
+```
+
+**Type Safety:** Services depend on `EmailPort` (Protocol), container injects `SendGridAdapter` or `FakeEmailAdapter` based on active profile.
 
 ### Container: The Global Singleton
 
@@ -248,136 +307,129 @@ Different environments need different implementations:
 - **Testing:** In-memory, fake email, local files
 - **Development:** SQLite, console email, local storage
 
-### The Solution: Profiles
+### The Solution: Profile Enum
 
-Tag implementations with profiles. Dioxide activates only matching implementations.
+Use the `Profile` enum to specify which adapter implementations are active in each environment.
 
 ```python
-from dioxide import component, profile
-
-# Define a protocol
 from typing import Protocol
+from dioxide import adapter, service, Profile, container
 
-class EmailProvider(Protocol):
+# Define port (interface)
+class EmailPort(Protocol):
     async def send(self, to: str, subject: str, body: str) -> None: ...
 
-# Multiple implementations, different profiles
-@component.implements(EmailProvider)
-@profile.production
-class SendGridEmail:
+# Production adapter - real SendGrid
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
     """Real email - production only."""
     async def send(self, to: str, subject: str, body: str) -> None:
         # Real SendGrid API call
         pass
 
-@component.implements(EmailProvider)
-@profile.test
-class FakeEmail:
+# Test adapter - fake for testing
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
     """Fast fake - testing only."""
     def __init__(self):
-        self.outbox = []
+        self.sent_emails = []
 
     async def send(self, to: str, subject: str, body: str) -> None:
-        self.outbox.append({"to": to, "subject": subject, "body": body})
+        self.sent_emails.append({"to": to, "subject": subject, "body": body})
 
-@component.implements(EmailProvider)
-@profile.development
-class ConsoleEmail:
+# Development adapter - console logging
+@adapter.for_(EmailPort, profile=Profile.DEVELOPMENT)
+class ConsoleEmailAdapter:
     """Dev email - prints to console."""
     async def send(self, to: str, subject: str, body: str) -> None:
         print(f"📧 To: {to}\n   Subject: {subject}\n   Body: {body}")
+
+# Service depends on port (works with any adapter)
+@service
+class UserService:
+    def __init__(self, email: EmailPort):
+        self.email = email
 ```
 
 **Activation:**
 
 ```python
-from dioxide import container
+from dioxide import container, Profile
 
-# Production
-container.scan("app", profile="production")
-# Only SendGridEmail is active
+# Production - activates SendGridAdapter
+container.scan(profile=Profile.PRODUCTION)
+email = container.resolve(EmailPort)  # Returns SendGridAdapter instance
 
-# Testing
-container.scan("app", profile="test")
-# Only FakeEmail is active
+# Testing - activates FakeEmailAdapter
+container.scan(profile=Profile.TEST)
+email = container.resolve(EmailPort)  # Returns FakeEmailAdapter instance
 
-# Development
-container.scan("app", profile="development")
-# Only ConsoleEmail is active
+# Development - activates ConsoleEmailAdapter
+container.scan(profile=Profile.DEVELOPMENT)
+email = container.resolve(EmailPort)  # Returns ConsoleEmailAdapter instance
 ```
 
-### Profile Implementation: Hybrid Approach
+### Profile Enum: Type-Safe Profiles
 
-The `@profile` marker uses magic `__getattr__` to support any attribute, but pre-defines common ones for IDE autocomplete.
+The `Profile` enum provides type-safe, IDE-friendly profile selection:
 
 ```python
-# dioxide/profile.py implementation
-class ProfileMarker:
-    """
-    Magic profile marker supporting any attribute name.
-    Common profiles pre-defined for IDE autocomplete.
-    """
+from dioxide import Profile
 
-    # Pre-defined for IDE autocomplete (type hints only)
-    production: 'ProfileDecorator'
-    test: 'ProfileDecorator'
-    development: 'ProfileDecorator'
-    staging: 'ProfileDecorator'
+# Standard profiles (with IDE autocomplete)
+Profile.PRODUCTION   # 'production'
+Profile.TEST         # 'test'
+Profile.DEVELOPMENT  # 'development'
+Profile.STAGING      # 'staging'
+Profile.CI           # 'ci'
+Profile.ALL          # '*' - matches all profiles
 
-    def __init__(self):
-        # Pre-populate common profiles
-        for name in ['production', 'test', 'development', 'staging']:
-            setattr(self, name, self._make_decorator(name))
+# String-based enum
+assert Profile.PRODUCTION.value == 'production'
 
-    def _make_decorator(self, name: str):
-        """Create a decorator for a single profile."""
-        def decorator(cls):
-            profiles = getattr(cls, '__dioxide_profiles__', set())
-            cls.__dioxide_profiles__ = profiles | {name}
-            return cls
-        return decorator
-
-    def __getattr__(self, name: str):
-        """Catch-all for custom profiles (infinite flexibility)."""
-        return self._make_decorator(name)
-
-    def __call__(self, *names: str):
-        """Multiple profiles via function call syntax."""
-        def decorator(cls):
-            profiles = getattr(cls, '__dioxide_profiles__', set())
-            cls.__dioxide_profiles__ = profiles | set(names)
-            return cls
-        return decorator
-
-profile = ProfileMarker()
+# Case-insensitive matching (normalized to lowercase)
+container.scan(profile='PRODUCTION')  # Works (converted to 'production')
+container.scan(profile=Profile.PRODUCTION)  # Preferred (type-safe)
 ```
 
-**Usage patterns:**
+**Multiple Profiles:**
 
 ```python
-# Common profiles (IDE autocomplete works)
-@profile.production
-@profile.test
-@profile.development
-@profile.staging
+# Adapter available in multiple profiles
+@adapter.for_(EmailPort, profile=[Profile.TEST, Profile.DEVELOPMENT])
+class SimpleEmailAdapter:
+    """Simple email for both test and dev."""
+    async def send(self, to: str, subject: str, body: str) -> None:
+        print(f"Simple email to {to}")
 
-# Custom profiles (infinite flexibility via __getattr__)
-@profile.ci
-@profile.integration
-@profile.my_laptop
-@profile.fridays_only
-
-# Multiple profiles (call syntax)
-@profile("test", "development")
-@profile("production", "staging")
+# Adapter available in ALL profiles
+@adapter.for_(CachePort, profile=Profile.ALL)
+class InMemoryCacheAdapter:
+    """Simple cache available everywhere."""
+    pass
 ```
 
-**Why hybrid?**
+**Custom Profiles (Strings):**
 
-1. **IDE support** - Common profiles have autocomplete
-2. **Infinite flexibility** - Any custom profile works via `__getattr__`
-3. **Pythonic** - Same pattern as `pytest.mark`
-4. **Zero registration** - Just use any name
+While `Profile` enum covers common cases, you can use strings for custom profiles:
+
+```python
+# Custom profile (not in enum)
+@adapter.for_(EmailPort, profile='demo')
+class DemoEmailAdapter:
+    pass
+
+# Activate custom profile
+container.scan(profile='demo')
+```
+
+**Why Profile Enum?**
+
+1. **Type safety** - Catch typos at type-check time, not runtime
+2. **IDE autocomplete** - Discover available profiles
+3. **Explicit** - Clear which profiles exist
+4. **Extensible** - Can still use strings for custom profiles
+5. **Consistent** - Case-insensitive, normalized matching
 
 ---
 
@@ -608,16 +660,16 @@ def send_notification(request):
 
 ## Complete Example
 
-Here's a complete application showing the full dioxide workflow:
+Here's a complete application showing the full dioxide hexagonal architecture workflow:
 
 ```python
 # ============================================================================
 # config.py - Configuration
 # ============================================================================
 from pydantic_settings import BaseSettings
-from dioxide import component
+from dioxide import service
 
-@component
+@service
 class AppConfig(BaseSettings):
     """Configuration loaded from environment."""
     database_url: str = "sqlite:///dev.db"
@@ -633,26 +685,30 @@ from typing import Protocol
 from datetime import datetime
 
 class UserRepository(Protocol):
+    """Port for user data access."""
     async def find_by_id(self, user_id: int) -> User | None: ...
     async def save(self, user: User) -> None: ...
 
 class EmailProvider(Protocol):
+    """Port for email sending."""
     async def send(self, to: str, subject: str, body: str) -> None: ...
 
 class Clock(Protocol):
+    """Port for time operations."""
     def now(self) -> datetime: ...
 
 # ============================================================================
 # domain/services.py - Business logic (pure, no I/O)
 # ============================================================================
-from dioxide import component
+from dioxide import service
 from datetime import timedelta
 
-@component
+@service
 class NotificationService:
     """Pure business logic - testable without I/O."""
 
     def __init__(self, users: UserRepository, email: EmailProvider, clock: Clock):
+        # Depends on PORTS, not concrete adapters
         self.users = users
         self.email = email
         self.clock = clock
@@ -684,25 +740,26 @@ class NotificationService:
 # ============================================================================
 # adapters/postgres.py - Production database
 # ============================================================================
-from dioxide import component, profile, Initializable, Disposable
+from dioxide import adapter, Profile, service
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-@component
-@profile.production
-class Database(Initializable, Disposable):
+@service
+class Database:
+    """Database connection - shared across all repositories."""
     def __init__(self, config: AppConfig):
         self.config = config
         self.engine: AsyncEngine = None
 
-    async def initialize(self):
+    async def __aenter__(self):
         self.engine = create_async_engine(self.config.database_url)
+        return self
 
-    async def dispose(self):
+    async def __aexit__(self, *args):
         await self.engine.dispose()
 
-@component.implements(UserRepository)
-@profile.production
-class PostgresUserRepository:
+@adapter.for_(UserRepository, profile=Profile.PRODUCTION)
+class PostgresUserRepositoryAdapter:
+    """Production user repository using PostgreSQL."""
     def __init__(self, db: Database):
         self.db = db
 
@@ -723,9 +780,9 @@ class PostgresUserRepository:
 # ============================================================================
 # adapters/sendgrid.py - Production email
 # ============================================================================
-@component.implements(EmailProvider)
-@profile.production
-class SendGridEmail:
+@adapter.for_(EmailProvider, profile=Profile.PRODUCTION)
+class SendGridEmailAdapter:
+    """Production email using SendGrid API."""
     def __init__(self, config: AppConfig):
         self.api_key = config.sendgrid_api_key
 
@@ -740,18 +797,18 @@ class SendGridEmail:
 # ============================================================================
 # adapters/system_clock.py - Real time
 # ============================================================================
-@component.implements(Clock)
-@profile.production
-class SystemClock:
+@adapter.for_(Clock, profile=Profile.PRODUCTION)
+class SystemClockAdapter:
+    """Production clock using system time."""
     def now(self) -> datetime:
         return datetime.now(UTC)
 
 # ============================================================================
 # adapters/memory.py - Fast fakes for testing/dev
 # ============================================================================
-@component.implements(UserRepository)
-@profile("test", "development")  # Multiple profiles
-class InMemoryUserRepository:
+@adapter.for_(UserRepository, profile=[Profile.TEST, Profile.DEVELOPMENT])
+class InMemoryUserRepositoryAdapter:
+    """In-memory user repository for testing and development."""
     def __init__(self):
         self.users: dict[int, User] = {}
 
@@ -762,23 +819,24 @@ class InMemoryUserRepository:
         self.users[user.id] = user
 
     def seed(self, *users: User) -> None:
+        """Seed with test data - only available in fakes!"""
         for user in users:
             self.users[user.id] = user
 
-@component.implements(EmailProvider)
-@profile("test", "development")
-class FakeEmail:
+@adapter.for_(EmailProvider, profile=[Profile.TEST, Profile.DEVELOPMENT])
+class FakeEmailAdapter:
+    """Fake email that captures sends in memory."""
     def __init__(self):
         self.outbox = []
 
     async def send(self, to: str, subject: str, body: str) -> None:
         self.outbox.append({"to": to, "subject": subject, "body": body})
-        if hasattr(self, '_print'):  # Dev mode prints
-            print(f"📧 {to}: {subject}")
+        # Dev mode can inspect outbox for debugging
+        print(f"📧 Fake email to {to}: {subject}")
 
-@component.implements(Clock)
-@profile.test
-class FakeClock:
+@adapter.for_(Clock, profile=Profile.TEST)
+class FakeClockAdapter:
+    """Controllable fake clock for testing time-dependent logic."""
     def __init__(self):
         self._now = datetime(2024, 1, 1, tzinfo=UTC)
 
@@ -786,98 +844,103 @@ class FakeClock:
         return self._now
 
     def set_time(self, dt: datetime) -> None:
+        """Set current time - only available in fakes!"""
         self._now = dt
 
 # ============================================================================
 # main.py - Production entry point
 # ============================================================================
-from dioxide import container
+from dioxide import Container, Profile
 from fastapi import FastAPI
 
 async def main():
-    # Set up container
-    container.scan("app", profile="production")
+    # Set up container with production profile
+    container = Container()
+    container.scan(profile=Profile.PRODUCTION)
 
-    async with container:
-        # Run application
-        app = FastAPI()
+    # Run application (Database initialized automatically)
+    app = FastAPI()
 
-        @app.post("/notifications")
-        async def notify(user_id: int):
-            service = NotificationService()
-            result = await service.send_welcome_email(user_id)
-            return {"success": result}
+    @app.post("/notifications")
+    async def notify(user_id: int):
+        service = container.resolve(NotificationService)
+        result = await service.send_welcome_email(user_id)
+        return {"success": result}
 
-        import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 # ============================================================================
 # tests/test_notification.py - Testing
 # ============================================================================
 import pytest
-from dioxide import container
+from dioxide import Container, Profile
 
-@pytest.fixture(autouse=True)
-def setup_container():
-    container.scan("app", profile="test")
-    yield
-    container.reset()
+@pytest.fixture
+def container():
+    """Create test container with fakes."""
+    c = Container()
+    c.scan(profile=Profile.TEST)
+    return c
 
-async def test_welcome_email_sent():
-    # Arrange
-    users = container[UserRepository]
+async def test_welcome_email_sent(container):
+    # Arrange - Use fake adapters
+    users = container.resolve(UserRepository)  # Gets InMemoryUserRepositoryAdapter
     users.seed(User(id=1, email="alice@example.com", name="Alice"))
 
-    clock = container[Clock]
+    clock = container.resolve(Clock)  # Gets FakeClockAdapter
     clock.set_time(datetime(2024, 1, 1, tzinfo=UTC))
 
     # Act
-    service = NotificationService()
+    service = container.resolve(NotificationService)
     result = await service.send_welcome_email(1)
 
-    # Assert
+    # Assert - Verify fake captured the send
     assert result is True
-    email = container[EmailProvider]
+    email = container.resolve(EmailProvider)  # Gets FakeEmailAdapter
     assert len(email.outbox) == 1
+    assert email.outbox[0]["to"] == "alice@example.com"
 
-async def test_throttling():
+async def test_throttling(container):
     # Arrange
-    users = container[UserRepository]
+    users = container.resolve(UserRepository)
     users.seed(User(
         id=1,
         email="alice@example.com",
         last_welcome_sent=datetime(2024, 1, 1, tzinfo=UTC)
     ))
 
-    clock = container[Clock]
+    clock = container.resolve(Clock)
     clock.set_time(datetime(2024, 1, 15, tzinfo=UTC))  # 14 days later
 
     # Act
-    service = NotificationService()
+    service = container.resolve(NotificationService)
     result = await service.send_welcome_email(1)
 
-    # Assert
-    assert result is False  # Throttled
-    email = container[EmailProvider]
+    # Assert - Throttled, no email sent
+    assert result is False
+    email = container.resolve(EmailProvider)
     assert len(email.outbox) == 0
 
 # ============================================================================
 # dev.py - Local development
 # ============================================================================
 async def dev_main():
-    container.scan("app", profile="development")
+    # Development mode: in-memory storage, fake email
+    container = Container()
+    container.scan(profile=Profile.DEVELOPMENT)
 
     # Seed with dev data
-    users = container[UserRepository]
+    users = container.resolve(UserRepository)
     users.seed(
         User(id=1, email="dev@example.com", name="Dev User"),
         User(id=2, email="test@example.com", name="Test User"),
     )
 
     # Run dev server (no Postgres, no SendGrid needed!)
-    async with container:
-        print("Dev environment ready!")
-        # ... run app
+    print("Dev environment ready!")
+    print("Using in-memory database and fake email")
+    # ... run app
 ```
 
 ---
@@ -892,7 +955,7 @@ To maintain focus and ship the MLP, we explicitly exclude:
 
 ```python
 # ❌ Don't build this
-@component
+@service
 class AppConfig:
     @value("DATABASE_URL", default="sqlite:///dev.db")
     database_url: str
@@ -900,7 +963,7 @@ class AppConfig:
 # ✅ Use existing tools
 from pydantic_settings import BaseSettings
 
-@component
+@service
 class AppConfig(BaseSettings):
     database_url: str = "sqlite:///dev.db"
 ```
@@ -911,12 +974,12 @@ class AppConfig(BaseSettings):
 
 ```python
 # ❌ Don't support this
-@component
+@service
 class UserService:
     repo: UserRepository = inject()  # No property injection
 
 # ✅ Only support this
-@component
+@service
 class UserService:
     def __init__(self, repo: UserRepository):
         self.repo = repo
@@ -928,14 +991,14 @@ class UserService:
 
 ```python
 # ❌ Don't support this
-@component
+@service
 class UserService:
     @inject
     def process(self, repo: UserRepository):
         pass
 
 # ✅ Inject via constructor
-@component
+@service
 class UserService:
     def __init__(self, repo: UserRepository):
         self.repo = repo
@@ -947,7 +1010,7 @@ class UserService:
 
 ```python
 # ❌ Don't support this
-@component
+@service
 class A:
     def __init__(self, b: Provider[B]):  # Lazy resolution
         self.b = b
@@ -968,7 +1031,7 @@ class A:
 #     scope: singleton
 
 # ✅ Use Python
-@component
+@service
 class UserService:
     pass
 ```
@@ -979,7 +1042,7 @@ class UserService:
 
 ```python
 # ❌ Don't build this (yet)
-@component
+@service
 @transactional
 @logged
 class UserService:
@@ -988,17 +1051,17 @@ class UserService:
 
 ### ❌ Request Scoping (MLP)
 
-**Post-MLP feature.** For now, SINGLETON and FACTORY only.
+**Post-MLP feature.** For now, all services are SINGLETON (adapters selected by profile).
 
 ```python
 # ❌ Not in MLP
-@component.request_scoped  # Wait until post-MLP
+@service.request_scoped  # Wait until post-MLP
 class RequestContext:
     pass
 
 # ✅ MLP only supports
-@component  # Singleton
-@component.factory  # Factory
+@service  # Singleton (core domain)
+@adapter.for_(Port, profile=...)  # Profile-based adapter selection
 ```
 
 ---
@@ -1009,20 +1072,20 @@ These enhancements improve developer ergonomics while maintaining MLP's core pri
 
 ### Auto-Detecting Protocol Implementations
 
-**Problem:** `@component.implements(EmailProvider)` is explicit but verbose when you're already inheriting from the Protocol.
+**Problem:** `@adapter.for_(EmailProvider, profile=...)` is explicit but verbose when you're already inheriting from the Protocol.
 
-**Solution:** Smart `@component` decorator that auto-detects Protocol inheritance.
+**Solution:** Smart `@adapter` decorator that auto-detects Protocol inheritance.
 
 ```python
 # Current MLP approach (explicit)
-@component.implements(EmailProvider)
-class SendGridEmail:
+@adapter.for_(EmailProvider, profile=Profile.PRODUCTION)
+class SendGridEmailAdapter:
     async def send(self, to: str, subject: str, body: str) -> None:
         pass
 
 # Post-MLP enhancement (auto-detect)
-@component
-class SendGridEmail(EmailProvider):  # Auto-detects EmailProvider!
+@adapter(profile=Profile.PRODUCTION)
+class SendGridEmailAdapter(EmailProvider):  # Auto-detects EmailProvider!
     async def send(self, to: str, subject: str, body: str) -> None:
         pass
 ```
@@ -1040,30 +1103,28 @@ def is_protocol(cls) -> bool:
         cls is not Protocol  # Exclude Protocol itself
     )
 
-def component(cls):
-    """Auto-register component, detecting Protocol implementations."""
+def adapter(profile=None):
+    """Auto-register adapter, detecting Protocol implementations."""
+    def decorator(cls):
+        # Check each base class for Protocols
+        for base in cls.__bases__:
+            if is_protocol(base):
+                container._register_adapter(base, cls, profile)
 
-    # Check each base class for Protocols
-    for base in cls.__bases__:
-        if is_protocol(base):
-            container._register_implementation(base, cls)
-
-    # Also register as a component
-    container._register_component(cls)
-
-    return cls
+        return cls
+    return decorator
 ```
 
 **Benefits:**
 
-- ✅ **Minimal boilerplate** - Just `@component`
+- ✅ **Minimal boilerplate** - Just `@adapter(profile=...)`
 - ✅ **Still explicit** - You must inherit from Protocol
 - ✅ **Type-safe** - mypy validates Protocol implementation
 - ✅ **No metaclass magic** - Simple decorator inspection
-- ✅ **Backward compatible** - `@component.implements()` still works
+- ✅ **Backward compatible** - `@adapter.for_()` still works
 
 **Why Post-MLP:**
-- Adds complexity to `@component` decorator
+- Adds complexity to `@adapter` decorator
 - Need to handle edge cases (multiple Protocols, generic Protocols)
 - MLP should prove core value first
 
