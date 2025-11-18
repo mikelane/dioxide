@@ -47,5 +47,10 @@ def lifecycle(cls: T) -> T:
         msg = f'{cls.__name__}.initialize() must be async'
         raise TypeError(msg)
 
+    # Validate that dispose() method exists
+    if not hasattr(cls, 'dispose'):
+        msg = f'{cls.__name__} must implement dispose() method'
+        raise TypeError(msg)
+
     cls._dioxide_lifecycle = True  # type: ignore[attr-defined]
     return cls

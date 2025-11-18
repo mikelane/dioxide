@@ -44,3 +44,13 @@ class DescribeLifecycleDecorator:
 
                 async def dispose(self) -> None:
                     pass
+
+    def it_validates_dispose_method_exists(self) -> None:
+        """Decorator raises TypeError if dispose() method is missing."""
+
+        with pytest.raises(TypeError, match=r'must implement.*dispose'):
+
+            @lifecycle
+            class Database:
+                async def initialize(self) -> None:
+                    pass
