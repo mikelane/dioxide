@@ -48,6 +48,7 @@ from .exceptions import (
     AdapterNotFoundError,
     ServiceNotFoundError,
 )
+from .lifecycle import lifecycle
 from .profile import profile
 from .profile_enum import Profile
 from .scope import Scope
@@ -65,6 +66,7 @@ __all__ = [
     'adapter',
     'component',
     'container',
+    'lifecycle',
     'profile',
     'service',
 ]
