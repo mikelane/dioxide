@@ -36,7 +36,7 @@ repos:
         additional_dependencies: [pytest>=8.0]
         args: [--strict, --config-file=pyproject.toml]
         files: ^(python/|tests/)
-        exclude: ^(features/|.*\.pyi$)
+        exclude: ^(features/|tests/type_checking/invalid/|.*\.pyi$)
 
   # Rust formatting and linting (local hooks)
   - repo: local

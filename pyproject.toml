@@ -89,7 +89,7 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 strict_concatenate = true
-exclude = ["features/"]
+exclude = ["features/", "tests/type_checking/invalid/"]
 
 [[tool.mypy.overrides]]
 module = ["behave", "behave.*", "dioxide._dioxide_core"]

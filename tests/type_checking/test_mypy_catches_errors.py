@@ -15,7 +15,7 @@ class DescribeMypyErrorDetection:
 
     def it_catches_invalid_resolve_usage(self) -> None:
         """mypy detects type errors in invalid_resolve_usage.py."""
-        test_file = Path(__file__).parent / 'invalid_resolve_usage.py'
+        test_file = Path(__file__).parent / 'invalid' / 'invalid_resolve_usage.py'
         assert test_file.exists(), f'Test file not found: {test_file}'
 
         # Remove type: ignore comments temporarily to test mypy
@@ -57,7 +57,7 @@ class DescribeMypyErrorDetection:
 
     def it_catches_missing_initialize_method(self) -> None:
         """mypy detects missing initialize() in @lifecycle class."""
-        test_file = Path(__file__).parent / 'invalid_lifecycle_missing_initialize.py'
+        test_file = Path(__file__).parent / 'invalid' / 'invalid_lifecycle_missing_initialize.py'
         assert test_file.exists(), f'Test file not found: {test_file}'
 
         # Remove type: ignore comments temporarily to test mypy
@@ -98,7 +98,7 @@ class DescribeMypyErrorDetection:
 
     def it_catches_missing_dispose_method(self) -> None:
         """mypy detects missing dispose() in @lifecycle class."""
-        test_file = Path(__file__).parent / 'invalid_lifecycle_missing_dispose.py'
+        test_file = Path(__file__).parent / 'invalid' / 'invalid_lifecycle_missing_dispose.py'
         assert test_file.exists(), f'Test file not found: {test_file}'
 
         # Remove type: ignore comments temporarily to test mypy
@@ -139,7 +139,7 @@ class DescribeMypyErrorDetection:
 
     def it_catches_sync_methods_instead_of_async(self) -> None:
         """mypy detects sync methods when async is required."""
-        test_file = Path(__file__).parent / 'invalid_lifecycle_sync_methods.py'
+        test_file = Path(__file__).parent / 'invalid' / 'invalid_lifecycle_sync_methods.py'
         assert test_file.exists(), f'Test file not found: {test_file}'
 
         # Remove type: ignore comments temporarily to test mypy
@@ -170,7 +170,8 @@ class DescribeMypyErrorDetection:
             output = result.stdout + result.stderr
 
             # Should catch type mismatch (sync vs async)
-            assert 'arg-type' in output or 'incompatible' in output.lower(), (
+            # mypy reports 'type-var' error when class doesn't match protocol requirements
+            assert 'arg-type' in output or 'incompatible' in output.lower() or 'type-var' in output.lower(), (
                 f'mypy should catch sync vs async mismatch\nOutput: {output}'
             )
 
