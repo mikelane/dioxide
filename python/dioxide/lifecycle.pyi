@@ -1,12 +1,7 @@
-from typing import (
-    Protocol,
-    TypeVar,
-)
+from typing import Protocol
 
 class LifecycleProtocol(Protocol):
     async def initialize(self) -> None: ...
     async def dispose(self) -> None: ...
 
-_T = TypeVar('_T', bound=LifecycleProtocol)
-
-def lifecycle(cls: type[_T]) -> type[_T]: ...
+def lifecycle(cls: type[LifecycleProtocol]) -> type[LifecycleProtocol]: ...
