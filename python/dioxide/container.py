@@ -905,17 +905,21 @@ class Container:
                 dependencies[instance] = set()
 
         # Topological sort using Kahn's algorithm
+        # in_degree[node] = number of dependencies node has (edges pointing TO node)
+        from collections import deque
+
         in_degree = dict.fromkeys(all_instances, 0)
         for node in all_instances:
             for dep in dependencies.get(node, set()):
                 if dep in in_degree:
-                    in_degree[node] += 1
+                    # node depends on dep, so node has one incoming edge
+                    in_degree[node] = in_degree.get(node, 0) + 1
 
-        queue = [node for node in all_instances if in_degree[node] == 0]
+        queue = deque([node for node in all_instances if in_degree[node] == 0])
         sorted_instances = []
 
         while queue:
-            node = queue.pop(0)
+            node = queue.popleft()
             sorted_instances.append(node)
 
             # Find nodes that depend on this node
@@ -924,6 +928,13 @@ class Container:
                     in_degree[other_node] -= 1
                     if in_degree[other_node] == 0:
                         queue.append(other_node)
+
+        # Detect circular dependencies
+        if len(sorted_instances) < len(all_instances):
+            unprocessed = set(all_instances) - set(sorted_instances)
+            from dioxide.exceptions import CircularDependencyError
+
+            raise CircularDependencyError(f'Circular dependency detected involving: {unprocessed}')
 
         return sorted_instances
 
@@ -1015,9 +1026,11 @@ class Container:
         for component in reversed(lifecycle_components):
             try:
                 await component.dispose()
-            except Exception:
+            except Exception as e:
                 # Continue disposing other components even if one fails
-                pass
+                import logging
+
+                logging.error(f'Error disposing component {component.__class__.__name__}: {e}')
 
     async def __aenter__(self) -> Container:
         """Enter async context manager - calls start().

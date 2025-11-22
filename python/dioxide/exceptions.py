@@ -77,3 +77,25 @@ class ServiceNotFoundError(Exception):
     """
 
     pass
+
+
+class CircularDependencyError(Exception):
+    """Raised when circular dependencies are detected during lifecycle initialization.
+
+    This error occurs when @lifecycle components have circular dependencies
+    that cannot be resolved through topological sorting.
+
+    Example:
+        >>> from dioxide import Container, service, lifecycle
+        >>>
+        >>> # This would cause a circular dependency error
+        >>> # A depends on B, B depends on C, C depends on A
+        >>>
+        >>> container = Container()
+        >>> try:
+        ...     await container.start()
+        ... except CircularDependencyError as e:
+        ...     print(e)  # Shows which components are involved in the cycle
+    """
+
+    pass
