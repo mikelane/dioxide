@@ -143,12 +143,47 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 Services and adapters can opt into lifecycle management using the `@lifecycle` decorator for components that need initialization and cleanup:
 
 ```python
-from dioxide import service, lifecycle
+from dioxide import Container, Profile, service, lifecycle, adapter
+from typing import Protocol
 
+# Port for cache operations
+class CachePort(Protocol):
+    async def get(self, key: str) -> str | None: ...
+    async def set(self, key: str, value: str) -> None: ...
+
+# Production adapter with lifecycle
+@adapter.for_(CachePort, profile=Profile.PRODUCTION)
+@lifecycle
+class RedisAdapter:
+    """Redis cache with connection lifecycle."""
+
+    def __init__(self, config: AppConfig):
+        self.config = config
+        self.redis = None
+
+    async def initialize(self) -> None:
+        """Called automatically when container starts."""
+        self.redis = await aioredis.create_redis_pool(self.config.redis_url)
+        print(f"Redis connected: {self.config.redis_url}")
+
+    async def dispose(self) -> None:
+        """Called automatically when container stops."""
+        if self.redis:
+            self.redis.close()
+            await self.redis.wait_closed()
+            print("Redis connection closed")
+
+    async def get(self, key: str) -> str | None:
+        return await self.redis.get(key)
+
+    async def set(self, key: str, value: str) -> None:
+        await self.redis.set(key, value)
+
+# Service with lifecycle
 @service
 @lifecycle
 class Database:
-    """Service with async initialization and cleanup."""
+    """Database service with connection lifecycle."""
 
     def __init__(self, config: AppConfig):
         self.config = config
@@ -157,7 +192,7 @@ class Database:
     async def initialize(self) -> None:
         """Called automatically when container starts."""
         self.engine = create_async_engine(self.config.database_url)
-        print(f"Connected to {self.config.database_url}")
+        print(f"Database connected: {self.config.database_url}")
 
     async def dispose(self) -> None:
         """Called automatically when container stops."""
@@ -165,11 +200,23 @@ class Database:
             await self.engine.dispose()
             print("Database connection closed")
 
-# Future: Container lifecycle support (v0.0.3-alpha Phase 2)
-# async with container:
-#     app = container.resolve(Application)
-#     await app.run()  # Database initialized before use
-# # Database disposed after exit
+# Use async context manager for automatic lifecycle
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+
+async with container:
+    # All @lifecycle components initialized here (in dependency order)
+    app = container.resolve(Application)
+    await app.run()
+# All @lifecycle components disposed here (in reverse order)
+
+# Or manually control lifecycle
+await container.start()  # Initialize all @lifecycle components
+try:
+    app = container.resolve(Application)
+    await app.run()
+finally:
+    await container.stop()  # Dispose all @lifecycle components
 ```
 
 **Why `@lifecycle`?**
@@ -177,8 +224,17 @@ class Database:
 - ✅ **Validated**: Decorator ensures `initialize()` and `dispose()` methods exist and are async
 - ✅ **Consistent**: Matches dioxide's decorator-based API (`@service`, `@adapter.for_()`)
 - ✅ **Type-safe**: Type stubs provide IDE autocomplete and mypy validation
+- ✅ **Dependency-ordered**: Components initialized/disposed in correct dependency order
 
-**Status**: Decorator implemented (v0.0.3-alpha Phase 1). Container integration coming in Phase 2.
+**Key Features**:
+- **Async context manager**: `async with container:` handles start/stop automatically
+- **Manual control**: `await container.start()` and `await container.stop()` for explicit lifecycle
+- **Dependency ordering**: Initialization happens in dependency order (dependencies first)
+- **Reverse disposal**: Disposal happens in reverse order (dependents disposed before dependencies)
+- **Graceful rollback**: If initialization fails, already-initialized components are disposed
+- **Error resilience**: Disposal continues even if individual components fail
+
+**Status**: Fully implemented (v0.0.4-alpha).
 
 ## Function Injection
 
