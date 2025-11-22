@@ -89,7 +89,7 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 strict_concatenate = true
-exclude = ["features/"]
+exclude = ["features/", "tests/type_checking/invalid/"]
 
 [[tool.mypy.overrides]]
 module = ["behave", "behave.*", "dioxide._dioxide_core"]
@@ -98,7 +98,8 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 # Allow dynamic attributes in tests (e.g., component.implements)
-disable_error_code = ["attr-defined", "type-abstract"]
+# Allow type-var errors for intentionally invalid test cases
+disable_error_code = ["attr-defined", "type-abstract", "type-var"]
 
 [tool.ruff]
 target-version = "py311"
@@ -168,6 +169,7 @@ tests_dir = "tests/"
 dev = [
     "twine>=6.2.0",
     "python-semantic-release>=10.4.1",
+    "mypy>=1.18.2",
 ]
 test = [
     "libcst>=1.8.6",
