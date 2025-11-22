@@ -34,7 +34,7 @@ class DescribeLifecycleDecorator:
 
         with pytest.raises(TypeError, match=r'must implement.*initialize'):
 
-            @lifecycle
+            @lifecycle  # type: ignore[arg-type]
             class Database:
                 async def dispose(self) -> None:
                     pass
@@ -44,7 +44,7 @@ class DescribeLifecycleDecorator:
 
         with pytest.raises(TypeError, match=r'initialize.*must be async'):
 
-            @lifecycle
+            @lifecycle  # type: ignore[arg-type]
             class Database:
                 def initialize(self) -> None:  # Not async!
                     pass
@@ -57,7 +57,7 @@ class DescribeLifecycleDecorator:
 
         with pytest.raises(TypeError, match=r'must implement.*dispose'):
 
-            @lifecycle
+            @lifecycle  # type: ignore[arg-type]
             class Database:
                 async def initialize(self) -> None:
                     pass
@@ -67,7 +67,7 @@ class DescribeLifecycleDecorator:
 
         with pytest.raises(TypeError, match=r'dispose.*must be async'):
 
-            @lifecycle
+            @lifecycle  # type: ignore[arg-type]
             class Database:
                 async def initialize(self) -> None:
                     pass
