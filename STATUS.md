@@ -1,7 +1,7 @@
 # dioxide Project Status
 
-**Last Updated**: 2025-11-18
-**Current Milestone**: 0.0.3-alpha (Lifecycle Management)
+**Last Updated**: 2025-11-22
+**Current Milestone**: 0.0.4-alpha (Lifecycle Management)
 **Latest Release**: v0.0.1-alpha (Nov 6, 2025)
 **Progress**: v0.0.2-alpha COMPLETE! Hexagonal architecture API fully implemented ✅
 
@@ -13,7 +13,7 @@
 ✅ **11 of 11 milestone issues complete** - 100% of 0.0.2-alpha scope delivered
 ✅ **Breaking changes implemented** - `@adapter.for_()`, `@service`, `Profile` enum
 ✅ **Migration guide complete** - MIGRATION.md with comprehensive examples
-🎯 **NEXT**: 0.0.3-alpha - Lifecycle Management (Initializable/Disposable)
+🎯 **CURRENT**: 0.0.4-alpha - Lifecycle Management (#95, #67 completed, runtime support pending)
 
 ---
 
@@ -78,21 +78,23 @@ pip install -i https://test.pypi.org/simple/ dioxide
 - ✅ Integration tests demonstrating full patterns
 - ✅ Deprecation path for old API
 
-## Current Sprint (0.0.3-alpha) - Lifecycle Management
+## Current Sprint (0.0.4-alpha) - Lifecycle Management
 
 ### 🎯 Sprint Goal
-**"Production-Ready Resource Management"** - Implement lifecycle protocols for initialization and cleanup
+**"Production-Ready Resource Management"** - Complete lifecycle runtime support
 
-### 📋 Planned Work
-**Epic #95: Lifecycle Management**
-- Issue #67: Implement `Initializable` and `Disposable` protocols
-- Issue #4: Graceful shutdown of singleton resources
-- Add async context manager support (`async with container:`)
-- Initialize components in dependency order
-- Dispose components in reverse order
+### 📋 Work Status
+**Epic #95: Lifecycle Management & Resource Cleanup** (1/3 complete)
+- ✅ Issue #67: @lifecycle decorator implementation (COMPLETE)
+- ✅ Issue #5: Circular dependency detection (COMPLETE)
+- ⏳ Issue #95: Runtime lifecycle support (container.start/stop, async context manager)
 
 ### 🔄 In Progress
-- Planning phase - epic created, ready to start implementation
+- Epic #95: Implementing container lifecycle runtime support
+  - `async with container:` context manager
+  - `container.start()` / `container.stop()` methods
+  - Initialize components in dependency order
+  - Dispose components in reverse dependency order
 
 ### ✅ Completed Last Two Weeks (Nov 11-18, 2025)
 **v0.0.2-alpha Hexagonal Architecture (11 PRs merged)**:
@@ -156,47 +158,57 @@ pip install -i https://test.pypi.org/simple/ dioxide
 - ✅ Maintained 100% test coverage
 - ✅ Deprecation path for old `@component` API
 
-### 0.0.3-alpha (IN PROGRESS - Lifecycle Management)
+### 0.0.3-alpha (COMPLETE ✅)
 **[View milestone →](https://github.com/mikelane/dioxide/milestone/6)**
 
-**Progress**: 0% (0 of 2 issues complete)
+**Progress**: 100% (1 of 1 issue complete)
+**Completed**: Nov 2025
+
+| Issue | Status | Completed |
+|-------|--------|-----------|
+| #6 Named tokens for disambiguation | ✅ DONE | Nov 2025 |
+
+**Note**: This milestone was for named token support, completed earlier.
+
+### 0.0.4-alpha (IN PROGRESS - Lifecycle Management)
+**[View milestone →](https://github.com/mikelane/dioxide/milestone/8)**
+
+**Progress**: 67% (2 of 3 issues complete)
 
 | Issue | Status | Priority |
 |-------|--------|----------|
-| #67 Initializable/Disposable protocols | ⏳ TODO | High |
-| #4 Graceful shutdown | ⏳ TODO | Medium |
+| #67 @lifecycle decorator | ✅ DONE | High |
+| #5 Circular dependency detection | ✅ DONE | Medium |
+| #95 Lifecycle runtime support | ⏳ IN PROGRESS | High |
 
-**Target**: Week of Nov 25, 2025 (1 week)
-**Goal**: Production-ready resource management
+**Target**: Week of Nov 25, 2025
+**Goal**: Production-ready resource management with container lifecycle
 
 ---
 
-## Critical Path to 0.0.2-alpha (MLP Realignment)
+## Remaining Work to 0.1.0-beta (MLP Complete)
 
-What needs to happen for the next release:
+### 0.0.4-alpha (Current - Week of Nov 25)
+1. ✅ @lifecycle decorator (COMPLETE)
+2. ⏳ **Container lifecycle runtime** (#95)
+   - `async with container:` context manager
+   - `container.start()` / `container.stop()` methods
+   - Dependency-ordered initialization/disposal
 
-1. ⏳ **Core API Changes** (Week 1-2)
-   - Implement `@component.factory` syntax
-   - Implement `@component.implements(Protocol)`
-   - Implement `@profile` decorator system (hybrid approach)
-   - Add package and profile parameters to `container.scan()`
-   - Create global singleton container pattern
+### 0.0.5-alpha (Polish & Examples)
+1. Package scanning implementation (#86)
+2. Complete example applications
+3. FastAPI integration example
+4. Error message improvements (#84, #87)
+5. Documentation additions (#64, #81)
 
-2. ⏳ **Documentation Realignment** (Week 2)
-   - Update README with MLP syntax
-   - Rewrite ROADMAP for MLP phases
-   - Update all code examples
-   - Add migration guide from 0.0.1 to 0.0.2
+### 0.1.0-beta (API Freeze - MLP Complete)
+1. Performance benchmarking (#18)
+2. Final API validation
+3. Complete test coverage
+4. Production pilot readiness
 
-3. ⏳ **Test and Validate** (Ongoing)
-   - Maintain 100% test coverage
-   - Update all tests to MLP syntax
-   - Type safety validation with mypy
-
-4. ⏳ **Release to Test PyPI** - Tag v0.0.2-alpha
-
-**Estimated time to release**: 2-3 weeks
-**Why longer?** API realignment is significant work, but sets correct foundation
+**Timeline**: 3-4 weeks to 0.1.0-beta (Dec 16-23, 2025)
 
 ---
 
@@ -222,10 +234,21 @@ What needs to happen for the next release:
 ### Blocking Next Release
 - None currently - ready to start 0.0.2-alpha work
 
-### Future Features (Backlog)
-- #2: Inject values by parameter name
-- #4: Graceful shutdown of singleton resources
-- #15: Set up pytest-bdd framework
+### Backlog (Post-MLP Enhancements)
+High Priority:
+- #86: Package scanning for container.scan()
+- #64: Function injection examples documentation
+
+Medium Priority:
+- #84: Better error messages for protocol resolution failures
+- #87: Warning for empty profile matches in container.scan()
+- #54: GitHub Actions audit and update
+- #82: Container reset mechanism for testing isolation
+- #81: Thread safety documentation
+
+Low Priority:
+- #33: container[Type] bracket syntax (optional nice-to-have)
+- #83: Validation for @component.factory misuse
 
 ---
 
@@ -243,38 +266,37 @@ b199662 docs: add migration guide for v0.0.1-alpha to v0.0.2-alpha (#100) (#115)
 
 ## Next Actions
 
-**This Week** (by Nov 22):
-1. ⏳ Start #67: Implement Initializable and Disposable protocols
-2. ⏳ Design lifecycle protocol API (refer to MLP_VISION.md)
-3. ⏳ Write failing tests for lifecycle management
-4. ⏳ Implement async context manager support
-5. ⏳ Update STATUS.md (this update!)
+**This Week** (by Nov 29):
+1. ✅ Close obsolete issues (#88, #89, #94, #15, #63) - DONE
+2. ✅ Update STATUS.md with correct milestones - DONE
+3. ⏳ Start #95: Container lifecycle runtime implementation
+4. ⏳ Write failing tests for container.start() / container.stop()
+5. ⏳ Implement async context manager support
 
-**Next Week (Week of Nov 25)**:
-1. Complete Initializable/Disposable implementation (#67)
-2. Implement graceful shutdown (#4)
-3. Add lifecycle examples to documentation
-4. Maintain 100% test coverage throughout
-5. Target: v0.0.3-alpha release
+**Week of Dec 2 (Complete 0.0.4-alpha)**:
+1. Complete lifecycle runtime implementation (#95)
+2. Add lifecycle examples to documentation
+3. Maintain 100% test coverage throughout
+4. Release v0.0.4-alpha
 
-**Week of Dec 2 (0.0.4-alpha - Polish)**:
+**Week of Dec 9-16 (0.0.5-alpha - Polish)**:
 1. Package scanning implementation (#86)
-2. Circular dependency detection
-3. Complete example application
-4. FastAPI integration example
-5. Final polish and refinements
+2. Complete example application
+3. FastAPI integration example
+4. Error message improvements
+5. Documentation polish
 
-**Week of Dec 9 (0.1.0-beta - MLP Complete)**:
-1. Final MLP validation
-2. Performance benchmarking
+**Week of Dec 16-23 (0.1.0-beta - MLP Complete)**:
+1. Performance benchmarking (#18)
+2. Final MLP validation against MLP_VISION.md
 3. API freeze
 4. Beta release to Test PyPI
 5. Start production pilot program
 
 **Future Milestones**:
-- 0.0.3-alpha: Lifecycle management (this week!)
-- 0.0.4-alpha: Polish & examples (week of Dec 2)
-- 0.1.0-beta: MLP complete, API freeze (week of Dec 9)
+- 0.0.4-alpha: Lifecycle runtime (current!)
+- 0.0.5-alpha: Polish & examples (week of Dec 9)
+- 0.1.0-beta: MLP complete, API freeze (week of Dec 16)
 - 1.0.0: Stable release (Q1 2026)
 
 ---
@@ -308,7 +330,7 @@ b199662 docs: add migration guide for v0.0.1-alpha to v0.0.2-alpha (#100) (#115)
 
 ---
 
-**Next Status Update**: Friday, Nov 22, 2025 (Lifecycle management progress)
+**Next Status Update**: Friday, Nov 29, 2025 (Lifecycle runtime progress)
 
 ---
 
@@ -322,17 +344,18 @@ b199662 docs: add migration guide for v0.0.1-alpha to v0.0.2-alpha (#100) (#115)
 - Integration tests
 - Deprecation warnings
 
-### 🔄 In Progress (v0.0.3-alpha)
-- Lifecycle protocols (`Initializable`, `Disposable`)
-- Async context manager support
-- Graceful shutdown
+### 🔄 In Progress (v0.0.4-alpha)
+- Container lifecycle runtime (#95)
+  - `async with container:` context manager
+  - `container.start()` / `container.stop()` methods
+  - Dependency-ordered initialization/disposal
 
 ### 📋 Remaining for MLP Complete (0.1.0-beta)
+- Container lifecycle runtime (#95) - current work
 - Package scanning (#86)
-- Circular dependency detection
 - Complete example application
 - FastAPI integration
-- Performance benchmarking
+- Performance benchmarking (#18)
 
 **Current Grade**: A- (85/100) - 70% complete toward MLP vision
 **Previous**: B- (75/100) after v0.0.1-alpha

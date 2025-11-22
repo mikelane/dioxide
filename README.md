@@ -180,6 +180,163 @@ class Database:
 
 **Status**: Decorator implemented (v0.0.3-alpha Phase 1). Container integration coming in Phase 2.
 
+## Function Injection
+
+dioxide works with **any callable**, not just classes. You can inject dependencies into standalone functions, route handlers, and background tasks by using default parameters with `container.resolve()`:
+
+### Standalone Functions
+
+```python
+from dioxide import Container, Profile, adapter, service
+from typing import Protocol
+
+# Define port
+class EmailPort(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
+
+# Set up container
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+
+# Standalone function with injected dependencies
+async def send_welcome_email(
+    user_email: str,
+    user_name: str,
+    email: EmailPort = container.resolve(EmailPort)
+) -> None:
+    """Send welcome email using injected email service."""
+    await email.send(
+        to=user_email,
+        subject="Welcome!",
+        body=f"Thanks for joining, {user_name}!"
+    )
+
+# Call like a normal function
+await send_welcome_email("alice@example.com", "Alice")
+# EmailPort dependency injected automatically
+```
+
+### Route Handlers (Web Frameworks)
+
+Perfect for FastAPI, Flask, or any web framework:
+
+```python
+from fastapi import FastAPI, Request
+from dioxide import Container, Profile
+
+app = FastAPI()
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+
+@app.post("/users")
+async def create_user(
+    request: Request,
+    db: DatabasePort = container.resolve(DatabasePort),
+    email: EmailPort = container.resolve(EmailPort)
+) -> dict:
+    """Create user with injected database and email services."""
+    # Parse request
+    user_data = await request.json()
+
+    # Use injected dependencies
+    user = await db.save_user(user_data)
+    await email.send(
+        to=user_data["email"],
+        subject="Welcome!",
+        body=f"Hello {user_data['name']}!"
+    )
+
+    return {"id": user.id, "status": "created"}
+```
+
+### Background Tasks
+
+Great for Celery, RQ, or any background job system:
+
+```python
+from dioxide import Container, Profile
+from typing import Protocol
+
+# Define ports
+class PaymentPort(Protocol):
+    async def charge(self, invoice_id: str) -> dict: ...
+
+class InvoiceEmailPort(Protocol):
+    """Port for sending invoice-related emails."""
+    async def send_receipt(self, email: str, invoice: dict) -> None: ...
+
+class LoggerPort(Protocol):
+    """Port for logging."""
+    def info(self, msg: str) -> None: ...
+    def error(self, msg: str) -> None: ...
+
+# Set up container
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+
+# Background task with injected dependencies
+async def process_invoice(
+    invoice_id: str,
+    payment: PaymentPort = container.resolve(PaymentPort),
+    email: InvoiceEmailPort = container.resolve(InvoiceEmailPort),
+    logger: LoggerPort = container.resolve(LoggerPort)
+) -> None:
+    """Process invoice payment and send receipt."""
+    try:
+        # Charge payment
+        result = await payment.charge(invoice_id)
+
+        # Send receipt
+        await email.send_receipt(result["customer_email"], result)
+
+        # Log success
+        logger.info(f"Invoice {invoice_id} processed successfully")
+
+    except Exception as e:
+        logger.error(f"Failed to process invoice {invoice_id}: {e}")
+        raise
+
+# Schedule the task (example with Celery)
+@celery_app.task
+def process_invoice_task(invoice_id: str):
+    """Celery task wrapper."""
+    import asyncio
+    return asyncio.run(process_invoice(invoice_id))
+```
+
+### Testing Functions with Injection
+
+Function injection works seamlessly with the profile system for testing:
+
+```python
+import pytest
+from dioxide import Container, Profile
+
+@pytest.fixture
+def test_container():
+    """Container with test profile."""
+    container = Container()
+    container.scan(profile=Profile.TEST)
+    return container
+
+async def test_send_welcome_email(test_container):
+    """Test function injection with fake email adapter."""
+    # Function uses test profile automatically
+    await send_welcome_email("test@example.com", "TestUser")
+
+    # Verify with fake adapter
+    fake_email = test_container.resolve(EmailPort)
+    assert len(fake_email.sent_emails) == 1
+    assert fake_email.sent_emails[0]["to"] == "test@example.com"
+```
+
+**Why function injection?**
+- ✅ **Flexible**: Works with any callable (classes, functions, lambdas)
+- ✅ **Practical**: Perfect for route handlers, background jobs, utility functions
+- ✅ **Testable**: Same profile system works for function injection
+- ✅ **No magic**: Just default parameters with `container.resolve()`
+- ✅ **Type-safe**: Full mypy support for injected types
+
 ## Features
 
 ### v0.0.1-alpha ✅ RELEASED (Nov 6, 2025)
