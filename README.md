@@ -261,8 +261,14 @@ from typing import Protocol
 class PaymentPort(Protocol):
     async def charge(self, invoice_id: str) -> dict: ...
 
-class EmailPort(Protocol):
+class InvoiceEmailPort(Protocol):
+    """Port for sending invoice-related emails."""
     async def send_receipt(self, email: str, invoice: dict) -> None: ...
+
+class LoggerPort(Protocol):
+    """Port for logging."""
+    def info(self, msg: str) -> None: ...
+    def error(self, msg: str) -> None: ...
 
 # Set up container
 container = Container()
@@ -272,7 +278,7 @@ container.scan(profile=Profile.PRODUCTION)
 async def process_invoice(
     invoice_id: str,
     payment: PaymentPort = container.resolve(PaymentPort),
-    email: EmailPort = container.resolve(EmailPort),
+    email: InvoiceEmailPort = container.resolve(InvoiceEmailPort),
     logger: LoggerPort = container.resolve(LoggerPort)
 ) -> None:
     """Process invoice payment and send receipt."""
@@ -294,7 +300,8 @@ async def process_invoice(
 @celery_app.task
 def process_invoice_task(invoice_id: str):
     """Celery task wrapper."""
-    return process_invoice(invoice_id)
+    import asyncio
+    return asyncio.run(process_invoice(invoice_id))
 ```
 
 ### Testing Functions with Injection
