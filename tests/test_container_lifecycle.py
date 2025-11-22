@@ -453,3 +453,90 @@ class DescribeContainerAsyncContextManager:
         # Dispose happens after initialize
         assert events.index('db.dispose') > events.index('db.initialize')
         assert events.index('email.dispose') > events.index('email.initialize')
+
+
+class DescribeContainerLifecycleEdgeCases:
+    """Tests for lifecycle edge cases and error handling."""
+
+    @pytest.mark.asyncio
+    async def it_skips_lifecycle_components_not_in_active_profile(self) -> None:
+        """Skips lifecycle components/adapters not registered for active profile."""
+        initialized = []
+
+        # Service registered for PRODUCTION only
+        @service
+        @lifecycle
+        class ProductionService:
+            async def initialize(self) -> None:
+                initialized.append('ProductionService')
+
+            async def dispose(self) -> None:
+                pass
+
+        # Adapter registered for TEST only
+        class CachePort(Protocol):
+            async def get(self, key: str) -> str | None: ...
+
+        @adapter.for_(CachePort, profile=Profile.TEST)
+        @lifecycle
+        class TestCacheAdapter:
+            async def initialize(self) -> None:
+                initialized.append('TestCacheAdapter')
+
+            async def dispose(self) -> None:
+                pass
+
+            async def get(self, key: str) -> str | None:
+                return None
+
+        # Scan with PRODUCTION profile - should skip TestCacheAdapter
+        container = Container()
+        container.scan(profile=Profile.PRODUCTION)
+
+        await container.start()
+
+        # Only ProductionService should be initialized (TestCacheAdapter skipped)
+        assert 'ProductionService' in initialized
+        assert 'TestCacheAdapter' not in initialized
+
+    @pytest.mark.asyncio
+    async def it_handles_dispose_errors_during_rollback(self) -> None:
+        """Continues rollback even if dispose() fails during error recovery."""
+        initialized = []
+        disposed = []
+
+        @service
+        @lifecycle
+        class Database:
+            async def initialize(self) -> None:
+                initialized.append('Database')
+
+            async def dispose(self) -> None:
+                disposed.append('Database')
+                raise RuntimeError('Database dispose failed during rollback')
+
+        @service
+        @lifecycle
+        class Cache:
+            def __init__(self, db: Database) -> None:
+                self.db = db
+
+            async def initialize(self) -> None:
+                initialized.append('Cache')
+                raise RuntimeError('Cache initialization failed')
+
+            async def dispose(self) -> None:
+                disposed.append('Cache')
+
+        container = Container()
+        container.scan()
+
+        # start() should fail on Cache initialization
+        with pytest.raises(RuntimeError, match='Cache initialization failed'):
+            await container.start()
+
+        # Database was initialized and should attempt dispose (even though it fails)
+        assert 'Database' in initialized
+        assert 'Database' in disposed
+        # Cache never initialized, so no dispose
+        assert 'Cache' not in disposed
