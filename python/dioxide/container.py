@@ -100,20 +100,35 @@ class Container:
         its own singleton cache and registration state.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, allowed_packages: list[str] | None = None) -> None:
         """Initialize a new dependency injection container.
 
         Creates a new container with an empty registry. The container is
         ready to accept registrations via scan() for @component classes
         or via manual registration methods.
 
+        Args:
+            allowed_packages: Optional list of package prefixes allowed for scanning.
+                If provided, only modules matching these prefixes can be imported.
+                This prevents arbitrary code execution via package scanning.
+                If None, no validation is performed (backward compatible).
+                Example: ['myapp', 'tests.fixtures'] allows 'myapp.services'
+                and 'tests.fixtures.mocks' but blocks 'os' or 'sys'.
+
         Example:
             >>> from dioxide import Container
             >>> container = Container()
             >>> assert container.is_empty()
+
+            Security example:
+            >>> # Only allow scanning within your application package
+            >>> container = Container(allowed_packages=['myapp', 'tests'])
+            >>> container.scan(package='myapp.services')  # OK
+            >>> container.scan(package='os')  # Raises ValueError
         """
         self._rust_core = RustContainer()
         self._active_profile: str | None = None  # Track active profile for error messages
+        self._allowed_packages = allowed_packages  # Security: restrict scannable packages
 
     def register_instance(self, component_type: type[T], instance: T) -> None:
         """Register a pre-created instance for a given type.
@@ -608,6 +623,7 @@ class Container:
 
         Raises:
             ImportError: If the package name is invalid or cannot be imported.
+            ValueError: If package_name is not in allowed_packages list (if configured).
 
         Example:
             >>> container._import_package('app.services')
@@ -617,6 +633,17 @@ class Container:
             This is an internal method used by scan() to support package-based
             scanning. It should not be called directly by users.
         """
+        import logging
+
+        # Security: Validate package is in allowed list (if configured)
+        if self._allowed_packages is not None:
+            if not any(package_name.startswith(prefix) for prefix in self._allowed_packages):
+                msg = (
+                    f"Package '{package_name}' is not in allowed_packages list. "
+                    f'Allowed prefixes: {self._allowed_packages}'
+                )
+                raise ValueError(msg)
+
         try:
             # Import the package itself
             package = importlib.import_module(package_name)
@@ -636,7 +663,9 @@ class Container:
         ):
             try:
                 importlib.import_module(modname)
-            except Exception:
+            except Exception as e:
+                # Log import failures for debugging
+                logging.warning(f'Failed to import module {modname}: {e}')
                 # Skip modules that fail to import (missing dependencies, etc.)
                 pass
 
