@@ -837,6 +837,240 @@ class Container:
 
         return factory
 
+    def _build_lifecycle_dependency_order(self) -> list[Any]:
+        """Build list of lifecycle components in dependency order.
+
+        Returns:
+            List of component instances sorted by dependency order (dependencies first).
+        """
+        from dioxide.adapter import _adapter_registry
+        from dioxide.decorators import _get_registered_components
+
+        # Collect all lifecycle component classes
+        lifecycle_classes: dict[type[Any], Any] = {}
+
+        # Check registered components (services)
+        for component_class in _get_registered_components():
+            if hasattr(component_class, '_dioxide_lifecycle'):
+                try:
+                    instance = self.resolve(component_class)
+                    lifecycle_classes[component_class] = instance
+                except (AdapterNotFoundError, ServiceNotFoundError):
+                    # Component not registered for this profile - skip
+                    pass
+
+        # Check adapters - map port class to adapter instance
+        adapter_instances: dict[type[Any], Any] = {}
+        for adapter_class in _adapter_registry:
+            if hasattr(adapter_class, '_dioxide_lifecycle'):
+                # Get the port this adapter implements
+                port_class = getattr(adapter_class, '__dioxide_port__', None)
+                if port_class is not None:
+                    try:
+                        instance = self.resolve(port_class)
+                        adapter_instances[port_class] = instance
+                    except (AdapterNotFoundError, ServiceNotFoundError):
+                        # Adapter not registered for this profile - skip
+                        pass
+
+        # Build dependency graph
+        dependencies: dict[Any, set[Any]] = {}
+        all_instances: list[Any] = list(lifecycle_classes.values()) + list(adapter_instances.values())
+
+        for component_class, instance in lifecycle_classes.items():
+            deps = set()
+            # Check constructor dependencies
+            try:
+                init_signature = inspect.signature(component_class.__init__)
+                type_hints = get_type_hints(component_class.__init__, globalns=component_class.__init__.__globals__)
+
+                for param_name in init_signature.parameters:
+                    if param_name == 'self':
+                        continue
+                    if param_name in type_hints:
+                        dep_type = type_hints[param_name]
+                        # Check if dependency is a lifecycle component
+                        if dep_type in lifecycle_classes:
+                            deps.add(lifecycle_classes[dep_type])
+                        elif dep_type in adapter_instances:
+                            deps.add(adapter_instances[dep_type])
+            except (ValueError, AttributeError, NameError):
+                pass
+
+            dependencies[instance] = deps
+
+        # Add adapters (they typically have no dependencies among lifecycle components)
+        for instance in adapter_instances.values():
+            if instance not in dependencies:
+                dependencies[instance] = set()
+
+        # Topological sort using Kahn's algorithm
+        # in_degree[node] = number of dependencies node has (edges pointing TO node)
+        from collections import deque
+
+        in_degree = dict.fromkeys(all_instances, 0)
+        for node in all_instances:
+            for dep in dependencies.get(node, set()):
+                if dep in in_degree:
+                    # node depends on dep, so node has one incoming edge
+                    in_degree[node] = in_degree.get(node, 0) + 1
+
+        queue = deque([node for node in all_instances if in_degree[node] == 0])
+        sorted_instances = []
+
+        while queue:
+            node = queue.popleft()
+            sorted_instances.append(node)
+
+            # Find nodes that depend on this node
+            for other_node in all_instances:
+                if node in dependencies.get(other_node, set()):
+                    in_degree[other_node] -= 1
+                    if in_degree[other_node] == 0:
+                        queue.append(other_node)
+
+        # Detect circular dependencies
+        if len(sorted_instances) < len(all_instances):
+            unprocessed = set(all_instances) - set(sorted_instances)
+            from dioxide.exceptions import CircularDependencyError
+
+            raise CircularDependencyError(f'Circular dependency detected involving: {unprocessed}')
+
+        return sorted_instances
+
+    async def start(self) -> None:
+        """Initialize all @lifecycle components in dependency order.
+
+        Resolves all registered components and calls initialize() on those
+        decorated with @lifecycle. Components are initialized in dependency
+        order (dependencies before their dependents).
+
+        If initialization fails for any component, all previously initialized
+        components are disposed in reverse order (rollback).
+
+        Raises:
+            Exception: If any component's initialize() method raises an exception.
+                Already-initialized components are disposed before re-raising.
+
+        Example:
+            >>> from dioxide import Container, service, lifecycle, Profile
+            >>>
+            >>> @service
+            ... @lifecycle
+            ... class Database:
+            ...     async def initialize(self) -> None:
+            ...         print('Database connected')
+            ...
+            ...     async def dispose(self) -> None:
+            ...         print('Database disconnected')
+            >>>
+            >>> container = Container()
+            >>> container.scan(profile=Profile.PRODUCTION)
+            >>> await container.start()
+            Database connected
+        """
+        # Build dependency-ordered list
+        lifecycle_components = self._build_lifecycle_dependency_order()
+
+        # Track initialized components for rollback
+        initialized_components: list[Any] = []
+
+        try:
+            # Initialize components in dependency order
+            for component in lifecycle_components:
+                await component.initialize()
+                initialized_components.append(component)
+
+        except Exception:
+            # Rollback: dispose already-initialized components in reverse order
+            for component in reversed(initialized_components):
+                try:
+                    await component.dispose()
+                except Exception:
+                    # Log but don't raise - we're already in error state
+                    pass
+            raise
+
+    async def stop(self) -> None:
+        """Dispose all @lifecycle components in reverse dependency order.
+
+        Calls dispose() on all components decorated with @lifecycle. Components
+        are disposed in reverse dependency order (dependents before their
+        dependencies).
+
+        If disposal fails for any component, continues disposing remaining
+        components (does not raise until all disposals are attempted).
+
+        Example:
+            >>> from dioxide import Container, service, lifecycle, Profile
+            >>>
+            >>> @service
+            ... @lifecycle
+            ... class Database:
+            ...     async def initialize(self) -> None:
+            ...         pass
+            ...
+            ...     async def dispose(self) -> None:
+            ...         print('Database disconnected')
+            >>>
+            >>> container = Container()
+            >>> container.scan(profile=Profile.PRODUCTION)
+            >>> await container.start()
+            >>> await container.stop()
+            Database disconnected
+        """
+        # Build dependency-ordered list (same as start())
+        lifecycle_components = self._build_lifecycle_dependency_order()
+
+        # Dispose components in reverse order (dependents first)
+        for component in reversed(lifecycle_components):
+            try:
+                await component.dispose()
+            except Exception as e:
+                # Continue disposing other components even if one fails
+                import logging
+
+                logging.error(f'Error disposing component {component.__class__.__name__}: {e}')
+
+    async def __aenter__(self) -> Container:
+        """Enter async context manager - calls start().
+
+        Example:
+            >>> from dioxide import Container, service, lifecycle
+            >>>
+            >>> @service
+            ... @lifecycle
+            ... class Database:
+            ...     async def initialize(self) -> None:
+            ...         print('Connected')
+            ...
+            ...     async def dispose(self) -> None:
+            ...         print('Disconnected')
+            >>>
+            >>> async with Container() as container:
+            ...     container.scan()
+            ...     # Use container
+            Connected
+            Disconnected
+        """
+        await self.start()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
+    ) -> None:
+        """Exit async context manager - calls stop().
+
+        Args:
+            exc_type: Exception type if an exception was raised
+            exc_val: Exception value if an exception was raised
+            exc_tb: Exception traceback if an exception was raised
+        """
+        await self.stop()
+
 
 # Global singleton container instance for simplified API
 # This provides the MLP-style ergonomic API while keeping Container class

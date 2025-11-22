@@ -567,18 +567,24 @@ class Database:
         self.engine = None
 
     async def initialize(self) -> None:
-        """Called automatically when container starts (Phase 2)."""
+        """Called automatically when container starts."""
         self.engine = create_async_engine(self.config.database_url)
         logger.info(f"Connected to {self.config.database_url}")
 
     async def dispose(self) -> None:
-        """Called automatically when container stops (Phase 2)."""
+        """Called automatically when container stops."""
         if self.engine:
             await self.engine.dispose()
             logger.info("Database connection closed")
+
+# Use async context manager for automatic lifecycle
+async with container:
+    db = container.resolve(Database)
+    # db.initialize() was called automatically
+# db.dispose() called automatically on exit
 ```
 
-**Implementation**: `python/dioxide/lifecycle.py`
+**Implementation**: `python/dioxide/lifecycle.py`, `python/dioxide/container.py`
 
 **How it works**:
 1. `@lifecycle` - Marks class for lifecycle management with `_dioxide_lifecycle = True`
@@ -586,10 +592,13 @@ class Database:
 3. Validates both methods are async coroutines
 4. Raises `TypeError` with clear error if validation fails
 5. Works with `@service` and `@adapter.for_()` decorators
+6. `container.start()` - Initializes all @lifecycle components in dependency order
+7. `container.stop()` - Disposes all @lifecycle components in reverse dependency order
+8. `async with container` - Context manager automatically calls start/stop
 
 **Type safety**: Type stubs (`lifecycle.pyi`) provide IDE autocomplete and mypy validation of method signatures.
 
-**Status**: Decorator implemented (v0.0.3-alpha Phase 1). Container integration (`container.start()`, `container.stop()`, `async with container`) coming in Phase 2.
+**Status**: Fully implemented (v0.0.4-alpha). Decorator and runtime support complete.
 
 ### Container (Profile-Based Dependency Injection)
 
