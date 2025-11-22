@@ -98,7 +98,8 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 # Allow dynamic attributes in tests (e.g., component.implements)
-disable_error_code = ["attr-defined", "type-abstract"]
+# Allow type-var errors for intentionally invalid test cases
+disable_error_code = ["attr-defined", "type-abstract", "type-var"]
 
 [tool.ruff]
 target-version = "py311"
