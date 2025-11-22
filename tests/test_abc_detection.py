@@ -7,6 +7,7 @@ from abc import (
 
 from dioxide import (
     Container,
+    Profile,
     adapter,
     component,
 )
@@ -54,3 +55,30 @@ class DescribeABCDetection:
         # Assert: Can resolve regular component
         service = container.resolve(RegularService)
         assert service.do_something() == 'done'
+
+    def it_handles_abc_with_profile_filtering(self) -> None:
+        """Handles ABC ports with profile-based adapter selection."""
+
+        # Arrange: ABC port with profile-specific adapters
+        class StoragePort(ABC):
+            @abstractmethod
+            def save(self, data: str) -> None:
+                pass
+
+        @adapter.for_(StoragePort, profile=Profile.PRODUCTION)
+        class ProductionStorage:
+            def save(self, data: str) -> None:
+                pass
+
+        @adapter.for_(StoragePort, profile=Profile.TEST)
+        class FakeStorage:
+            def save(self, data: str) -> None:
+                pass
+
+        # Act: Scan with test profile
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        # Assert: Test adapter is selected
+        storage = container.resolve(StoragePort)
+        assert isinstance(storage, FakeStorage)
