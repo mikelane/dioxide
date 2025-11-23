@@ -139,17 +139,39 @@ pip install -i https://test.pypi.org/simple/ dioxide
 **Timeline**: 3 weeks (Nov 25 - Dec 15, 2025)
 
 ### 📋 Work Status
-**Milestone: 0.1.0-beta** (0 of 5 issues complete)
+**Milestone: 0.1.0-beta** (3 of 5 issues complete - 60%)
 
-**Planned Issues** (need to be created):
-1. ⏳ Performance benchmarking (#18 - existing issue)
-2. ⏳ FastAPI integration example (new issue needed)
-3. ⏳ Testing guide: "fakes > mocks" philosophy (new issue needed)
-4. ⏳ Documentation polish and API reference (new issue needed)
-5. ⏳ MLP validation audit (new issue needed)
+**Completed**:
+1. ✅ Performance benchmarking (#18) - PR #133 merged
+2. ✅ FastAPI integration example (#127) - PR #132 merged
+3. ✅ Testing guide: "fakes > mocks" philosophy (#128) - PR #131 merged
+
+**In Progress**:
+- None currently
+
+**Remaining**:
+4. ⏳ MLP validation audit (#129)
+5. ⏳ Release preparation (#130)
+
+### ✅ Completed This Week (Nov 23, 2025)
+**3 major features delivered**:
+1. ✅ [PR #131](https://github.com/mikelane/dioxide/pull/131): Testing guide: "fakes > mocks" philosophy (#128)
+   - 1,775-line comprehensive guide
+   - Demonstrates dioxide's testing philosophy
+   - Complete examples with fakes for all port types
+
+2. ✅ [PR #132](https://github.com/mikelane/dioxide/pull/132): FastAPI integration example (#127)
+   - Production-ready reference implementation (3,478 lines)
+   - Demonstrates all MLP features in real application
+   - Complete test suite (12 tests in 0.11s)
+
+3. ✅ [PR #133](https://github.com/mikelane/dioxide/pull/133): Performance benchmarking (#18)
+   - 11 comprehensive benchmarks (413 lines)
+   - All targets exceeded by 30-10,000x
+   - Resolution: 167-300ns (target <10μs)
 
 ### 🔄 In Progress
-None yet - sprint starts week of Nov 25
+None currently - moving to final MLP validation
 
 ### 📝 Sprint Backlog (To Be Created)
 **Week 1 (Nov 25-29)**:
@@ -247,18 +269,20 @@ None yet - sprint starts week of Nov 25
 - ✅ Package scanning implementation
 - ✅ Maintained 100% test coverage (92 tests passing)
 
-### 0.1.0-beta (PLANNED - MLP Complete)
-**[View milestone →](https://github.com/mikelane/dioxide/milestone/9)** (to be created)
+### 0.1.0-beta (IN PROGRESS - MLP Complete)
+**[View milestone →](https://github.com/mikelane/dioxide/milestone/9)**
 
-**Progress**: 0% (0 of 5 issues complete)
+**Progress**: 60% (3 of 5 issues complete)
 **Target**: Dec 15, 2025
 
-**Planned Issues** (to be created):
-1. Performance benchmarking (#18)
-2. FastAPI integration example
-3. Testing guide: "fakes > mocks" philosophy
-4. Documentation polish and API reference
-5. MLP validation audit
+**Completed**:
+1. ✅ Performance benchmarking (#18) - PR #133
+2. ✅ FastAPI integration example (#127) - PR #132
+3. ✅ Testing guide: "fakes > mocks" (#128) - PR #131
+
+**Remaining**:
+4. ⏳ MLP validation audit (#129)
+5. ⏳ Release preparation (#130)
 
 **Goal**: MLP feature-complete, API frozen, production-ready
 
@@ -361,6 +385,9 @@ None yet - sprint starts week of Nov 25
 ## Recent Commits
 
 ```
+1c1c7bd feat: add performance benchmarking infrastructure (#18) (#133)
+2dfaead docs: add comprehensive testing guide with fakes philosophy (#128) (#131)
+af06d9d feat: add FastAPI integration example (#127) (#132)
 882f3a2 chore(release): bump to 0.0.4-alpha.1 for PyPI filename conflict
 ad4cd02 fix: correct version format to 0.0.4-alpha for Cargo semver compatibility
 6a2d11c chore(release): bump version to 0.0.4-alpha
@@ -368,9 +395,6 @@ ad4cd02 fix: correct version format to 0.0.4-alpha for Cargo semver compatibilit
 2daa796 feat: implement container lifecycle runtime support (#95) (#125)
 41ce9be docs: add comprehensive function injection examples to README (#64) (#124)
 e1eddd5 chore: add Python 3.14 to package classifiers and CI matrix
-e1734c2 fix: restore @lifecycle runtime implementation and tests (#67) (#123)
-51b400f feat: add type stubs for @lifecycle decorator (#67) (#122)
-bb8f8c4 feat: implement @lifecycle decorator for opt-in lifecycle management (#67) (#121)
 ```
 
 ---
@@ -381,26 +405,20 @@ bb8f8c4 feat: implement @lifecycle decorator for opt-in lifecycle management (#6
 1. ✅ Complete 0.0.4-alpha milestone - DONE
 2. ✅ Release v0.0.4-alpha.1 to PyPI - DONE
 3. ✅ Update STATUS.md with completed sprint - DONE
-4. ⏳ Create 0.1.0-beta milestone on GitHub
-5. ⏳ Create issues for 0.1.0-beta sprint (5 issues)
-6. ⏳ Start FastAPI integration example
+4. ✅ Create 0.1.0-beta milestone on GitHub - DONE
+5. ✅ Create issues for 0.1.0-beta sprint (5 issues) - DONE
+6. ✅ Complete FastAPI integration example (#127) - DONE
+7. ✅ Complete testing guide (#128) - DONE
+8. ✅ Complete performance benchmarking (#18) - DONE
 
-**Week of Dec 2-6 (0.1.0-beta Sprint - Week 1)**:
-1. Complete FastAPI integration example
-2. Begin performance benchmarking (#18)
-3. Create test suite showing fakes pattern
-4. Document FastAPI + Dioxide patterns
+**This Weekend** (Nov 23-24):
+1. ⏳ MLP validation audit (#129) - Verify all features against MLP_VISION.md
+2. ⏳ Begin release preparation (#130)
 
-**Week of Dec 9-13 (0.1.0-beta Sprint - Week 2)**:
-1. Complete performance benchmarking
-2. Write testing guide: "fakes > mocks" philosophy
-3. Begin documentation polish
-4. API reference generation
-
-**Week of Dec 15-20 (0.1.0-beta Sprint - Week 3)**:
-1. Complete MLP validation audit
-2. Verify all MLP_VISION.md features
-3. Final documentation polish
+**Week of Nov 25-29 (0.1.0-beta Sprint - Final Week)**:
+1. Complete MLP validation audit (#129)
+2. Final documentation polish (#130)
+3. Prepare release notes and CHANGELOG
 4. Release v0.1.0-beta to PyPI
 5. API freeze announcement
 
@@ -438,7 +456,7 @@ bb8f8c4 feat: implement @lifecycle decorator for opt-in lifecycle management (#6
 
 ---
 
-**Next Status Update**: Friday, Nov 29, 2025 (0.1.0-beta sprint kickoff and FastAPI integration progress)
+**Next Status Update**: Friday, Nov 29, 2025 (0.1.0-beta release and API freeze)
 
 ---
 
@@ -461,21 +479,26 @@ bb8f8c4 feat: implement @lifecycle decorator for opt-in lifecycle management (#6
 - ✅ Circular dependency detection
 - ✅ Package scanning implementation
 
-### 📋 Remaining for MLP Complete (3 of 14 Features - 21%)
+### 📋 Remaining for MLP Complete (0 of 14 Features - 0%)
 
-**0.1.0-beta Sprint** (3 weeks remaining):
-1. ⏳ Performance benchmarking (#18)
-2. ⏳ FastAPI integration example (demonstrating full pattern)
-3. ⏳ Testing guide: "fakes > mocks" philosophy
+**0.1.0-beta Sprint** (Final validation remaining):
+1. ✅ Performance benchmarking (#18) - DONE
+2. ✅ FastAPI integration example (#127) - DONE
+3. ✅ Testing guide: "fakes > mocks" philosophy (#128) - DONE
 
-**Current Grade**: A+ (95/100) - 79% complete toward MLP vision
+**Remaining**:
+- MLP validation audit (#129) - Verify all features against MLP_VISION.md
+- Release preparation (#130) - CHANGELOG, documentation polish
+
+**Current Grade**: A+ (100/100) - 100% MLP features complete! 🎉
 **Previous Grades**:
+- A+ (95/100) after v0.0.4-alpha.1
 - A- (85/100) after v0.0.2-alpha
 - B- (75/100) after v0.0.1-alpha
 
-**Progress**: +10 points in 1 week! 🎉 (from 85 to 95)
+**Progress**: All 14 MLP features delivered!
 
-**Timeline to MLP Complete**: 3 weeks (Dec 15, 2025)
+**Timeline to Release**: 1 week (target: Nov 29, 2025)
 
 ---
 
