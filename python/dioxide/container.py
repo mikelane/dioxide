@@ -917,10 +917,47 @@ class Container:
         """
         try:
             init_signature = inspect.signature(cls.__init__)
-            # Pass the class's module globals to resolve forward references
-            type_hints = get_type_hints(cls.__init__, globalns=cls.__init__.__globals__)
+            # Pass both global and local namespaces to resolve forward references
+            # For local classes (e.g., in tests), we need to pass the class's __dict__ as localns
+            globalns = getattr(cls.__init__, '__globals__', {})
+            # Include the class's own namespace to handle references to sibling local classes
+            localns = dict(vars(cls))
+            # Also include the class itself in case it's referenced
+            localns[cls.__name__] = cls
+
+            # For local classes defined in test functions, we need to get the frame locals
+            # Try to extract locals from the class's qualname
+            if '<locals>' in cls.__qualname__:
+                # This is a local class - try to get its defining scope
+                # We can't reliably get the locals, but we can at least handle the common case
+                # by checking if there are any classes in the same module with the same qualname pattern
+                try:
+                    import sys
+                    from types import FrameType
+
+                    frame: FrameType | None = sys._getframe()
+                    # Walk up the stack to find locals that might contain our dependencies
+                    while frame is not None:
+                        frame_locals = frame.f_locals
+                        # Add any classes from frame locals
+                        for name, obj in frame_locals.items():
+                            if inspect.isclass(obj):
+                                localns[name] = obj
+                        frame = frame.f_back
+                except (AttributeError, ValueError):
+                    # Frame walking failed - continue without local class resolution
+                    pass
+
+            type_hints = get_type_hints(cls.__init__, globalns=globalns, localns=localns)
         except (ValueError, AttributeError, NameError):
             # No __init__ or no type hints, or can't resolve type hints - just instantiate directly
+            return cls
+
+        # Check if there are any actual dependencies to inject
+        # If there are no type hints (empty dict) or only 'return' hint, just use the class directly
+        injectable_params = [name for name in init_signature.parameters if name != 'self' and name in type_hints]
+        if not injectable_params:
+            # No dependencies to inject - return the class itself for direct instantiation
             return cls
 
         # Build factory that resolves dependencies
@@ -981,7 +1018,28 @@ class Container:
             # Check constructor dependencies
             try:
                 init_signature = inspect.signature(component_class.__init__)
-                type_hints = get_type_hints(component_class.__init__, globalns=component_class.__init__.__globals__)
+                # Use the same logic as _create_auto_injecting_factory to handle local classes
+                globalns = getattr(component_class.__init__, '__globals__', {})
+                localns = dict(vars(component_class))
+                localns[component_class.__name__] = component_class
+
+                if '<locals>' in component_class.__qualname__:
+                    try:
+                        import sys
+                        from types import FrameType
+
+                        frame: FrameType | None = sys._getframe()
+                        while frame is not None:
+                            frame_locals = frame.f_locals
+                            for name, obj in frame_locals.items():
+                                if inspect.isclass(obj):
+                                    localns[name] = obj
+                            frame = frame.f_back
+                    except (AttributeError, ValueError):
+                        # Frame walking failed - continue without local class resolution
+                        pass
+
+                type_hints = get_type_hints(component_class.__init__, globalns=globalns, localns=localns)
 
                 for param_name in init_signature.parameters:
                     if param_name == 'self':

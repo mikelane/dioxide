@@ -89,22 +89,13 @@ class DescribePackageScanning:
 
         container.scan(package='tests.fixtures.test_package_d', profile=Profile.TEST)
 
-        # Assert: Only TEST profile components from package_d are registered
-        from tests.fixtures.test_package_d import (
-            ProductionOnlyService,
-            TestOnlyService,
-        )
+        # Assert: Only TEST profile adapters from package_d are registered
+        from tests.fixtures.test_package_d import ServicePort
 
-        test_service = container.resolve(TestOnlyService)
+        # Resolve via the port - should get the TEST profile adapter
+        test_service = container.resolve(ServicePort)
         assert test_service is not None
-
-        # Production-only service should NOT be registered
-        import pytest
-
-        from dioxide.exceptions import ServiceNotFoundError
-
-        with pytest.raises(ServiceNotFoundError):
-            container.resolve(ProductionOnlyService)
+        assert test_service.get_name() == 'TestOnlyService'
 
     def it_scans_all_packages_when_package_is_none(self) -> None:
         """Scans all registered components when package=None."""
