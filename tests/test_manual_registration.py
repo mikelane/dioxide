@@ -2,7 +2,7 @@
 
 from dioxide import (
     Container,
-    component,
+    service,
 )
 
 
@@ -66,15 +66,15 @@ class DescribeRegisterFactory:
 
 
 class DescribeManualRegistrationPrecedence:
-    """Tests for manual registration taking precedence over @component."""
+    """Tests for manual registration taking precedence over @service."""
 
-    def it_uses_manual_registration_over_component_decorator(self) -> None:
-        """Manual registration overrides @component auto-discovery."""
+    def it_uses_manual_registration_over_service_decorator(self) -> None:
+        """Manual registration overrides @service auto-discovery."""
         # Arrange
         container = Container()
         custom_value = 'custom_instance'
 
-        @component
+        @service
         class ServiceA:
             def __init__(self) -> None:
                 self.value = 'auto_discovered'

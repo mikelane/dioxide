@@ -3,8 +3,7 @@
 import dioxide
 from dioxide import (
     Container,
-    Scope,
-    component,
+    service,
 )
 
 
@@ -16,11 +15,11 @@ def test_import() -> None:
 def test_core_functionality() -> None:
     """Test basic DI functionality works."""
 
-    @component
+    @service
     class Service:
         pass
 
-    @component
+    @service
     class Consumer:
         def __init__(self, service: Service) -> None:
             self.service = service
@@ -34,9 +33,9 @@ def test_core_functionality() -> None:
 
 
 def test_singleton_scope() -> None:
-    """Test singleton scope works correctly."""
+    """Test singleton scope works correctly (services are always singletons)."""
 
-    @component(scope=Scope.SINGLETON)
+    @service
     class SingletonService:
         pass
 
@@ -49,25 +48,8 @@ def test_singleton_scope() -> None:
     assert instance1 is instance2
 
 
-def test_factory_scope() -> None:
-    """Test factory scope works correctly."""
-
-    @component(scope=Scope.FACTORY)
-    class FactoryService:
-        pass
-
-    container = Container()
-    container.scan()
-
-    instance1 = container.resolve(FactoryService)
-    instance2 = container.resolve(FactoryService)
-
-    assert instance1 is not instance2
-
-
 if __name__ == '__main__':
     test_import()
     test_core_functionality()
     test_singleton_scope()
-    test_factory_scope()
     print('All smoke tests passed')

@@ -7,8 +7,8 @@ testing isolation or multi-tenant applications.
 
 from dioxide import (
     Container,
-    component,
     container,
+    service,
 )
 
 
@@ -113,7 +113,7 @@ class DescribeGlobalContainerFunctionality:
     def it_resolves_components_via_singleton(self) -> None:
         """Global container can resolve components after scan."""
 
-        @component
+        @service
         class TestDatabase:
             def __init__(self) -> None:
                 self.connected = True
@@ -129,12 +129,12 @@ class DescribeGlobalContainerFunctionality:
     def it_handles_dependency_injection(self) -> None:
         """Global container auto-injects dependencies."""
 
-        @component
+        @service
         class Database:
             def __init__(self) -> None:
                 self.name = 'testdb'
 
-        @component
+        @service
         class UserService:
             def __init__(self, db: Database) -> None:
                 self.db = db
@@ -143,10 +143,10 @@ class DescribeGlobalContainerFunctionality:
         test_container = Container()
         test_container.scan()
 
-        service = test_container.resolve(UserService)
-        assert isinstance(service, UserService)
-        assert isinstance(service.db, Database)
-        assert service.db.name == 'testdb'
+        user_service = test_container.resolve(UserService)
+        assert isinstance(user_service, UserService)
+        assert isinstance(user_service.db, Database)
+        assert user_service.db.name == 'testdb'
 
 
 class DescribeGetItemSyntax:
@@ -161,22 +161,22 @@ class DescribeGetItemSyntax:
     def it_resolves_via_bracket_notation(self) -> None:
         """Container supports container[Type] syntax."""
 
-        @component
+        @service
         class BracketService:
             def __init__(self) -> None:
                 self.name = 'bracket'
 
         test_container = Container()
         test_container.scan()
-        service = test_container[BracketService]
+        bracket_service = test_container[BracketService]
 
-        assert isinstance(service, BracketService)
-        assert service.name == 'bracket'
+        assert isinstance(bracket_service, BracketService)
+        assert bracket_service.name == 'bracket'
 
     def it_is_equivalent_to_resolve(self) -> None:
         """container[Type] returns same instance as container.resolve(Type)."""
 
-        @component
+        @service
         class SameService:
             pass
 
@@ -190,7 +190,7 @@ class DescribeGetItemSyntax:
     def it_works_with_global_container(self) -> None:
         """Bracket syntax works with global singleton container."""
 
-        @component
+        @service
         class GlobalService:
             def __init__(self) -> None:
                 self.value = 42
@@ -198,10 +198,10 @@ class DescribeGetItemSyntax:
         # Need a fresh container to avoid test pollution
         fresh = Container()
         fresh.scan()
-        service = fresh[GlobalService]
+        global_service = fresh[GlobalService]
 
-        assert isinstance(service, GlobalService)
-        assert service.value == 42
+        assert isinstance(global_service, GlobalService)
+        assert global_service.value == 42
 
 
 class DescribeBackwardCompatibility:
@@ -210,13 +210,13 @@ class DescribeBackwardCompatibility:
     def it_supports_old_pattern_with_container_class(self) -> None:
         """Old v0.0.1-alpha pattern still works."""
 
-        @component
+        @service
         class OldService:
             pass
 
         # Old pattern: manual instantiation
         old_container = Container()
         old_container.scan()
-        service = old_container.resolve(OldService)
+        old_service = old_container.resolve(OldService)
 
-        assert isinstance(service, OldService)
+        assert isinstance(old_service, OldService)

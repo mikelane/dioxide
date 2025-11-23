@@ -2,10 +2,10 @@
 
 # This will cause an ImportError when imported
 
-from dioxide import component
+from dioxide import service
 
 
-@component
+@service
 class BrokenService:
     """This service won't be registered due to import error."""
 

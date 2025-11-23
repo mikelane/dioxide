@@ -1,153 +1,77 @@
-"""Tests for deprecation warnings in old API decorators.
+"""Tests verifying deprecated APIs have been removed.
 
-This module tests that the old @component, @component.factory, and
-@component.implements APIs emit proper DeprecationWarnings to guide
-users toward the new hexagonal architecture API (@service and @adapter.for_()).
+This module tests that the old @component, @component.factory, @component.implements,
+and @profile decorators have been completely removed as of v0.1.0-beta.
+Users should use @service and @adapter.for_() instead.
 """
 
-import warnings
-from typing import Protocol
-
-from dioxide import (
-    Scope,
-    component,
-)
+import pytest
 
 
-class DescribeComponentDeprecation:
-    """Tests for @component decorator deprecation warnings."""
+class DescribeDeprecatedAPIRemoval:
+    """Tests that deprecated APIs are no longer importable."""
 
-    def it_emits_deprecation_warning_for_basic_component(self) -> None:
-        """@component emits DeprecationWarning with migration guidance."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
+    def it_raises_import_error_for_component(self) -> None:
+        """@component decorator is no longer available."""
+        with pytest.raises(ImportError, match=r'cannot import name.*component'):
+            from dioxide import component  # noqa: F401, PLC0415
 
-            @component
-            class TestService:
-                pass
+    def it_raises_import_error_for_profile(self) -> None:
+        """@profile decorator is no longer available."""
+        with pytest.raises(ImportError, match=r'cannot import name.*profile'):
+            from dioxide import profile  # noqa: F401, PLC0415
 
-            # Should emit exactly one warning
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
+    def it_does_not_export_component_in_all(self) -> None:
+        """__all__ no longer includes 'component'."""
+        from dioxide import __all__  # noqa: PLC0415
 
-            # Warning message should guide migration
-            message = str(w[0].message)
-            assert '@component is deprecated' in message
-            assert '@service' in message or '@adapter.for_()' in message
-            assert 'MIGRATION.md' in message
+        assert 'component' not in __all__
+        assert 'profile' not in __all__
 
-    def it_emits_deprecation_warning_for_component_with_scope(self) -> None:
-        """@component(scope=...) emits DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
+    def it_does_not_export_profile_in_all(self) -> None:
+        """__all__ no longer includes 'profile'."""
+        from dioxide import __all__  # noqa: PLC0415
 
-            @component(scope=Scope.SINGLETON)
-            class TestService:
-                pass
-
-            # Should emit exactly one warning
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert '@component is deprecated' in str(w[0].message)
+        assert 'profile' not in __all__
 
 
-class DescribeComponentFactoryDeprecation:
-    """Tests for @component.factory decorator deprecation warnings."""
+class DescribeDeprecatedModules:
+    """Tests that deprecated modules have been removed."""
 
-    def it_emits_deprecation_warning_for_factory(self) -> None:
-        """@component.factory emits DeprecationWarning."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
+    def it_raises_import_error_for_decorators_module(self) -> None:
+        """dioxide.decorators module is no longer available."""
+        with pytest.raises(ImportError, match=r'No module named.*decorators'):
+            import dioxide.decorators  # type: ignore[import-not-found]  # noqa: F401, PLC0415
 
-            @component.factory
-            class RequestHandler:
-                pass
-
-            # Should emit exactly one warning
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-
-            # Warning message should guide migration
-            message = str(w[0].message)
-            assert '@component.factory is deprecated' in message
-            assert '@service' in message or '@adapter.for_()' in message
-            assert 'MIGRATION.md' in message
+    def it_raises_import_error_for_profile_module(self) -> None:
+        """dioxide.profile module is no longer available."""
+        with pytest.raises(ImportError, match=r'No module named.*profile'):
+            import dioxide.profile  # type: ignore[import-not-found]  # noqa: F401, PLC0415
 
 
-class DescribeComponentImplementsDeprecation:
-    """Tests for @component.implements() decorator deprecation warnings."""
+class DescribeReplacementAPIs:
+    """Tests that replacement APIs are available."""
 
-    def it_emits_deprecation_warning_for_implements(self) -> None:
-        """@component.implements(Protocol) emits DeprecationWarning."""
+    def it_exports_service(self) -> None:
+        """@service is available as replacement for @component."""
+        from dioxide import service  # noqa: PLC0415
 
-        # Define a test protocol
-        class EmailProvider(Protocol):
-            async def send(self, to: str, subject: str, body: str) -> None: ...
+        assert service is not None
+        assert callable(service)
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
+    def it_exports_adapter(self) -> None:
+        """@adapter.for_() is available as replacement for @component.implements."""
+        from dioxide import adapter  # noqa: PLC0415
 
-            @component.implements(EmailProvider)
-            class SendGridEmail:
-                async def send(self, to: str, subject: str, body: str) -> None:
-                    pass
+        assert adapter is not None
+        assert hasattr(adapter, 'for_')
+        assert callable(adapter.for_)
 
-            # Should emit exactly one warning
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
+    def it_exports_profile_enum(self) -> None:
+        """Profile enum is available for profile parameter."""
+        from dioxide import Profile  # noqa: PLC0415
 
-            # Warning message should guide migration
-            message = str(w[0].message)
-            assert '@component.implements' in message
-            assert 'deprecated' in message
-            assert '@adapter.for_' in message  # Match actual message format
-            assert 'MIGRATION.md' in message
-
-
-class DescribeWarningStackLevel:
-    """Tests that warnings point to user code, not decorator internals."""
-
-    def it_uses_correct_stack_level_for_component(self) -> None:
-        """Warning stacklevel points to user's @component line, not decorator."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-
-            @component
-            class TestService:
-                pass
-
-            # Check that warning was emitted
-            assert len(w) == 1
-
-            # The filename should be this test file, not decorators.py
-            # (stacklevel=2 makes warning point to caller, not decorator)
-            assert 'test_deprecation.py' in w[0].filename
-
-    def it_uses_correct_stack_level_for_factory(self) -> None:
-        """Warning stacklevel points to user's @component.factory line."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-
-            @component.factory
-            class TestHandler:
-                pass
-
-            assert len(w) == 1
-            assert 'test_deprecation.py' in w[0].filename
-
-    def it_uses_correct_stack_level_for_implements(self) -> None:
-        """Warning stacklevel points to user's @component.implements line."""
-
-        class TestPort(Protocol):
-            def method(self) -> None: ...
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-
-            @component.implements(TestPort)
-            class TestAdapter:
-                def method(self) -> None:
-                    pass
-
-            assert len(w) == 1
-            assert 'test_deprecation.py' in w[0].filename
+        assert Profile is not None
+        assert hasattr(Profile, 'PRODUCTION')
+        assert hasattr(Profile, 'TEST')
+        assert hasattr(Profile, 'DEVELOPMENT')

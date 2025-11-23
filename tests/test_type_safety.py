@@ -2,8 +2,7 @@
 
 from dioxide import (
     Container,
-    Scope,
-    component,
+    service,
 )
 
 
@@ -59,12 +58,12 @@ class DescribeContainerResolveTypeInference:
 
 
 class DescribeDecoratorTypePreservation:
-    """Tests that @component decorator preserves type information."""
+    """Tests that @service decorator preserves type information."""
 
     def it_preserves_class_type_information(self) -> None:
-        """@component decorator doesn't erase type information."""
+        """@service decorator doesn't erase type information."""
 
-        @component
+        @service
         class MyService:
             def do_something(self) -> str:
                 return 'done'
@@ -75,19 +74,19 @@ class DescribeDecoratorTypePreservation:
         instance = MyService()
         assert instance.do_something() == 'done'
 
-    def it_preserves_type_information_with_scope_parameter(self) -> None:
-        """@component(scope=...) preserves type information."""
+    def it_preserves_type_information_for_services(self) -> None:
+        """@service preserves type information."""
 
-        @component(scope=Scope.FACTORY)
-        class MyFactory:
-            def create(self) -> str:
-                return 'created'
+        @service
+        class MyTypedService:
+            def get_value(self) -> str:
+                return 'value'
 
         # Type should be preserved
-        assert hasattr(MyFactory, 'create')
+        assert hasattr(MyTypedService, 'get_value')
 
-        instance = MyFactory()
-        assert instance.create() == 'created'
+        instance = MyTypedService()
+        assert instance.get_value() == 'value'
 
 
 class DescribeConstructorInjectionTypeSafety:
@@ -96,12 +95,12 @@ class DescribeConstructorInjectionTypeSafety:
     def it_resolves_correctly_typed_dependencies(self) -> None:
         """Dependencies are resolved with correct types."""
 
-        @component
+        @service
         class Database:
             def query(self) -> str:
                 return 'result'
 
-        @component
+        @service
         class Service:
             def __init__(self, db: Database) -> None:
                 self.db = db
@@ -112,9 +111,9 @@ class DescribeConstructorInjectionTypeSafety:
         container = Container()
         container.scan()
 
-        service = container.resolve(Service)
+        resolved_service = container.resolve(Service)
 
         # Verify types at runtime
-        assert isinstance(service, Service)
-        assert isinstance(service.db, Database)
-        assert service.execute() == 'result'
+        assert isinstance(resolved_service, Service)
+        assert isinstance(resolved_service.db, Database)
+        assert resolved_service.execute() == 'result'

@@ -11,7 +11,7 @@ sitting between ports (interfaces) and adapters (implementations).
 
 from typing import TypeVar
 
-from dioxide.decorators import _component_registry
+from dioxide._registry import _component_registry
 from dioxide.scope import Scope
 
 T = TypeVar('T')

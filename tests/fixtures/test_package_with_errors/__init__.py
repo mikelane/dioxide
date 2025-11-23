@@ -1,9 +1,9 @@
 """Test package with intentionally broken module."""
 
-from dioxide import component
+from dioxide import service
 
 
-@component
+@service
 class WorkingService:
     """A working service."""
 

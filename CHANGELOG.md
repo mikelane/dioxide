@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta] - 2025-11-22
+
+### Added
+- Performance benchmarking infrastructure (#18)
+  - 11 comprehensive benchmarks exceeding targets by 30-10,000x
+  - Resolution in 167-300ns (target: <10μs)
+  - Lifecycle operations in 1-1.3μs (target: <10ms)
+  - Container initialization benchmarks for 10/50/100 components
+- FastAPI integration example (#127)
+  - Production-ready reference implementation (3,478 lines)
+  - Demonstrates all MLP features in real application
+  - Complete test suite (12 tests in 0.11s)
+  - Shows hexagonal architecture with adapters
+- Comprehensive testing guide (#128)
+  - "Fakes > Mocks" philosophy (1,775 lines)
+  - Complete examples for all port types
+  - Demonstrates dioxide's testing approach
+  - Port-based testing patterns
+
+### Changed
+- **BREAKING**: Removed deprecated `@component` decorator - use `@service` or `@adapter.for_()`
+- **BREAKING**: Removed deprecated `@component.factory` - use `@service` (always singleton)
+- **BREAKING**: Removed deprecated `@component.implements()` - use `@adapter.for_(Port, profile=...)`
+- **BREAKING**: Removed deprecated `@profile.*` decorators - use `profile=` parameter on `@adapter.for_()`
+- **API FREEZE**: No breaking changes until v2.0.0 (stabilizing for production use)
+
+### Removed
+- `dioxide.decorators` module (moved to `dioxide._registry` internal module)
+- `dioxide.profile` module (replaced by `profile=` parameter)
+
+### Documentation
+- MLP validation audit report (#129)
+- API freeze announcement
+- Migration guide updated for removed APIs
+
 ## [0.0.4-alpha.1] - 2025-01-22
 
 ### Added
