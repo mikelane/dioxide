@@ -58,7 +58,7 @@ dioxide exists to make clean architecture (ports-and-adapters) the path of least
 
 1. **Type-safe DI** - If mypy passes, the wiring is correct
 2. **Profile-based implementations** - Swap PostgreSQL ↔ in-memory with one line
-3. **Testing without mocks** - Fast fakes at the seams, not mock behavior
+3. **Testing without mocks** - Fast fakes at the seams, not mock behavior ([testing guide](docs/TESTING_GUIDE.md))
 4. **Rust-backed performance** - Fast graph operations and resolution
 
 See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy.
@@ -556,7 +556,7 @@ Contributions are welcome! We follow a strict workflow to maintain code quality:
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
-See [ROADMAP.md](ROADMAP.md) for the complete product roadmap and [MLP_VISION.md](docs/MLP_VISION.md) for the design philosophy.
+See [ROADMAP.md](ROADMAP.md) for the complete product roadmap, [MLP_VISION.md](docs/MLP_VISION.md) for the design philosophy, and [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for comprehensive testing patterns with dioxide's "fakes over mocks" philosophy.
 
 ## License
 
