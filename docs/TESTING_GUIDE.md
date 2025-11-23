@@ -136,7 +136,7 @@ Instead of mocks, use **fast, real implementations** for testing:
 ```python
 # ✅ GOOD: Using fakes with dioxide
 import pytest
-from dioxide import Container, Profile
+from dioxide import Container, Profile, adapter, service
 from typing import Protocol
 
 # Port (interface)
@@ -328,6 +328,9 @@ class FakeUserRepository:
 For services that produce side effects (email, logging, events), capture calls for verification.
 
 ```python
+from typing import Protocol
+from dioxide import adapter, Profile
+
 # Port
 class EmailPort(Protocol):
     async def send(self, to: str, subject: str, body: str) -> None: ...
@@ -364,7 +367,9 @@ class FakeEmailAdapter:
 **Usage in tests**:
 
 ```python
-async def test_welcome_email_sent(container):
+from dioxide import Container, Profile
+
+async def test_welcome_email_sent(container: Container):
     service = container.resolve(UserService)
     await service.register_user("Alice", "alice@example.com")
 
@@ -380,6 +385,8 @@ For testing time-dependent logic, make fakes controllable.
 
 ```python
 from datetime import datetime, UTC
+from typing import Protocol
+from dioxide import adapter, Profile
 
 # Port
 class Clock(Protocol):
@@ -410,9 +417,10 @@ class FakeClock:
 **Usage in tests**:
 
 ```python
-from datetime import timedelta
+from datetime import datetime, timedelta, UTC
+from dioxide import Container
 
-async def test_throttles_within_30_days(container):
+async def test_throttles_within_30_days(container: Container):
     clock = container.resolve(Clock)
     users = container.resolve(UserRepository)
     service = container.resolve(NotificationService)
@@ -445,9 +453,17 @@ async def test_throttles_within_30_days(container):
 For testing error handling, make fakes configurable to fail.
 
 ```python
+from typing import Protocol
+from dioxide import adapter, Profile
+
 # Port
 class PaymentGateway(Protocol):
     async def charge(self, amount: float, card: str) -> dict: ...
+
+# Define custom exception
+class PaymentError(Exception):
+    """Payment processing error."""
+    pass
 
 # Fake with error injection
 @adapter.for_(PaymentGateway, profile=Profile.TEST)
@@ -477,12 +493,21 @@ class FakePaymentGateway:
         """Make next charge fail."""
         self.should_fail = True
         self.failure_reason = reason
+
+    def reset(self) -> None:
+        """Clear state between tests."""
+        self.charges = []
+        self.should_fail = False
+        self.failure_reason = "Card declined"
 ```
 
 **Usage in tests**:
 
 ```python
-async def test_payment_failure_handling(container):
+import pytest
+from dioxide import Container
+
+async def test_payment_failure_handling(container: Container):
     gateway = container.resolve(PaymentGateway)
     service = container.resolve(CheckoutService)
 
@@ -494,6 +519,14 @@ async def test_payment_failure_handling(container):
         await service.checkout(cart_id=123, card="4242424242424242")
 
     assert "Insufficient funds" in str(exc_info.value)
+
+# Use fixture with cleanup to prevent state leakage
+@pytest.fixture
+def payment_gateway(container: Container):
+    """Get payment gateway with automatic cleanup."""
+    gateway = container.resolve(PaymentGateway)
+    yield gateway
+    gateway.reset()  # Clean up after test
 ```
 
 ### 3.5 Shared Fakes Across Tests
@@ -696,6 +729,12 @@ async def main():
 Adapters can be available in multiple profiles:
 
 ```python
+from typing import Protocol
+from dioxide import adapter, Profile
+
+class EmailPort(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
+
 # Simple adapter for both test and development
 @adapter.for_(EmailPort, profile=[Profile.TEST, Profile.DEVELOPMENT])
 class SimpleEmailAdapter:
@@ -714,6 +753,8 @@ class SimpleEmailAdapter:
 ## Lifecycle in Tests
 
 When testing components with lifecycle (`@lifecycle`), use the container's async context manager.
+
+**Note**: Container lifecycle management (`async with container`, `container.start()`, `container.stop()`) is available in v0.0.4-alpha and later. If you're using an earlier version, the `@lifecycle` decorator is available but container integration is not yet implemented.
 
 ### 5.1 Container Lifecycle
 
@@ -769,6 +810,13 @@ async def test_email_sending(container):
 Most fakes don't need lifecycle because they're simple in-memory structures.
 
 ```python
+from typing import Protocol
+from dioxide import adapter, lifecycle, Profile
+
+class UserRepository(Protocol):
+    async def find_by_id(self, user_id: int) -> dict | None: ...
+    async def create(self, name: str, email: str) -> dict: ...
+
 # ❌ Usually overkill - fakes don't need lifecycle
 @adapter.for_(UserRepository, profile=Profile.TEST)
 @lifecycle
@@ -914,6 +962,7 @@ class SendGridAdapter:
 
 # adapters/system_clock.py - Real time
 from datetime import datetime, UTC
+from dioxide import adapter, Profile
 
 @adapter.for_(Clock, profile=Profile.PRODUCTION)
 class SystemClock:
@@ -982,6 +1031,7 @@ class FakeEmailAdapter:
 
 # adapters/fakes/fake_clock.py - Test fake
 from datetime import datetime, UTC, timedelta
+from dioxide import adapter, Profile
 
 @adapter.for_(Clock, profile=Profile.TEST)
 class FakeClock:
@@ -1549,6 +1599,10 @@ class TestUserService(unittest.TestCase):
 For third-party APIs that you don't control, create a port and two adapters:
 
 ```python
+from typing import Protocol
+from dioxide import adapter, Profile
+import httpx
+
 # Port (your interface)
 class WeatherPort(Protocol):
     async def get_temperature(self, city: str) -> float: ...
@@ -1614,6 +1668,11 @@ async def delete(self, user_id: int) -> None:
 Use test fixtures with cleanup:
 
 ```python
+import tempfile
+import shutil
+import pytest
+from dioxide import Container
+
 # Fake that creates temp files
 class FakeFileStorage:
     def __init__(self):
@@ -1624,7 +1683,7 @@ class FakeFileStorage:
 
 # Fixture with cleanup
 @pytest.fixture
-def fake_storage(container):
+def fake_storage(container: Container):
     storage = container.resolve(FileStorage)
     yield storage
     storage.cleanup()
@@ -1633,6 +1692,10 @@ def fake_storage(container):
 Or use lifecycle (`@lifecycle`) if the fake needs async cleanup:
 
 ```python
+import tempfile
+import shutil
+from dioxide import adapter, lifecycle, Profile
+
 @adapter.for_(FileStorage, profile=Profile.TEST)
 @lifecycle
 class FakeFileStorage:
@@ -1657,6 +1720,10 @@ Very rarely. Consider mocks only when:
 Use a fake clock:
 
 ```python
+from datetime import datetime, timedelta, UTC
+from typing import Protocol
+from dioxide import adapter, Profile
+
 # Port
 class Clock(Protocol):
     def now(self) -> datetime: ...
@@ -1674,7 +1741,6 @@ class FakeClock:
         self._now = dt
 
     def advance(self, **kwargs) -> None:
-        from datetime import timedelta
         self._now += timedelta(**kwargs)
 
 # Test
