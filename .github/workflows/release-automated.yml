@@ -126,15 +126,15 @@ jobs:
             python-version: '3.14'
 
           # Windows x86_64
-          - os: windows-latest
+          - os: windows-2022  # Use stable Windows Server 2022 instead of windows-latest (2025 has wheel issues)
             target: x86_64-pc-windows-msvc
             platform: windows
             python-version: '3.14'
-          - os: windows-latest
+          - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows
             python-version: '3.13'
-          - os: windows-latest
+          - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows
             python-version: '3.11'
