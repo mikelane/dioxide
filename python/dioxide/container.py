@@ -1012,7 +1012,7 @@ class Container:
             for dep in dependencies.get(node, set()):
                 if dep in in_degree:
                     # node depends on dep, so node has one incoming edge
-                    in_degree[node] = in_degree.get(node, 0) + 1
+                    in_degree[node] += 1
 
         queue = deque([node for node in all_instances if in_degree[node] == 0])
         sorted_instances = []
