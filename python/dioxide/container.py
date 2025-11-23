@@ -129,6 +129,7 @@ class Container:
         self._rust_core = RustContainer()
         self._active_profile: str | None = None  # Track active profile for error messages
         self._allowed_packages = allowed_packages  # Security: restrict scannable packages
+        self._lifecycle_instances: list[Any] | None = None  # Cache lifecycle instances during start()
 
     def register_instance(self, component_type: type[T], instance: T) -> None:
         """Register a pre-created instance for a given type.
@@ -1041,6 +1042,9 @@ class Container:
         decorated with @lifecycle. Components are initialized in dependency
         order (dependencies before their dependents).
 
+        The list of lifecycle instances is cached during start() and reused
+        during stop() to ensure all initialized components are disposed.
+
         If initialization fails for any component, all previously initialized
         components are disposed in reverse order (rollback).
 
@@ -1065,15 +1069,15 @@ class Container:
             >>> await container.start()
             Database connected
         """
-        # Build dependency-ordered list
-        lifecycle_components = self._build_lifecycle_dependency_order()
+        # Build dependency-ordered list and cache it for stop()
+        self._lifecycle_instances = self._build_lifecycle_dependency_order()
 
         # Track initialized components for rollback
         initialized_components: list[Any] = []
 
         try:
             # Initialize components in dependency order
-            for component in lifecycle_components:
+            for component in self._lifecycle_instances:
                 await component.initialize()
                 initialized_components.append(component)
 
@@ -1085,6 +1089,8 @@ class Container:
                 except Exception:
                     # Log but don't raise - we're already in error state
                     pass
+            # Clear the cache on failure
+            self._lifecycle_instances = None
             raise
 
     async def stop(self) -> None:
@@ -1093,6 +1099,9 @@ class Container:
         Calls dispose() on all components decorated with @lifecycle. Components
         are disposed in reverse dependency order (dependents before their
         dependencies).
+
+        Uses the cached list of lifecycle instances from start() to ensure
+        exactly the components that were initialized are disposed.
 
         If disposal fails for any component, continues disposing remaining
         components (does not raise until all disposals are attempted).
@@ -1115,11 +1124,13 @@ class Container:
             >>> await container.stop()
             Database disconnected
         """
-        # Build dependency-ordered list (same as start())
-        lifecycle_components = self._build_lifecycle_dependency_order()
+        # Use cached lifecycle instances from start()
+        # If start() was never called, there's nothing to dispose
+        if self._lifecycle_instances is None:
+            return
 
         # Dispose components in reverse order (dependents first)
-        for component in reversed(lifecycle_components):
+        for component in reversed(self._lifecycle_instances):
             try:
                 await component.dispose()
             except Exception as e:
@@ -1127,6 +1138,9 @@ class Container:
                 import logging
 
                 logging.error(f'Error disposing component {component.__class__.__name__}: {e}')
+
+        # Clear the cache after disposal
+        self._lifecycle_instances = None
 
     async def __aenter__(self) -> Container:
         """Enter async context manager - calls start().
