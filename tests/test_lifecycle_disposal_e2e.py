@@ -5,6 +5,7 @@ release (temp files, state tracking) to verify that resources are properly clean
 up when Container.stop() is called.
 """
 
+import os
 import tempfile
 from pathlib import Path
 from typing import Protocol
@@ -41,7 +42,8 @@ class DescribeLifecycleDisposalE2E:
 
             async def initialize(self) -> None:
                 # Create temp file to simulate database connection
-                _fd, path = tempfile.mkstemp(suffix='.db')
+                fd, path = tempfile.mkstemp(suffix='.db')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.db_file = Path(path)
                 temp_files['Database'] = self.db_file
                 # Write some data
@@ -61,7 +63,8 @@ class DescribeLifecycleDisposalE2E:
 
             async def initialize(self) -> None:
                 # Create temp file to simulate cache storage
-                _fd, path = tempfile.mkstemp(suffix='.cache')
+                fd, path = tempfile.mkstemp(suffix='.cache')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.cache_file = Path(path)
                 temp_files['Cache'] = self.cache_file
                 # Write some data
@@ -82,7 +85,8 @@ class DescribeLifecycleDisposalE2E:
 
             async def initialize(self) -> None:
                 # Create temp file to simulate log file
-                _fd, path = tempfile.mkstemp(suffix='.log')
+                fd, path = tempfile.mkstemp(suffix='.log')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.log_file = Path(path)
                 temp_files['LogFile'] = self.log_file
                 # Write some data
@@ -127,7 +131,8 @@ class DescribeLifecycleDisposalE2E:
                 self.resource_file: Path | None = None
 
             async def initialize(self) -> None:
-                _fd, path = tempfile.mkstemp(suffix='.resource')
+                fd, path = tempfile.mkstemp(suffix='.resource')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.resource_file = Path(path)
                 all_created_files.append(self.resource_file)
                 self.resource_file.write_text('resource data')
@@ -195,7 +200,8 @@ class DescribeLifecycleDisposalE2E:
             async def initialize(self) -> None:
                 app_state['email_initialized'] = True
                 # Create log file for sent emails
-                _fd, path = tempfile.mkstemp(suffix='.email-log')
+                fd, path = tempfile.mkstemp(suffix='.email-log')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.log_file = Path(path)
                 temp_files['email'] = self.log_file
                 self.log_file.write_text('email,subject\n')
@@ -220,7 +226,8 @@ class DescribeLifecycleDisposalE2E:
             async def initialize(self) -> None:
                 app_state['db_connected'] = True
                 # Create database file
-                _fd, path = tempfile.mkstemp(suffix='.db')
+                fd, path = tempfile.mkstemp(suffix='.db')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.db_file = Path(path)
                 temp_files['db'] = self.db_file
                 self.db_file.write_text('users table\n')
@@ -240,7 +247,8 @@ class DescribeLifecycleDisposalE2E:
             async def initialize(self) -> None:
                 app_state['cache_connected'] = True
                 # Create cache file
-                _fd, path = tempfile.mkstemp(suffix='.cache')
+                fd, path = tempfile.mkstemp(suffix='.cache')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.cache_file = Path(path)
                 temp_files['cache'] = self.cache_file
                 self.cache_file.write_text('cache entries\n')
@@ -315,7 +323,8 @@ class DescribeLifecycleDisposalE2E:
                     self.temp_file: Path | None = None
 
                 async def initialize(self) -> None:
-                    _fd, path = tempfile.mkstemp(suffix='.test-resource')
+                    fd, path = tempfile.mkstemp(suffix='.test-resource')
+                    os.close(fd)  # Close file descriptor (required on Windows)
                     self.temp_file = Path(path)
                     all_temp_files.append(self.temp_file)
                     self.temp_file.write_text('test data')
@@ -373,7 +382,8 @@ class DescribeLifecycleDisposalE2E:
                 self.temp_file: Path | None = None
 
             async def initialize(self) -> None:
-                _fd, path = tempfile.mkstemp(suffix='.good1')
+                fd, path = tempfile.mkstemp(suffix='.good1')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.temp_file = Path(path)
                 temp_files['good1'] = self.temp_file
                 self.temp_file.write_text('good1 data')
@@ -390,7 +400,8 @@ class DescribeLifecycleDisposalE2E:
                 self.temp_file: Path | None = None
 
             async def initialize(self) -> None:
-                _fd, path = tempfile.mkstemp(suffix='.failing')
+                fd, path = tempfile.mkstemp(suffix='.failing')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.temp_file = Path(path)
                 temp_files['failing'] = self.temp_file
                 self.temp_file.write_text('failing data')
@@ -408,7 +419,8 @@ class DescribeLifecycleDisposalE2E:
                 self.temp_file: Path | None = None
 
             async def initialize(self) -> None:
-                _fd, path = tempfile.mkstemp(suffix='.good2')
+                fd, path = tempfile.mkstemp(suffix='.good2')
+                os.close(fd)  # Close file descriptor (required on Windows)
                 self.temp_file = Path(path)
                 temp_files['good2'] = self.temp_file
                 self.temp_file.write_text('good2 data')

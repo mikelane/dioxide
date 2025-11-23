@@ -213,21 +213,22 @@ class DescribeLifecycleInstanceCaching:
 
         # Cycle 1
         await container.start()
-        assert container._lifecycle_instances is not None
         cycle1_instances = container._lifecycle_instances
+        assert cycle1_instances is not None
         await container.stop()
-        assert container._lifecycle_instances is None
+        stopped_state_1 = container._lifecycle_instances
+        assert stopped_state_1 is None
 
-        # Cycle 2
+        # Cycle 2 - start() rebuilds _lifecycle_instances
         await container.start()
-        assert container._lifecycle_instances is not None
-        cycle2_instances = container._lifecycle_instances  # type: ignore[unreachable]
+        cycle2_instances = container._lifecycle_instances
+        assert cycle2_instances is not None
         await container.stop()
-        assert container._lifecycle_instances is None
+        stopped_state_2 = container._lifecycle_instances
+        assert stopped_state_2 is None
 
         # Instances should be the same (singletons)
-        if cycle1_instances and cycle2_instances:
-            assert cycle1_instances[0] is cycle2_instances[0]
+        assert cycle1_instances[0] is cycle2_instances[0]
 
     @pytest.mark.asyncio
     async def it_caches_complex_dependency_graph(self) -> None:
