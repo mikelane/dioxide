@@ -1,0 +1,12 @@
+# Production dependencies
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+
+# dioxide - install from PyPI
+# For development, you can use: pip install -e ../../
+dioxide>=0.0.4a1
+
+# Optional production adapters (commented out for demo)
+# asyncpg>=0.30.0  # For PostgreSQL
+# sendgrid>=6.11.0  # For SendGrid email

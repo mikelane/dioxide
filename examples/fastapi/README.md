@@ -1,0 +1,600 @@
+# FastAPI + dioxide: Hexagonal Architecture Example
+
+This example demonstrates how to build a production-ready FastAPI application using **dioxide** for dependency injection with hexagonal architecture (ports and adapters pattern).
+
+## What This Example Demonstrates
+
+1. **Hexagonal Architecture**: Clean separation between domain logic and infrastructure
+2. **Profile-Based Configuration**: Different adapters for production, development, and testing
+3. **Lifecycle Management**: Proper initialization and cleanup of resources
+4. **Testing with Fakes**: Fast, deterministic tests without mocks
+5. **FastAPI Integration**: Container lifecycle integrated with FastAPI lifespan
+
+## Quick Start
+
+### Installation
+
+```bash
+# Clone the repository
+cd examples/fastapi
+
+# Install dependencies
+pip install -r requirements-dev.txt
+
+# Or using uv (faster)
+uv pip install -r requirements-dev.txt
+```
+
+### Running the Application
+
+```bash
+# Development mode (logging email adapter, in-memory database)
+PROFILE=development uvicorn app.main:app --reload
+
+# Production mode (SendGrid + PostgreSQL - requires configuration)
+PROFILE=production DATABASE_URL=postgresql://... SENDGRID_API_KEY=... uvicorn app.main:app
+
+# Test mode (for running tests)
+PROFILE=test pytest
+```
+
+### Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run specific test class
+pytest tests/test_api.py::DescribeUserCreation -v
+```
+
+## Architecture Overview
+
+### Hexagonal Architecture Layers
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    HTTP Layer (FastAPI)                      │
+│                  app/main.py - API routes                    │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             │ Depends on
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Domain Layer (Pure)                      │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  Services (app/domain/services.py)                     │ │
+│  │  - UserService: Business logic                         │ │
+│  │  - No framework dependencies                           │ │
+│  │  - Depends only on ports (interfaces)                  │ │
+│  └────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  Ports (app/domain/ports.py)                           │ │
+│  │  - DatabasePort: Protocol for data persistence         │ │
+│  │  - EmailPort: Protocol for email sending               │ │
+│  └────────────────────────────────────────────────────────┘ │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             │ Implemented by
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Adapter Layer (Profile-Specific)                │
+│  ┌─────────────────────┬─────────────────┬────────────────┐ │
+│  │   Production        │  Development    │     Test       │ │
+│  │  (PRODUCTION)       │ (DEVELOPMENT)   │    (TEST)      │ │
+│  ├─────────────────────┼─────────────────┼────────────────┤ │
+│  │ PostgresAdapter     │ PostgresAdapter │ FakeDatabase   │ │
+│  │ SendGridAdapter     │ LoggingEmail    │ FakeEmail      │ │
+│  └─────────────────────┴─────────────────┴────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Directory Structure
+
+```
+app/
+├── main.py              # FastAPI app + container setup
+├── domain/
+│   ├── ports.py        # Port definitions (Protocols)
+│   └── services.py     # Business logic (@service)
+└── adapters/
+    ├── postgres.py     # Production database (@adapter + @lifecycle)
+    ├── sendgrid.py     # Production email (@adapter)
+    ├── logging_email.py # Development email (@adapter)
+    └── fakes.py        # Test adapters (@adapter)
+
+tests/
+├── conftest.py         # Pytest configuration + fixtures
+└── test_api.py         # Fast tests using fakes
+```
+
+## How It Works
+
+### 1. Define Ports (Interfaces)
+
+Ports are pure protocol definitions - no implementation details:
+
+```python
+# app/domain/ports.py
+from typing import Protocol
+
+class DatabasePort(Protocol):
+    async def create_user(self, name: str, email: str) -> dict: ...
+    async def get_user(self, user_id: str) -> dict | None: ...
+
+class EmailPort(Protocol):
+    async def send_welcome_email(self, to: str, name: str) -> None: ...
+```
+
+### 2. Implement Domain Services
+
+Services contain business logic and depend only on ports:
+
+```python
+# app/domain/services.py
+from dioxide import service
+
+@service
+class UserService:
+    def __init__(self, db: DatabasePort, email: EmailPort):
+        self.db = db
+        self.email = email
+
+    async def register_user(self, name: str, email: str) -> dict:
+        # Business logic - doesn't know which adapters are active
+        user = await self.db.create_user(name, email)
+        await self.email.send_welcome_email(email, name)
+        return user
+```
+
+### 3. Create Adapters for Each Profile
+
+Adapters implement ports with profile-specific behavior:
+
+```python
+# Production adapter
+from dioxide import adapter, lifecycle, Profile
+
+@adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+@lifecycle
+class PostgresAdapter:
+    async def initialize(self):
+        # Connect to PostgreSQL
+        self.pool = await asyncpg.create_pool(...)
+
+    async def dispose(self):
+        # Close connection pool
+        await self.pool.close()
+
+    async def create_user(self, name: str, email: str) -> dict:
+        # Real database insert
+        ...
+
+# Test adapter (fake)
+@adapter.for_(DatabasePort, profile=Profile.TEST)
+class FakeDatabaseAdapter:
+    def __init__(self):
+        self.users = {}  # In-memory storage
+
+    async def create_user(self, name: str, email: str) -> dict:
+        # Fast, deterministic, no I/O
+        user = {"id": str(len(self.users) + 1), "name": name, "email": email}
+        self.users[user["id"]] = user
+        return user
+```
+
+### 4. Set Up FastAPI with Container Lifecycle
+
+The container integrates with FastAPI's lifespan:
+
+```python
+# app/main.py
+from dioxide import Container, Profile
+from contextlib import asynccontextmanager
+
+container = Container()
+container.scan(package="app", profile=Profile(os.getenv("PROFILE", "development")))
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with container:  # Initializes @lifecycle adapters
+        yield
+    # Disposes @lifecycle adapters on shutdown
+
+app = FastAPI(lifespan=lifespan)
+
+def get_user_service() -> UserService:
+    return container.resolve(UserService)
+
+@app.post("/users")
+async def create_user(
+    request: CreateUserRequest,
+    service: UserService = Depends(get_user_service)
+):
+    return await service.register_user(request.name, request.email)
+```
+
+### 5. Write Fast Tests Using Fakes
+
+Tests use the TEST profile to get fast, deterministic fakes:
+
+```python
+# tests/test_api.py
+def test_create_user(client, db, email):
+    # Make HTTP request
+    response = client.post("/users", json={"name": "Alice", "email": "alice@example.com"})
+
+    # Verify response
+    assert response.status_code == 201
+
+    # Verify fake state (no database query, instant)
+    assert len(db.users) == 1
+    assert len(email.sent_emails) == 1
+```
+
+## Key Features
+
+### Profile-Based Configuration
+
+Different environments use different adapters:
+
+| Profile | Database | Email | Use Case |
+|---------|----------|-------|----------|
+| `production` | PostgreSQL | SendGrid | Real production deployment |
+| `development` | In-memory | Console logging | Local development |
+| `test` | In-memory fake | Recording fake | Automated testing |
+| `ci` | In-memory | Console logging | CI/CD pipelines |
+
+### Lifecycle Management
+
+Adapters that need initialization/cleanup use `@lifecycle`:
+
+```python
+@adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+@lifecycle
+class PostgresAdapter:
+    async def initialize(self):
+        # Called on container start
+        self.pool = await asyncpg.create_pool(...)
+
+    async def dispose(self):
+        # Called on container stop
+        await self.pool.close()
+```
+
+The container lifecycle integrates with FastAPI:
+
+```
+App Start → lifespan.__aenter__ → container.__aenter__ → initialize() on adapters → Ready
+App Stop  → lifespan.__aexit__  → container.__aexit__  → dispose() on adapters → Shutdown
+```
+
+### Testing with Fakes (Not Mocks)
+
+This example uses **fakes** instead of mocks:
+
+**Fakes** (what we use):
+- Real implementations with shortcuts (in-memory instead of database)
+- Test actual behavior, not implementation details
+- No mocking framework needed
+- Reusable across many tests
+- Fast and deterministic
+
+**Mocks** (what we avoid):
+- Behavior verification objects
+- Test implementation details (which methods were called)
+- Require mocking framework
+- Brittle - break when refactoring
+- Harder to understand
+
+Example fake:
+
+```python
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    def __init__(self):
+        self.sent_emails = []  # Real storage, just in-memory
+
+    async def send_welcome_email(self, to: str, name: str):
+        # Real implementation - just records instead of sending
+        self.sent_emails.append({"to": to, "name": name, "type": "welcome"})
+
+    def was_welcome_email_sent_to(self, email: str) -> bool:
+        # Convenience method for tests
+        return any(e["to"] == email and e["type"] == "welcome" for e in self.sent_emails)
+```
+
+## API Endpoints
+
+### Create User
+
+```bash
+POST /users
+Content-Type: application/json
+
+{
+    "name": "Alice Smith",
+    "email": "alice@example.com"
+}
+
+# Response: 201 Created
+{
+    "id": "1",
+    "name": "Alice Smith",
+    "email": "alice@example.com"
+}
+```
+
+### Get User
+
+```bash
+GET /users/1
+
+# Response: 200 OK
+{
+    "id": "1",
+    "name": "Alice Smith",
+    "email": "alice@example.com"
+}
+```
+
+### List Users
+
+```bash
+GET /users
+
+# Response: 200 OK
+[
+    {
+        "id": "1",
+        "name": "Alice Smith",
+        "email": "alice@example.com"
+    },
+    {
+        "id": "2",
+        "name": "Bob Jones",
+        "email": "bob@example.com"
+    }
+]
+```
+
+### Health Check
+
+```bash
+GET /health
+
+# Response: 200 OK
+{
+    "status": "healthy",
+    "profile": "development"
+}
+```
+
+## Common Tasks
+
+### Running in Different Profiles
+
+```bash
+# Development (logging email, in-memory DB)
+PROFILE=development uvicorn app.main:app --reload
+
+# Production (real database and email)
+PROFILE=production \
+  DATABASE_URL=postgresql://user:pass@localhost/db \
+  SENDGRID_API_KEY=SG.xxx... \
+  SENDGRID_FROM_EMAIL=noreply@example.com \
+  uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Test (fakes for testing)
+PROFILE=test pytest
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=app --cov-report=term-missing
+
+# Run specific test
+pytest tests/test_api.py::DescribeUserCreation::it_creates_a_user_and_sends_welcome_email -v
+
+# Run tests and see print statements
+pytest -s
+```
+
+### Code Quality
+
+```bash
+# Format code
+ruff format app/ tests/
+
+# Lint
+ruff check app/ tests/
+
+# Type check
+mypy app/
+```
+
+## Extending the Example
+
+### Adding a New Port
+
+1. Define the port in `app/domain/ports.py`:
+
+```python
+class CachePort(Protocol):
+    async def get(self, key: str) -> str | None: ...
+    async def set(self, key: str, value: str, ttl: int = 3600) -> None: ...
+```
+
+2. Create adapters for each profile:
+
+```python
+# Production: Redis
+@adapter.for_(CachePort, profile=Profile.PRODUCTION)
+class RedisAdapter:
+    ...
+
+# Test: In-memory
+@adapter.for_(CachePort, profile=Profile.TEST)
+class FakeCacheAdapter:
+    def __init__(self):
+        self.cache = {}
+```
+
+3. Inject into services:
+
+```python
+@service
+class UserService:
+    def __init__(self, db: DatabasePort, email: EmailPort, cache: CachePort):
+        ...
+```
+
+### Adding a New Endpoint
+
+1. Add method to service:
+
+```python
+@service
+class UserService:
+    async def update_user(self, user_id: str, name: str) -> dict:
+        user = await self.db.get_user(user_id)
+        if not user:
+            raise ValueError("User not found")
+        user["name"] = name
+        await self.db.update_user(user)
+        return user
+```
+
+2. Add route to FastAPI:
+
+```python
+@app.put("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    request: UpdateUserRequest,
+    service: UserService = Depends(get_user_service)
+):
+    return await service.update_user(user_id, request.name)
+```
+
+3. Add tests:
+
+```python
+def test_update_user(client):
+    # Create user
+    response = client.post("/users", json={"name": "Alice", "email": "alice@example.com"})
+    user_id = response.json()["id"]
+
+    # Update user
+    response = client.put(f"/users/{user_id}", json={"name": "Alice Updated"})
+    assert response.status_code == 200
+    assert response.json()["name"] == "Alice Updated"
+```
+
+## Troubleshooting
+
+### "Module 'app' has no attribute 'domain'"
+
+Make sure you're running from the `examples/fastapi` directory:
+
+```bash
+cd examples/fastapi
+pytest
+```
+
+### Tests failing with "Container not initialized"
+
+Ensure `PROFILE=test` is set before importing the app. This is handled in `conftest.py`:
+
+```python
+import os
+os.environ["PROFILE"] = "test"
+from app.main import app, container
+```
+
+### "No adapter found for port"
+
+Check that:
+1. Adapter is decorated with `@adapter.for_(Port, profile=...)`
+2. Adapter file is imported (or in `app` package so `container.scan()` finds it)
+3. Profile matches (e.g., `PROFILE=test` matches `profile=Profile.TEST`)
+
+### Lifecycle methods not called
+
+Ensure:
+1. Adapter has `@lifecycle` decorator
+2. Container is used with `async with container:` in FastAPI lifespan
+3. Methods are named `initialize()` and `dispose()`
+4. Methods are async (`async def`)
+
+## Production Deployment
+
+### Environment Variables
+
+Required for production:
+
+```bash
+PROFILE=production
+DATABASE_URL=postgresql://user:password@host:port/database
+SENDGRID_API_KEY=SG.your_api_key_here
+SENDGRID_FROM_EMAIL=noreply@yourdomain.com
+```
+
+### Docker Example
+
+```dockerfile
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app/ ./app/
+
+ENV PROFILE=production
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### Database Setup (PostgreSQL)
+
+```sql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Then update `PostgresAdapter` to use real asyncpg queries.
+
+## Key Takeaways
+
+1. **Hexagonal architecture** makes your code testable and portable
+2. **Ports** (interfaces) define what adapters must implement
+3. **Profile-based configuration** selects adapters per environment
+4. **Fakes** make tests fast and deterministic without mocks
+5. **Lifecycle management** ensures clean resource initialization/cleanup
+6. **Domain layer** stays pure - no framework dependencies
+7. **Tests run in milliseconds** because fakes do no I/O
+
+## Learn More
+
+- [dioxide Documentation](https://github.com/mikelane/dioxide)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/)
+- [Ports and Adapters Pattern](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software))
+
+## License
+
+This example is part of the dioxide project and is provided as-is for educational purposes.

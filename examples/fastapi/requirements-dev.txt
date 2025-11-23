@@ -1,0 +1,10 @@
+# Development and testing dependencies
+-r requirements.txt
+
+# Testing
+pytest>=8.3.0
+httpx>=0.28.0  # Required by TestClient
+
+# Code quality
+ruff>=0.8.0
+mypy>=1.13.0
