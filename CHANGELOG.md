@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.4-alpha] - 2025-01-22
+## [0.0.4-alpha.1] - 2025-01-22
 
 ### Added
 - Container lifecycle management with async context manager support (#95)
@@ -99,5 +99,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLAUDE.md with project guidelines and best practices
 
 [0.1.0]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0
-[0.0.4-alpha]: https://github.com/mikelane/dioxide/releases/tag/v0.0.4-alpha
+[0.0.4-alpha.1]: https://github.com/mikelane/dioxide/releases/tag/v0.0.4-alpha.1
 [0.0.1-alpha]: https://github.com/mikelane/dioxide/releases/tag/v0.0.1-alpha
