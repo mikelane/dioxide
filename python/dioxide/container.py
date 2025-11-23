@@ -492,7 +492,7 @@ class Container:
         profile_str = f" '{self._active_profile}'" if self._active_profile else ''
 
         # Check if it's decorated with @service or @component
-        from dioxide.decorators import _get_registered_components
+        from dioxide._registry import _get_registered_components
 
         registered_components = list(_get_registered_components())
         is_registered = service_type in registered_components
@@ -742,9 +742,11 @@ class Container:
             - Manual registrations (register_*) take precedence over scan()
             - Profile names are case-insensitive (normalized to lowercase)
         """
+        from dioxide._registry import (
+            PROFILE_ATTRIBUTE,
+            _get_registered_components,
+        )
         from dioxide.adapter import _adapter_registry
-        from dioxide.decorators import _get_registered_components
-        from dioxide.profile import PROFILE_ATTRIBUTE
         from dioxide.profile_enum import Profile
         from dioxide.scope import Scope
 
@@ -940,8 +942,8 @@ class Container:
         Returns:
             List of component instances sorted by dependency order (dependencies first).
         """
+        from dioxide._registry import _get_registered_components
         from dioxide.adapter import _adapter_registry
-        from dioxide.decorators import _get_registered_components
 
         # Collect all lifecycle component classes
         lifecycle_classes: dict[type[Any], Any] = {}

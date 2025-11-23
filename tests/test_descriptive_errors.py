@@ -135,7 +135,7 @@ class DescribeServiceNotFoundError:
         """Raises ServiceNotFoundError when trying to resolve unregistered component."""
 
         class UnregisteredService:
-            """A service that was never decorated with @service or @component."""
+            """A service that was never decorated with @service or @service."""
 
             pass
 
@@ -149,7 +149,7 @@ class DescribeServiceNotFoundError:
         # Should mention the type
         assert 'UnregisteredService' in error_msg
         # Should suggest registration
-        assert '@service' in error_msg or '@component' in error_msg or 'register' in error_msg.lower()
+        assert '@service' in error_msg or '@service' in error_msg or 'register' in error_msg.lower()
 
     def it_includes_helpful_context_in_error_message(self) -> None:
         """Error message includes context like active profile and available types."""

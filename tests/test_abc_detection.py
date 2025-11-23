@@ -9,7 +9,7 @@ from dioxide import (
     Container,
     Profile,
     adapter,
-    component,
+    service,
 )
 
 
@@ -43,7 +43,7 @@ class DescribeABCDetection:
         """Handles regular classes that are not Protocols or ABCs."""
 
         # Arrange: Regular component
-        @component
+        @service
         class RegularService:
             def do_something(self) -> str:
                 return 'done'
@@ -53,8 +53,8 @@ class DescribeABCDetection:
         container.scan()
 
         # Assert: Can resolve regular component
-        service = container.resolve(RegularService)
-        assert service.do_something() == 'done'
+        regular_service = container.resolve(RegularService)
+        assert regular_service.do_something() == 'done'
 
     def it_handles_abc_with_profile_filtering(self) -> None:
         """Handles ABC ports with profile-based adapter selection."""

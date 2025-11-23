@@ -1,55 +1,57 @@
 """dioxide: Fast, Rust-backed declarative dependency injection for Python.
 
 dioxide is a modern dependency injection framework that combines:
-- Declarative Python API with @component decorators
+- Declarative Python API with hexagonal architecture support
 - High-performance Rust-backed container implementation
 - Type-safe dependency resolution with IDE autocomplete support
-- Support for SINGLETON and FACTORY component lifecycles
+- Profile-based configuration for different environments
 
 Quick Start (using global singleton container):
-    >>> from dioxide import container, component
+    >>> from dioxide import container, service, adapter, Profile
+    >>> from typing import Protocol
     >>>
-    >>> @component
-    ... class Database:
-    ...     pass
+    >>> class EmailPort(Protocol):
+    ...     async def send(self, to: str, subject: str, body: str) -> None: ...
     >>>
-    >>> @component
+    >>> @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+    ... class SendGridAdapter:
+    ...     async def send(self, to: str, subject: str, body: str) -> None:
+    ...         pass  # Real implementation
+    >>>
+    >>> @service
     ... class UserService:
-    ...     def __init__(self, db: Database):
-    ...         self.db = db
+    ...     def __init__(self, email: EmailPort):
+    ...         self.email = email
     >>>
-    >>> container.scan()
+    >>> container.scan(profile=Profile.PRODUCTION)
     >>> service = container.resolve(UserService)
     >>> # Or use bracket syntax:
     >>> service = container[UserService]
-    >>> assert isinstance(service.db, Database)
 
 Advanced: Creating separate containers for testing isolation:
-    >>> from dioxide import Container, component
+    >>> from dioxide import Container
     >>>
     >>> test_container = Container()
-    >>> test_container.scan()
+    >>> test_container.scan(profile=Profile.TEST)
     >>> service = test_container.resolve(UserService)
 
 For more information, see the README and documentation.
 """
 
+from ._registry import (
+    _clear_registry,
+    _get_registered_components,
+)
 from .adapter import adapter
 from .container import (
     Container,
     container,
-)
-from .decorators import (
-    _clear_registry,
-    _get_registered_components,
-    component,
 )
 from .exceptions import (
     AdapterNotFoundError,
     ServiceNotFoundError,
 )
 from .lifecycle import lifecycle
-from .profile import profile
 from .profile_enum import Profile
 from .scope import Scope
 from .services import service
@@ -64,9 +66,7 @@ __all__ = [
     '_clear_registry',
     '_get_registered_components',
     'adapter',
-    'component',
     'container',
     'lifecycle',
-    'profile',
     'service',
 ]

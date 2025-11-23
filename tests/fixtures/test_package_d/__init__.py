@@ -1,26 +1,33 @@
-"""Test package D - profile-specific components."""
+"""Test package D - profile-specific adapters."""
+
+from typing import Protocol
 
 from dioxide import (
     Profile,
-    component,
+    adapter,
 )
-from dioxide.profile import profile
 
 
-@component
-@profile(Profile.TEST)
+class ServicePort(Protocol):
+    """Protocol for test service."""
+
+    def get_name(self) -> str:
+        """Return component name."""
+        ...
+
+
+@adapter.for_(ServicePort, profile=Profile.TEST)
 class TestOnlyService:
-    """Component only available in TEST profile."""
+    """Adapter only available in TEST profile."""
 
     def get_name(self) -> str:
         """Return component name."""
         return 'TestOnlyService'
 
 
-@component
-@profile(Profile.PRODUCTION)
+@adapter.for_(ServicePort, profile=Profile.PRODUCTION)
 class ProductionOnlyService:
-    """Component only available in PRODUCTION profile."""
+    """Adapter only available in PRODUCTION profile."""
 
     def get_name(self) -> str:
         """Return component name."""

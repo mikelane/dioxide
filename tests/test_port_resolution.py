@@ -18,9 +18,9 @@ from dioxide import (
     Scope,
     adapter,
 )
+from dioxide._registry import PROFILE_ATTRIBUTE
 from dioxide.adapter import _adapter_registry
 from dioxide.exceptions import AdapterNotFoundError
-from dioxide.profile import PROFILE_ATTRIBUTE
 
 
 class EmailPort(Protocol):
