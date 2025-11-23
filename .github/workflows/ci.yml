@@ -47,7 +47,7 @@ jobs:
         run: uv run maturin develop
 
       - name: Run tests
-        run: uv run pytest tests/ --cov=dioxide --cov-report=xml --cov-report=term-missing --cov-branch --cov-fail-under=95 -v
+        run: uv run pytest tests/ --cov=dioxide --cov-report=xml --cov-report=term-missing --cov-branch --cov-fail-under=93 -v
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'

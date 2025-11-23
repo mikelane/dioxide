@@ -420,6 +420,7 @@ async def test_send_welcome_email(test_container):
 - [ ] `@lifecycle` decorator for opt-in lifecycle management - Issue #67
 - [ ] Graceful shutdown of singleton resources - Issue #4
 - [ ] Async context manager support (`async with container:`)
+- [x] Package scanning: `container.scan(package="app.services")` - ✅ Issue #86
 - [ ] Initialize components in dependency order
 - [ ] Dispose components in reverse dependency order
 
