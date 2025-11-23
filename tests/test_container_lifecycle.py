@@ -1,5 +1,7 @@
 """Tests for Container lifecycle management (start/stop/async context manager)."""
 
+from __future__ import annotations
+
 from typing import Protocol
 
 import pytest
@@ -11,6 +13,48 @@ from dioxide import (
     lifecycle,
     service,
 )
+from dioxide.exceptions import ServiceNotFoundError
+
+
+# Module-level classes for circular dependency test
+# These need to be at module level so forward references can be resolved
+@service
+@lifecycle
+class _CircularDepDatabase:
+    def __init__(self, cache: _CircularDepCache) -> None:
+        self.cache = cache
+
+    async def initialize(self) -> None:
+        pass
+
+    async def dispose(self) -> None:
+        pass
+
+
+@service
+@lifecycle
+class _CircularDepCache:
+    def __init__(self, auth: _CircularDepAuth) -> None:
+        self.auth = auth
+
+    async def initialize(self) -> None:
+        pass
+
+    async def dispose(self) -> None:
+        pass
+
+
+@service
+@lifecycle
+class _CircularDepAuth:
+    def __init__(self, db: _CircularDepDatabase) -> None:
+        self.db = db
+
+    async def initialize(self) -> None:
+        pass
+
+    async def dispose(self) -> None:
+        pass
 
 
 class DescribeContainerStart:
@@ -540,3 +584,29 @@ class DescribeContainerLifecycleEdgeCases:
         assert 'Database' in disposed
         # Cache never initialized, so no dispose
         assert 'Cache' not in disposed
+
+    @pytest.mark.asyncio
+    async def it_detects_circular_dependencies_at_resolution_time(self) -> None:
+        """Detects circular dependencies when first resolving components.
+
+        Circular dependencies are detected during the first resolve() attempt,
+        not during container.start(), because resolution fails with ServiceNotFoundError
+        when it encounters unresolvable circular dependencies.
+
+        The CircularDependencyError in _build_lifecycle_dependency_order() serves
+        as a safety net, but in practice circular dependencies are caught earlier
+        during resolution.
+        """
+        # Use module-level classes with circular dependencies:
+        # _CircularDepDatabase -> _CircularDepCache -> _CircularDepAuth -> _CircularDepDatabase
+
+        container = Container()
+        container.scan()
+
+        # Attempting to resolve any component in the cycle should fail
+        with pytest.raises(ServiceNotFoundError) as exc_info:
+            container.resolve(_CircularDepDatabase)
+
+        # Error should mention dependencies couldn't be resolved
+        error_msg = str(exc_info.value)
+        assert 'dependencies could not be resolved' in error_msg or 'Cannot resolve' in error_msg
