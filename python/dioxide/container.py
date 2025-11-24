@@ -1,9 +1,355 @@
-"""Dependency injection container.
+"""Profile-based dependency injection container with lifecycle management.
 
-The Container class is the heart of dioxide's dependency injection system.
-It manages component registration, dependency resolution, and lifecycle scopes.
-The container supports both automatic discovery via @component decorators and
-manual registration for fine-grained control.
+The Container class is the heart of dioxide's dependency injection system,
+providing profile-based component scanning, automatic dependency resolution,
+and opt-in lifecycle management for services and adapters.
+
+In hexagonal architecture, the container serves as the composition root where
+you wire together services (core domain logic) and adapters (infrastructure
+implementations). By using profiles, you can swap out infrastructure implementations
+based on environment (production vs test vs development) without changing core logic.
+
+Key Features:
+    - **Profile-based scanning**: Activate different adapters per environment
+    - **Automatic dependency injection**: Constructor parameters resolved via type hints
+    - **Lifecycle management**: Optional initialize/dispose for infrastructure resources
+    - **Type-safe resolution**: Full mypy support with IDE autocomplete
+    - **Port-based resolution**: Resolve abstract ports, get active adapter
+    - **Singleton caching**: Shared instances managed by high-performance Rust core
+    - **Async context manager**: Automatic lifecycle with ``async with container:``
+
+Architecture Overview:
+    dioxide implements hexagonal architecture (ports and adapters pattern):
+
+    - **Ports**: Abstract interfaces (Protocols/ABCs) defining contracts
+    - **Adapters**: Concrete implementations of ports (infrastructure at the seams)
+    - **Services**: Core domain logic depending on ports (not concrete adapters)
+    - **Container**: Composition root that wires services to adapters based on profile
+
+    The container ensures services remain decoupled from infrastructure by:
+    1. Services declare dependencies on ports (abstractions)
+    2. Adapters register as implementations for ports with profiles
+    3. Container injects the active adapter when resolving the port
+    4. Tests use fast fake adapters, production uses real infrastructure
+
+Profile System:
+    Profiles determine which adapter implementations are active:
+
+    - **Profile.PRODUCTION**: Real infrastructure (SendGrid, PostgreSQL, Redis, etc.)
+    - **Profile.TEST**: Fast fakes for testing (in-memory, no network calls)
+    - **Profile.DEVELOPMENT**: Developer-friendly implementations (console, files, etc.)
+    - **Profile.STAGING**: Staging environment configurations
+    - **Profile.CI**: Continuous integration environment
+    - **Profile.ALL** (``'*'``): Available in all profiles (universal adapters)
+
+    Services are profile-agnostic (available in ALL profiles) while adapters are
+    profile-specific. This enables swapping infrastructure without changing domain logic.
+
+Basic Example:
+    Automatic discovery with profile-based adapters::
+
+        from typing import Protocol
+        from dioxide import Container, adapter, service, Profile
+
+
+        # Port (interface) - defines contract
+        class EmailPort(Protocol):
+            async def send(self, to: str, subject: str, body: str) -> None: ...
+
+
+        # Production adapter - real SendGrid
+        @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+        class SendGridAdapter:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                # Real SendGrid API calls
+                async with httpx.AsyncClient() as client:
+                    await client.post('https://api.sendgrid.com/v3/mail/send', ...)
+
+
+        # Test adapter - fast fake
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmailAdapter:
+            def __init__(self):
+                self.sent_emails = []
+
+            async def send(self, to: str, subject: str, body: str) -> None:
+                self.sent_emails.append({'to': to, 'subject': subject, 'body': body})
+
+
+        # Service - depends on PORT, not concrete adapter
+        @service
+        class UserService:
+            def __init__(self, email: EmailPort):
+                self.email = email  # Container injects active adapter
+
+            async def register(self, email_addr: str, name: str):
+                # Core logic - doesn't know which adapter is active
+                await self.email.send(email_addr, 'Welcome!', f'Hello {name}!')
+
+
+        # Production container - uses SendGridAdapter
+        prod_container = Container()
+        prod_container.scan(profile=Profile.PRODUCTION)
+        prod_service = prod_container.resolve(UserService)
+        # prod_service.email is SendGridAdapter
+
+        # Test container - uses FakeEmailAdapter
+        test_container = Container()
+        test_container.scan(profile=Profile.TEST)
+        test_service = test_container.resolve(UserService)
+        # test_service.email is FakeEmailAdapter
+
+        # Tests run fast with fakes, production uses real infrastructure
+        # Core domain logic (UserService) stays the same
+
+Lifecycle Management Example:
+    Initialize and dispose resources automatically::
+
+        from dioxide import Container, adapter, lifecycle, Profile
+        from sqlalchemy.ext.asyncio import create_async_engine
+
+
+        @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+        @lifecycle
+        class PostgresAdapter:
+            def __init__(self, config: AppConfig):
+                self.config = config
+                self.engine = None
+
+            async def initialize(self) -> None:
+                # Called automatically when container starts
+                self.engine = create_async_engine(self.config.database_url)
+                print('Database connected')
+
+            async def dispose(self) -> None:
+                # Called automatically when container stops
+                if self.engine:
+                    await self.engine.dispose()
+                print('Database disconnected')
+
+            async def query(self, sql: str) -> list[dict]:
+                async with self.engine.connect() as conn:
+                    result = await conn.execute(sql)
+                    return [dict(row) for row in result]
+
+
+        # Manual lifecycle control
+        container = Container()
+        container.scan(profile=Profile.PRODUCTION)
+        await container.start()  # Calls PostgresAdapter.initialize()
+        db = container.resolve(DatabasePort)
+        users = await db.query('SELECT * FROM users')
+        await container.stop()  # Calls PostgresAdapter.dispose()
+
+        # Async context manager (recommended)
+        async with Container() as container:
+            container.scan(profile=Profile.PRODUCTION)
+            # PostgresAdapter.initialize() called here
+            db = container.resolve(DatabasePort)
+            users = await db.query('SELECT * FROM users')
+        # PostgresAdapter.dispose() called here (even if exception raised)
+
+Advanced Example:
+    Multiple adapters with dependencies and lifecycle::
+
+        from dioxide import Container, adapter, service, lifecycle, Profile
+
+
+        # Cache adapter (no dependencies) - initialized first
+        @adapter.for_(CachePort, profile=Profile.PRODUCTION)
+        @lifecycle
+        class RedisCache:
+            async def initialize(self) -> None:
+                self.redis = await aioredis.create_redis_pool('redis://localhost')
+
+            async def dispose(self) -> None:
+                self.redis.close()
+                await self.redis.wait_closed()
+
+            async def get(self, key: str) -> str | None:
+                return await self.redis.get(key)
+
+            async def set(self, key: str, value: str) -> None:
+                await self.redis.set(key, value)
+
+
+        # Database adapter (no dependencies) - initialized first
+        @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+        @lifecycle
+        class PostgresAdapter:
+            async def initialize(self) -> None:
+                self.engine = create_async_engine('postgresql://...')
+
+            async def dispose(self) -> None:
+                await self.engine.dispose()
+
+            async def query(self, sql: str) -> list[dict]:
+                async with self.engine.connect() as conn:
+                    result = await conn.execute(sql)
+                    return [dict(row) for row in result]
+
+
+        # Service depends on cache and database - initialized last
+        @service
+        @lifecycle
+        class UserRepository:
+            def __init__(self, cache: CachePort, db: DatabasePort):
+                self.cache = cache
+                self.db = db
+
+            async def initialize(self) -> None:
+                # Both adapters are already initialized
+                # Warm cache with users from database
+                users = await self.db.query('SELECT * FROM users')
+                for user in users:
+                    await self.cache.set(f'user:{user["id"]}', user['email'])
+
+            async def dispose(self) -> None:
+                # Flush any pending operations
+                pass
+
+
+        # Container manages initialization order automatically:
+        # 1. RedisCache.initialize()
+        # 2. PostgresAdapter.initialize()
+        # 3. UserRepository.initialize() (after dependencies ready)
+        # ... application runs ...
+        # 1. UserRepository.dispose() (before dependencies)
+        # 2. PostgresAdapter.dispose()
+        # 3. RedisCache.dispose()
+
+        async with Container() as container:
+            container.scan(profile=Profile.PRODUCTION)
+            repo = container.resolve(UserRepository)
+            # All @lifecycle components initialized in dependency order
+            user = await repo.find_by_email('alice@example.com')
+        # All @lifecycle components disposed in reverse dependency order
+
+Testing Example:
+    Fast tests with fake adapters::
+
+        import pytest
+        from dioxide import Container, Profile
+
+
+        @pytest.fixture
+        async def container():
+            async with Container() as c:
+                c.scan(profile=Profile.TEST)
+                # Fast fake adapters initialized (no real infrastructure)
+                yield c
+            # Cleanup happens automatically
+
+
+        async def test_user_registration(container):
+            # Arrange
+            service = container.resolve(UserService)
+            email = container.resolve(EmailPort)  # FakeEmailAdapter
+
+            # Act
+            await service.register('alice@example.com', 'Alice')
+
+            # Assert - check observable outcomes using fake's state
+            assert len(email.sent_emails) == 1
+            assert email.sent_emails[0]['to'] == 'alice@example.com'
+            assert 'Welcome' in email.sent_emails[0]['subject']
+
+
+        # Tests run in milliseconds, no network calls, fully isolated
+
+Global Container Instance:
+    For most applications, use the global singleton container::
+
+        from dioxide import container, Profile
+
+        # Setup once at application startup
+        container.scan(profile=Profile.PRODUCTION)
+
+        # Resolve services anywhere in your app
+        user_service = container.resolve(UserService)
+
+        # With lifecycle
+        async with container:
+            # All @lifecycle components initialized
+            await app.run()
+        # All @lifecycle components disposed
+
+Manual Registration Example:
+    Register components without decorators::
+
+        from dioxide import Container
+
+
+        class Config:
+            def __init__(self, env: str):
+                self.env = env
+
+
+        container = Container()
+
+        # Register pre-created instance
+        config = Config('production')
+        container.register_instance(Config, config)
+
+        # Register singleton factory
+        container.register_singleton(Logger, lambda: Logger(config))
+
+        # Register transient factory (new instance each time)
+        container.register_factory(RequestContext, lambda: RequestContext())
+
+        # Resolve components
+        config = container.resolve(Config)
+        logger = container.resolve(Logger)
+
+Security:
+    Restrict which packages can be scanned to prevent code execution::
+
+        # Only allow scanning within your application packages
+        container = Container(allowed_packages=['myapp', 'tests'])
+        container.scan(package='myapp.services')  # OK
+        container.scan(package='os')  # Raises ValueError
+
+Error Handling:
+    Descriptive errors with troubleshooting hints::
+
+        from dioxide.exceptions import AdapterNotFoundError, ServiceNotFoundError
+
+        try:
+            container.scan(profile=Profile.PRODUCTION)
+            email = container.resolve(EmailPort)
+        except AdapterNotFoundError as e:
+            # Shows:
+            # - Which port couldn't be resolved
+            # - Active profile
+            # - Available adapters for other profiles
+            # - How to register an adapter for this profile
+            print(e)
+
+        try:
+            service = container.resolve(UnregisteredService)
+        except ServiceNotFoundError as e:
+            # Shows:
+            # - Which service couldn't be resolved
+            # - Missing dependencies
+            # - How to register the service
+            print(e)
+
+Best Practices:
+    - **One container per application**: Create once at startup, reuse everywhere
+    - **Use profiles**: Swap infrastructure, keep domain logic unchanged
+    - **Global container for simplicity**: Import ``from dioxide import container``
+    - **Separate containers for testing**: Isolated test containers per test
+    - **Lifecycle for adapters**: Infrastructure resources need init/dispose
+    - **Services rarely need lifecycle**: Core logic is usually stateless
+    - **Async context manager**: ``async with container:`` handles lifecycle automatically
+
+See Also:
+    - :class:`dioxide.adapter.adapter` - For marking infrastructure adapters
+    - :class:`dioxide.services.service` - For marking core domain services
+    - :class:`dioxide.lifecycle.lifecycle` - For initialization/cleanup
+    - :class:`dioxide.profile_enum.Profile` - Standard profile enum values
+    - :class:`dioxide.exceptions.AdapterNotFoundError` - Port resolution error
+    - :class:`dioxide.exceptions.ServiceNotFoundError` - Service resolution error
 """
 
 from __future__ import annotations
