@@ -163,7 +163,7 @@ jobs:
         run: uv run sphinx-build -b html docs docs/_build/html
 
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@ea165f2524346e8e184311c5dd8b91e8fae30904  # v4.5.0
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b  # v4.5.0
         with:
           name: documentation
           path: docs/_build/html
