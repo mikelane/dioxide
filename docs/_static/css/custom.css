@@ -1,0 +1,88 @@
+/* Custom styles for dioxide documentation */
+
+/* Make code samples more readable */
+pre {
+    padding: 12px;
+    line-height: 1.5;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+
+/* Make parameter lists in API docs more readable */
+.field-list {
+    margin-bottom: 1.5em;
+}
+
+.field-name {
+    font-weight: bold;
+}
+
+/* Add more space between sections */
+.section {
+    margin-bottom: 2em;
+}
+
+/* Make class/method names stand out */
+dl.class > dt,
+dl.function > dt,
+dl.method > dt {
+    background-color: #f8f8f8;
+    border-left: 3px solid #2980b9;
+    padding: 6px 8px;
+}
+
+/* Improve the appearance of admonitions */
+.admonition {
+    padding: 12px;
+    margin: 20px 0;
+    border-radius: 4px;
+}
+
+.admonition-title {
+    margin: -12px -12px 12px -12px;
+    padding: 6px 12px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    font-weight: bold;
+}
+
+/* Make note admonitions stand out */
+.admonition.note {
+    background-color: #eff5fb;
+}
+
+.admonition.note .admonition-title {
+    background-color: #6ab0de;
+    color: white;
+}
+
+/* Make warning admonitions stand out */
+.admonition.warning {
+    background-color: #ffedcc;
+}
+
+.admonition.warning .admonition-title {
+    background-color: #f0b37e;
+    color: white;
+}
+
+/* Additional spacing for lists */
+ul, ol {
+    margin-bottom: 1.5em;
+}
+
+/* Improve table formatting */
+table.docutils {
+    margin-bottom: 1.5em;
+    border-collapse: collapse;
+    border: 1px solid #e1e4e5;
+}
+
+table.docutils td, table.docutils th {
+    padding: 8px;
+    border: 1px solid #e1e4e5;
+}
+
+table.docutils thead {
+    background-color: #f3f6f6;
+}

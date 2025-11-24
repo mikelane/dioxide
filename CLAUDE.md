@@ -405,6 +405,20 @@ maturin develop --release
 maturin build
 ```
 
+### Documentation
+```bash
+# Install docs dependencies
+uv sync --group docs
+
+# Build HTML documentation
+uv run sphinx-build -b html docs docs/_build/html
+
+# View documentation locally
+open docs/_build/html/index.html  # macOS
+xdg-open docs/_build/html/index.html  # Linux
+start docs/_build/html/index.html  # Windows
+```
+
 ## Repository Structure
 
 ```
