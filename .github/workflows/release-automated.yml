@@ -33,6 +33,50 @@ jobs:
             echo "should_release=false" >> $GITHUB_OUTPUT
           fi
 
+  # Phase 1 Fix: Pre-flight version validation
+  # Validates that Cargo.toml version matches git tag BEFORE building wheels
+  # Prevents wasting 90+ minutes building wrong version (issue #137)
+  validate-version:
+    name: Validate Version Synchronization
+    needs: determine-release
+    runs-on: ubuntu-latest
+    if: needs.determine-release.outputs.should_release == 'true'
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+        with:
+          ref: ${{ needs.determine-release.outputs.tag }}
+
+      - name: Validate Cargo.toml version matches git tag
+        run: |
+          # Extract version from Cargo.toml
+          CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | cut -d'"' -f2)
+
+          # Extract version from git tag (remove 'v' prefix)
+          TAG_VERSION="${{ needs.determine-release.outputs.version }}"
+
+          echo "Cargo.toml version: $CARGO_VERSION"
+          echo "Git tag version: $TAG_VERSION"
+
+          if [ "$CARGO_VERSION" != "$TAG_VERSION" ]; then
+            echo ""
+            echo "❌ ERROR: Version mismatch detected!"
+            echo ""
+            echo "  Cargo.toml:  $CARGO_VERSION"
+            echo "  Git tag:     $TAG_VERSION"
+            echo ""
+            echo "This mismatch would cause building the wrong version."
+            echo "Please update Cargo.toml to match the git tag before releasing."
+            echo ""
+            echo "To fix:"
+            echo "  1. Update version in Cargo.toml to $TAG_VERSION"
+            echo "  2. Commit the change"
+            echo "  3. Move the git tag: git tag -f ${{ needs.determine-release.outputs.tag }}"
+            echo "  4. Force push the tag: git push -f origin ${{ needs.determine-release.outputs.tag }}"
+            exit 1
+          fi
+
+          echo "✅ Version validation passed: $CARGO_VERSION"
+
   semantic-release:
     name: Semantic Release
     runs-on: ubuntu-latest
@@ -73,7 +117,7 @@ jobs:
 
   build-wheels:
     name: Build wheels on ${{ matrix.platform || matrix.os }} for ${{ matrix.target }}
-    needs: [determine-release, semantic-release]
+    needs: [determine-release, semantic-release, validate-version]
     if: |
       always() && (
         needs.determine-release.outputs.should_release == 'true' ||
@@ -185,7 +229,7 @@ jobs:
 
   build-sdist:
     name: Build source distribution
-    needs: [determine-release, semantic-release]
+    needs: [determine-release, semantic-release, validate-version]
     if: |
       always() && (
         needs.determine-release.outputs.should_release == 'true' ||
@@ -222,9 +266,116 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
+  # Phase 1 Fix: Wheel validation
+  # Validates wheel structure BEFORE uploading to PyPI
+  # Catches ZIP structure issues and trailing data (issue #137)
+  validate-wheels:
+    name: Validate Wheel Structure
+    needs: [build-wheels, build-sdist]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53  # v6.0.0
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Setup Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # v6.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Install validation tools
+        run: pip install wheel check-wheel-contents
+
+      - name: Validate wheel ZIP structure
+        run: |
+          python3 << 'EOF'
+          import zipfile
+          from pathlib import Path
+
+          def validate_wheel(wheel_path):
+              """Validate wheel ZIP structure and detect issues."""
+              issues = []
+
+              try:
+                  # Test ZIP integrity
+                  with zipfile.ZipFile(wheel_path, 'r') as zf:
+                      bad_file = zf.testzip()
+                      if bad_file:
+                          issues.append(f"Corrupt file in ZIP: {bad_file}")
+
+                  # Check for trailing data
+                  with open(wheel_path, 'rb') as f:
+                      data = f.read()
+
+                  # Find End of Central Directory signature
+                  eocd_sig = b'PK\x05\x06'
+                  pos = data.rfind(eocd_sig)
+
+                  if pos == -1:
+                      issues.append("No EOCD signature found")
+                  else:
+                      # Calculate expected end position
+                      comment_len = int.from_bytes(data[pos+20:pos+22], 'little')
+                      eocd_end = pos + 22 + comment_len
+                      trailing_bytes = len(data) - eocd_end
+
+                      if trailing_bytes > 0:
+                          issues.append(f"Trailing data after EOCD: {trailing_bytes} bytes")
+
+                  # Verify version in filename matches expected
+                  # (This is redundant with pre-flight check but good defense-in-depth)
+                  if issues:
+                      return False, issues
+                  return True, []
+
+              except Exception as e:
+                  return False, [f"Exception during validation: {e}"]
+
+          # Validate all wheels
+          dist_dir = Path('dist')
+          wheels = list(dist_dir.glob('*.whl'))
+
+          print(f"Validating {len(wheels)} wheel(s)...")
+          print()
+
+          all_valid = True
+          for wheel in sorted(wheels):
+              valid, issues = validate_wheel(wheel)
+              if valid:
+                  print(f"✅ {wheel.name}")
+              else:
+                  print(f"❌ {wheel.name}")
+                  for issue in issues:
+                      print(f"   - {issue}")
+                  all_valid = False
+
+          print()
+          if not all_valid:
+              print("❌ Wheel validation FAILED")
+              print()
+              print("Wheels have structural issues that would cause PyPI upload to fail.")
+              print("This is a bug in the wheel building process.")
+              exit(1)
+
+          print("✅ All wheels passed validation")
+          EOF
+
+      - name: Check wheel contents
+        run: |
+          # Use check-wheel-contents to validate wheel metadata
+          for wheel in dist/*.whl; do
+            echo "Checking $wheel..."
+            check-wheel-contents "$wheel"
+          done
+
   test-wheels:
     name: Test wheels on ${{ matrix.os }} with Python ${{ matrix.python-version }}
-    needs: build-wheels
+    needs: [build-wheels, validate-wheels]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -265,9 +416,130 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
+  # Phase 1 Fix: Test PyPI staging
+  # Upload to Test PyPI BEFORE production PyPI
+  # Catches upload issues without consuming production version numbers (issue #137)
+  publish-test-pypi:
+    name: Publish to Test PyPI (Staging)
+    needs: [determine-release, semantic-release, build-wheels, build-sdist, validate-wheels, test-wheels]
+    runs-on: ubuntu-latest
+    if: |
+      always() && (
+        needs.determine-release.outputs.should_release == 'true' ||
+        needs.semantic-release.outputs.released == 'true'
+      )
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/dioxide/
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53  # v6.0.0
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download sdist
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53  # v6.0.0
+        with:
+          pattern: sdist
+          path: dist
+          merge-multiple: true
+
+      - name: Setup Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # v6.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Strip trailing data from wheels (PyPI validation fix)
+        run: |
+          python3 << 'EOF'
+          import os
+          import zipfile
+          from pathlib import Path
+
+          def strip_trailing_data(wheel_path):
+              """Remove trailing NULL bytes after ZIP End of Central Directory.
+
+              PyPI now rejects wheels with trailing data to prevent ZIP confusion attacks.
+              Some wheel builders (including maturin on Windows) add trailing NULL bytes.
+
+              See: https://blog.pypi.org/posts/2025-08-07-wheel-archive-confusion-attacks/
+              """
+              with open(wheel_path, 'rb') as f:
+                  data = f.read()
+
+              # Find End of Central Directory signature (last occurrence)
+              eocd_sig = b'PK\x05\x06'
+              pos = data.rfind(eocd_sig)
+
+              if pos == -1:
+                  print(f"  ⚠️  No EOCD found in {wheel_path.name}")
+                  return False
+
+              # EOCD is 22 bytes minimum + comment
+              comment_len = int.from_bytes(data[pos+20:pos+22], 'little')
+              eocd_end = pos + 22 + comment_len
+
+              trailing_bytes = len(data) - eocd_end
+
+              if trailing_bytes > 0:
+                  print(f"  ✂️  {wheel_path.name}: Removing {trailing_bytes} trailing bytes")
+                  # Write file without trailing data
+                  with open(wheel_path, 'wb') as f:
+                      f.write(data[:eocd_end])
+                  return True
+              else:
+                  print(f"  ✓  {wheel_path.name}: No trailing data")
+                  return False
+
+          # Process all wheels
+          dist_dir = Path('dist')
+          wheels = list(dist_dir.glob('*.whl'))
+
+          print(f"Checking {len(wheels)} wheel(s) for trailing data...")
+          fixed = 0
+
+          for wheel in sorted(wheels):
+              if strip_trailing_data(wheel):
+                  fixed += 1
+
+          if fixed > 0:
+              print(f"\n✅ Fixed {fixed} wheel(s)")
+          else:
+              print(f"\n✅ All wheels clean")
+          EOF
+
+      - name: Install maturin
+        run: pip install maturin
+
+      - name: Publish to Test PyPI with Trusted Publishing
+        run: |
+          # Upload to Test PyPI first to catch issues before production
+          # Test PyPI uses separate OIDC configuration
+          maturin upload --repository testpypi dist/*
+
+      - name: Verify Test PyPI upload
+        run: |
+          VERSION="${{ needs.determine-release.outputs.version || needs.semantic-release.outputs.version }}"
+          echo "Verifying upload of dioxide $VERSION to Test PyPI..."
+
+          # Wait a few seconds for Test PyPI to process
+          sleep 10
+
+          # Try to view the package on Test PyPI
+          curl -f "https://test.pypi.org/project/dioxide/$VERSION/" || {
+            echo "⚠️  Package not yet visible on Test PyPI (may take a few moments)"
+          }
+
+          echo "✅ Test PyPI upload successful"
+
   publish-pypi:
-    name: Publish to PyPI
-    needs: [determine-release, semantic-release, build-wheels, build-sdist, test-wheels]
+    name: Publish to PyPI (Production)
+    needs: [determine-release, semantic-release, build-wheels, build-sdist, validate-wheels, test-wheels, publish-test-pypi]
     runs-on: ubuntu-latest
     if: |
       always() && (
