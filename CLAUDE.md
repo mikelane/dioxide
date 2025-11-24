@@ -12,7 +12,7 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 
 **Note**: The package was recently renamed from `rivet_di` to `dioxide`. All references in code, tests, and documentation have been updated to use `dioxide`.
 
-**✅ v0.0.2-alpha COMPLETE** (Nov 16, 2025): Hexagonal architecture API fully implemented. All documentation has been updated to reflect the actual API.
+**✅ v0.1.0-beta.2 RELEASED** (Nov 23, 2025): MLP Complete! Hexagonal architecture API, lifecycle management, circular dependency detection, performance benchmarking, FastAPI integration, and comprehensive testing guide all implemented.
 
 ## MLP Vision: The North Star
 
@@ -165,17 +165,23 @@ See `COVERAGE.md` for detailed coverage documentation.
 Use the Describe*/it_* pattern for ALL tests:
 
 ```python
-class DescribeComponentFeature:
-    """Tests for @component decorator functionality."""
+class DescribeAdapterFeature:
+    """Tests for @adapter decorator functionality."""
 
-    def it_registers_the_decorated_class(self) -> None:
-        """Decorator adds class to global registry."""
-        @component
-        class UserService:
-            pass
+    def it_registers_the_adapter_for_port(self) -> None:
+        """Decorator adds adapter to registry for specified port."""
+        from typing import Protocol
+        from dioxide import adapter, Profile
 
-        registered = _get_registered_components()
-        assert UserService in registered
+        class EmailPort(Protocol):
+            def send(self, to: str) -> None: ...
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmailAdapter:
+            def send(self, to: str) -> None:
+                pass
+
+        # Test that adapter is registered...
 ```
 
 **pytest configuration** (in `pyproject.toml`):
@@ -234,7 +240,7 @@ If you find yourself writing Rust code without Python tests, **STOP** and write 
 Run coverage before every commit:
 
 ```bash
-pytest tests/ --cov=dioxide --cov-report=term-missing --cov-branch
+uv run pytest tests/ --cov=dioxide --cov-report=term-missing --cov-branch
 ```
 
 **Requirements**:
@@ -348,8 +354,8 @@ Undocumented code is:
 uv venv
 source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
 
-# Install dependencies
-uv pip install -e ".[dev]"
+# Install dependencies (use uv sync, not uv pip!)
+uv sync --extra dev
 
 # Build Rust extension
 maturin develop
@@ -361,16 +367,19 @@ pre-commit install
 ### Testing
 ```bash
 # Run all tests
-pytest tests/
+uv run pytest tests/
 
 # Run with coverage
-pytest tests/ --cov=dioxide --cov-report=term-missing --cov-branch
+uv run pytest tests/ --cov=dioxide --cov-report=term-missing --cov-branch
 
 # Run specific test file
-pytest tests/test_component.py
+uv run pytest tests/test_adapter.py
 
 # Run tests matching a pattern
-pytest tests/ -k "singleton"
+uv run pytest tests/ -k "lifecycle"
+
+# Run performance benchmarks
+uv run pytest tests/benchmarks/ --benchmark-only
 ```
 
 ### Code Quality
@@ -423,28 +432,43 @@ start docs/_build/html/index.html  # Windows
 
 ```
 dioxide/
-├── python/dioxide/       # Public Python API
-│   ├── __init__.py        # Package exports
-│   ├── container.py       # Container class with scan() for auto-discovery
-│   ├── decorators.py      # @component decorator and registry
-│   └── scope.py           # Scope enum (SINGLETON, FACTORY)
-├── rust/src/              # Private Rust implementation
-│   └── lib.rs             # PyO3 bindings and container logic
-├── tests/                 # Python integration tests
-│   ├── test_component.py           # @component decorator tests
-│   └── test_rust_container_edge_cases.py  # Container behavior tests
+├── python/dioxide/         # Public Python API
+│   ├── __init__.py          # Package exports
+│   ├── container.py         # Container class with profile-based scanning
+│   ├── adapter.py           # @adapter.for_() decorator
+│   ├── services.py          # @service decorator
+│   ├── lifecycle.py         # @lifecycle decorator
+│   ├── profile_enum.py      # Profile enum (PRODUCTION, TEST, etc.)
+│   ├── scope.py             # Scope enum (SINGLETON, FACTORY)
+│   ├── exceptions.py        # Custom exceptions
+│   └── _registry.py         # Internal registration system
+├── rust/src/                # Private Rust implementation
+│   └── lib.rs               # PyO3 bindings and container logic
+├── tests/                   # Python integration tests
+│   ├── test_adapter.py      # @adapter decorator tests
+│   ├── test_services.py     # @service decorator tests
+│   ├── test_lifecycle.py    # @lifecycle tests
+│   ├── test_container.py    # Container behavior tests
+│   ├── type_checking/       # mypy type safety tests
+│   └── benchmarks/          # Performance benchmark tests
+├── examples/                # Example applications
+│   └── fastapi/             # FastAPI integration example
+├── docs/                    # Documentation
+│   ├── MLP_VISION.md        # Canonical design specification
+│   ├── TESTING_GUIDE.md     # Testing philosophy and patterns
+│   └── design/              # Architecture Decision Records (ADRs)
 ├── .pre-commit-config.yaml  # Pre-commit hooks configuration
-├── pyproject.toml         # Python project configuration
-├── Cargo.toml             # Rust project configuration
-├── COVERAGE.md            # Coverage documentation
-└── CLAUDE.md              # This file
+├── pyproject.toml           # Python project configuration
+├── Cargo.toml               # Rust project configuration
+├── COVERAGE.md              # Coverage documentation
+└── CLAUDE.md                # This file
 ```
 
 ## Key Components
 
 ### Hexagonal Architecture API
 
-dioxide now uses a hexagonal architecture (ports-and-adapters) API that makes clean architecture patterns explicit and type-safe.
+dioxide uses a hexagonal architecture (ports-and-adapters) API that makes clean architecture patterns explicit and type-safe.
 
 #### @adapter Decorator
 
@@ -542,29 +566,7 @@ Profile.ALL         # Available in all environments (use '*')
 3. `Profile.ALL` (`'*'`) matches all environments
 4. Custom profiles supported (pass string to `@adapter.for_()`)
 
-### Legacy @component Decorator
-
-The old `@component` decorator is deprecated in favor of the hexagonal architecture API:
-
-```python
-# OLD (deprecated) - still works but not recommended
-from dioxide import component
-
-@component
-class UserService:
-    pass
-
-# NEW (hexagonal architecture) - use this instead
-from dioxide import service
-
-@service
-class UserService:
-    pass
-```
-
-**Note**: `@component` is maintained for backward compatibility but all new code should use `@service` or `@adapter.for_()`.
-
-### @lifecycle Decorator
+#### @lifecycle Decorator
 
 The `@lifecycle` decorator enables opt-in lifecycle management for services and adapters that need initialization and cleanup:
 
@@ -612,7 +614,7 @@ async with container:
 
 **Type safety**: Type stubs (`lifecycle.pyi`) provide IDE autocomplete and mypy validation of method signatures.
 
-**Status**: Fully implemented (v0.0.4-alpha). Decorator and runtime support complete.
+**Status**: Fully implemented (v0.1.0-beta.2).
 
 ### Container (Profile-Based Dependency Injection)
 
@@ -667,6 +669,8 @@ service = prod_container[UserService]  # Same as resolve()
 - **Type-safe resolution**: `container.resolve(Type)` with full mypy support
 - **Automatic dependency injection**: Inspects `__init__` type hints and auto-injects dependencies
 - **Bracket syntax**: `container[Type]` as alternative to `resolve(Type)`
+- **Circular dependency detection**: Fails fast at scan time with clear error messages
+- **Lifecycle management**: Automatic initialization/disposal in dependency order
 
 **Implementation**: `python/dioxide/container.py`
 
@@ -675,15 +679,15 @@ service = prod_container[UserService]  # Same as resolve()
 - Each container instance maintains separate singleton instances
 - Profile determines which adapters are active for a given container
 - Services depend on ports (Protocols), container injects active adapter
+- Circular dependencies are detected and reported at `scan()` time
 
 ### Rust Container
 
 The Rust implementation (`rust/src/lib.rs`) provides:
 - Fast provider registration and resolution
-- Singleton caching (Factory providers are called once and cached)
+- Singleton caching
 - Type-based dependency lookup
-
-**Recent Bug Fix**: Factory providers now correctly cache singleton results in the resolve() method.
+- High-performance resolution (<1μs per resolution)
 
 ## Configuration Files
 
@@ -695,6 +699,7 @@ Key configurations:
 - **Module name**: `module-name = "dioxide._dioxide_core"`
 - **Test discovery**: Describe*/it_* pattern
 - **Coverage**: Branch coverage enabled
+- **Python versions**: 3.11, 3.12, 3.13, 3.14
 
 ### .pre-commit-config.yaml
 
@@ -711,7 +716,7 @@ Pre-commit hooks enforce:
 
 Rust dependencies:
 - **pyo3**: Python FFI bindings
-- **petgraph**: Dependency graph algorithms (planned)
+- **petgraph**: Dependency graph algorithms
 
 ## Git Commit Standards
 
@@ -753,7 +758,7 @@ The STATUS.md file shows:
 
 #### 2. GitHub Milestone
 
-**Location**: https://github.com/mikelane/dioxide/milestone/4 (0.0.1-alpha)
+**Location**: https://github.com/mikelane/dioxide/milestones
 **Purpose**: Real-time progress tracking with visual progress bar
 
 GitHub milestones show:
@@ -863,10 +868,10 @@ PRs from maintainers exist for archaeology (historical record) and to benefit fr
 
 ```bash
 # 1. Review what was completed this week
-gh issue list --milestone "0.0.1-alpha" --state closed --search "closed:>=$(date -v-7d +%Y-%m-%d)"
+gh issue list --milestone "v0.1.0 Documentation" --state closed --search "closed:>=$(date -v-7d +%Y-%m-%d)"
 
 # 2. Check milestone progress
-gh api repos/mikelane/dioxide/milestones/4 | jq '{open: .open_issues, closed: .closed_issues}'
+gh api repos/mikelane/dioxide/milestones/9 | jq '{open: .open_issues, closed: .closed_issues}'
 
 # 3. Update STATUS.md
 # - Move completed items from "In Progress" to "Completed This Week"
@@ -938,15 +943,15 @@ git commit -m "add new feature"
 
 **Result**: No confusion about what's done vs. what's pending.
 
-## Current Status: Lifecycle Management (v0.0.3-alpha)
+## Current Status: MLP Complete (v0.1.0-beta.2)
 
-**✅ v0.0.2-alpha COMPLETE** (Nov 16, 2025): Hexagonal architecture API fully implemented and documented.
+**✅ v0.1.0-beta.2 RELEASED** (Nov 23, 2025): MLP Complete! All must-have features implemented.
 
 ### Recent Milestones
 
 **v0.0.1-alpha (Released Nov 6, 2025)** ✅
 - First public release to Test PyPI
-- Basic `@component` decorator (deprecated in v0.0.2)
+- Basic component decorator
 - `Container().scan()` auto-discovery
 - 100% test coverage
 - Full CI/CD automation
@@ -961,17 +966,24 @@ git commit -m "add new feature"
 - Migration guide (MIGRATION.md)
 - Complete documentation alignment
 
-**v0.0.3-alpha (In Progress)** 🔄
-- Lifecycle protocols (`Initializable`, `Disposable`)
-- Graceful shutdown of singleton resources
-- Async context manager support
-- Initialize components in dependency order
-- Dispose components in reverse dependency order
+**v0.0.4-alpha (COMPLETE Nov 22, 2025)** ✅
+- `@lifecycle` decorator for opt-in lifecycle management
+- Container lifecycle runtime (`async with container`, `start()`, `stop()`)
+- Dependency-ordered initialization (Kahn's algorithm)
+- Circular dependency detection at scan time
+- Package scanning implementation
 
-**Timeline to MLP Complete**:
-- **Nov 2025**: v0.0.3-alpha (lifecycle management) ← **WE ARE HERE**
-- **Dec 2025**: v0.0.4-alpha (polish & examples)
-- **Mid-Dec 2025**: v0.1.0-beta (MLP complete, API freeze)
+**v0.1.0-beta (RELEASED Nov 23, 2025)** ✅
+- Performance benchmarking (all targets exceeded)
+- FastAPI integration example
+- Comprehensive testing guide (fakes > mocks philosophy)
+- MLP Complete - API frozen, production-ready
+
+**v0.1.0-beta.2 (RELEASED Nov 23, 2025)** ✅
+- Release process improvements
+- Test PyPI staging validation
+- Wheel structure validation
+- Documentation updates
 
 See [ROADMAP.md](ROADMAP.md) and [docs/MLP_VISION.md](docs/MLP_VISION.md) for details.
 
@@ -996,7 +1008,7 @@ Dioxide uses automated semantic versioning via GitHub Actions:
    - Linux (x86_64, ARM64)
    - macOS (x86_64 Intel, ARM64 Apple Silicon)
    - Windows (x86_64)
-   - Python versions: 3.11, 3.13, 3.14
+   - Python versions: 3.11, 3.12, 3.13, 3.14
 
 5. **Tested** on all target platforms with comprehensive smoke tests
 
@@ -1145,9 +1157,9 @@ python_functions = ["it_*", "test_*"]
 ```
 
 ### Coverage Not Running
-Check pre-commit configuration targets the correct test file:
+Check pre-commit configuration includes coverage checks:
 ```yaml
-args: [tests/test_component.py, --cov=dioxide, --cov-fail-under=95, --cov-branch, -q]
+args: [tests/, --cov=dioxide, --cov-fail-under=95, --cov-branch, -q]
 ```
 
 ## Working with Claude Code
@@ -1170,7 +1182,7 @@ When working on this project, follow these requirements in order:
 
 **CRITICAL**:
 - Step 2 (Issue exists) is MANDATORY - no issue means no work
-- Step 3 (TDD) and 9 (Documentation) are NOT optional - code without tests or documentation is incomplete
+- Step 4 (TDD) and 9 (Documentation) are NOT optional - code without tests or documentation is incomplete
 - Step 12 (Pull Request) is ENFORCED by branch protection - direct pushes to main are blocked
 
 ## Reference Documentation
@@ -1179,8 +1191,9 @@ When working on this project, follow these requirements in order:
 - **README.md**: Project overview and quick start
 - **COVERAGE.md**: Detailed coverage documentation
 - **STATUS.md**: Current sprint status and progress
+- **TESTING_GUIDE.md**: Testing philosophy and patterns (fakes > mocks)
 - **pyproject.toml**: Python configuration
 - **Cargo.toml**: Rust configuration
 - **.pre-commit-config.yaml**: Quality checks configuration
-- this project uses uv. Use the uv commands to run pytest and other python cli tools. Avoid `uv pip` commands and use the built-in uv commands instead.
-- do not use `uv pip` commands. Use `uv add`, `uv remove`, and `uv sync` to deal with dependencies. Use groups and/or extras where appropriate.
+- This project uses **uv**. Use the uv commands to run pytest and other python cli tools. Avoid `uv pip` commands and use the built-in uv commands instead.
+- Do not use `uv pip` commands. Use `uv add`, `uv remove`, and `uv sync` to deal with dependencies. Use groups and/or extras where appropriate.
