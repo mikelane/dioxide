@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0-beta.1] - 2025-11-23
+## [0.1.0-beta.2] - 2025-11-23
 
 🎉 **MLP (Minimum Lovable Product) Complete!** This release marks the completion of dioxide's core vision as defined in `docs/MLP_VISION.md`. The API is now frozen - no breaking changes until v2.0.0.
 
@@ -159,7 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - COVERAGE.md explaining testing strategy for Python/Rust hybrid projects
 - CLAUDE.md with project guidelines and best practices
 
-[0.1.0-beta.1]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0-beta.1
+[0.1.0-beta.2]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0-beta.2
 [0.1.0-beta]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0-beta
 [0.1.0]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0
 [0.0.4-alpha.1]: https://github.com/mikelane/dioxide/releases/tag/v0.0.4-alpha.1
