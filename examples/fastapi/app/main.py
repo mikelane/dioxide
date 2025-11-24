@@ -11,13 +11,12 @@ Key patterns demonstrated:
 """
 
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
-
-from fastapi import Depends, FastAPI, HTTPException
-from pydantic import BaseModel
 
 from dioxide import Container, Profile
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
 
 from .domain.services import UserService
 
@@ -30,11 +29,11 @@ profile = Profile(profile_name)
 container = Container()
 container.scan(package="app", profile=profile)
 
-print(f"\n{'='*60}")
-print(f"dioxide FastAPI Example")
-print(f"{'='*60}")
+print(f"\n{'=' * 60}")
+print("dioxide FastAPI Example")
+print(f"{'=' * 60}")
 print(f"Profile: {profile.value}")
-print(f"{'='*60}\n")
+print(f"{'=' * 60}\n")
 
 
 @asynccontextmanager

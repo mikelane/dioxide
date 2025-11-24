@@ -136,6 +136,7 @@ Contents
 
    development/contributing
    development/changelog
+   versioning
 
 Hexagonal Architecture Example
 -------------------------------

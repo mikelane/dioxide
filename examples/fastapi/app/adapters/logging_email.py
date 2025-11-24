@@ -4,7 +4,7 @@ This adapter implements EmailPort by logging emails instead of sending them,
 which is useful for local development where you don't want to send real emails.
 """
 
-from dioxide import adapter, Profile
+from dioxide import Profile, adapter
 
 from ..domain.ports import EmailPort
 
@@ -29,11 +29,11 @@ class LoggingEmailAdapter:
             name: Recipient's name for personalization
         """
         print(
-            f"\n{'='*60}\n"
+            f"\n{'=' * 60}\n"
             f"[LoggingEmailAdapter] EMAIL (NOT SENT)\n"
-            f"{'='*60}\n"
+            f"{'=' * 60}\n"
             f"To: {to}\n"
             f"Subject: Welcome to our platform, {name}!\n"
             f"Body: Hello {name}, welcome aboard!\n"
-            f"{'='*60}\n"
+            f"{'=' * 60}\n"
         )

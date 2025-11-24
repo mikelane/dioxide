@@ -6,7 +6,7 @@ sending in production environments.
 
 import os
 
-from dioxide import adapter, Profile
+from dioxide import Profile, adapter
 
 from ..domain.ports import EmailPort
 
@@ -66,8 +66,6 @@ class SendGridAdapter:
         )
 
         if self.api_key:
-            print(f"[SendGridAdapter] Email sent successfully via SendGrid API")
+            print("[SendGridAdapter] Email sent successfully via SendGrid API")
         else:
-            print(
-                f"[SendGridAdapter] Email NOT sent (SENDGRID_API_KEY not configured)"
-            )
+            print("[SendGridAdapter] Email NOT sent (SENDGRID_API_KEY not configured)")

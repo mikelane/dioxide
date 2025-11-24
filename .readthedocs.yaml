@@ -21,3 +21,13 @@ build:
 formats:
   - pdf
   - epub
+
+# Versioning strategy for ReadTheDocs
+# This configures which versions appear in the version switcher dropdown
+#
+# "latest" - Always points to main branch (bleeding edge)
+# "stable" - Points to latest release tag (recommended for users)
+# All version tags (v0.1.0, v0.2.0, etc.) - Specific release versions
+#
+# ReadTheDocs automatically detects git tags matching the pattern v*.*.*
+# and builds documentation for each tag.

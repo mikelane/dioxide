@@ -13,7 +13,6 @@ from typing import Protocol
 
 from dioxide import Container, Profile, adapter, service
 
-
 # ============================================================================
 # PORTS (Interfaces) - Define what operations we need
 # ============================================================================
@@ -54,7 +53,7 @@ class SendGridAdapter:
     async def send(self, to: str, subject: str, body: str) -> None:
         """Send email via SendGrid."""
         # In real code, this would call SendGrid API
-        print(f"📧 [SendGrid] Sending to {to}: {subject}")
+        print(f'📧 [SendGrid] Sending to {to}: {subject}')
         # await sendgrid_client.send(...)
 
 
@@ -67,9 +66,9 @@ class FakeEmailAdapter:
 
     async def send(self, to: str, subject: str, body: str) -> None:
         """Record email instead of sending."""
-        email = {"to": to, "subject": subject, "body": body}
+        email = {'to': to, 'subject': subject, 'body': body}
         self.sent_emails.append(email)
-        print(f"✅ [Fake] Recorded email to {to}: {subject}")
+        print(f'✅ [Fake] Recorded email to {to}: {subject}')
 
 
 @adapter.for_(EmailPort, profile=Profile.DEVELOPMENT)
@@ -78,9 +77,9 @@ class ConsoleEmailAdapter:
 
     async def send(self, to: str, subject: str, body: str) -> None:
         """Print email to console."""
-        print(f"📝 [Console] Email to {to}")
-        print(f"   Subject: {subject}")
-        print(f"   Body: {body}")
+        print(f'📝 [Console] Email to {to}')
+        print(f'   Subject: {subject}')
+        print(f'   Body: {body}')
 
 
 @adapter.for_(DatabasePort, profile=[Profile.PRODUCTION, Profile.DEVELOPMENT])
@@ -95,15 +94,15 @@ class PostgresAdapter:
         # In real code, this would use asyncpg or similar
         user_id = self.next_id
         self.next_id += 1
-        print(f"💾 [Postgres] Saved user {user_id}: {name} ({email})")
+        print(f'💾 [Postgres] Saved user {user_id}: {name} ({email})')
         # await conn.execute("INSERT INTO users ...")
         return user_id
 
     async def get_user(self, user_id: int) -> dict[str, str] | None:
         """Get user from PostgreSQL."""
         # In real code, this would query the database
-        print(f"🔍 [Postgres] Looking up user {user_id}")
-        return {"id": str(user_id), "name": "John Doe", "email": "john@example.com"}
+        print(f'🔍 [Postgres] Looking up user {user_id}')
+        return {'id': str(user_id), 'name': 'John Doe', 'email': 'john@example.com'}
 
 
 @adapter.for_(DatabasePort, profile=Profile.TEST)
@@ -118,13 +117,13 @@ class InMemoryDatabaseAdapter:
         """Save user to in-memory storage."""
         user_id = self.next_id
         self.next_id += 1
-        self.users[user_id] = {"name": name, "email": email}
-        print(f"💾 [InMemory] Saved user {user_id}: {name}")
+        self.users[user_id] = {'name': name, 'email': email}
+        print(f'💾 [InMemory] Saved user {user_id}: {name}')
         return user_id
 
     async def get_user(self, user_id: int) -> dict[str, str] | None:
         """Get user from in-memory storage."""
-        print(f"🔍 [InMemory] Looking up user {user_id}")
+        print(f'🔍 [InMemory] Looking up user {user_id}')
         return self.users.get(user_id)
 
 
@@ -159,9 +158,7 @@ class UserRegistrationService:
         user_id = await self.db.save_user(name, email)
 
         # Send welcome email (via EmailPort)
-        await self.email.send(
-            to=email, subject="Welcome!", body=f"Hello {name}, welcome to our platform!"
-        )
+        await self.email.send(to=email, subject='Welcome!', body=f'Hello {name}, welcome to our platform!')
 
         return user_id
 
@@ -186,9 +183,9 @@ class UserLookupService:
 
 async def production_example() -> None:
     """Example: Production usage with real infrastructure."""
-    print("\n" + "=" * 70)
-    print("PRODUCTION EXAMPLE - Real SendGrid + PostgreSQL")
-    print("=" * 70 + "\n")
+    print('\n' + '=' * 70)
+    print('PRODUCTION EXAMPLE - Real SendGrid + PostgreSQL')
+    print('=' * 70 + '\n')
 
     # Create production container
     container = Container()
@@ -198,16 +195,16 @@ async def production_example() -> None:
     registration_service = container.resolve(UserRegistrationService)
 
     # Use the service - infrastructure details are hidden
-    user_id = await registration_service.register_user("Alice Smith", "alice@example.com")
+    user_id = await registration_service.register_user('Alice Smith', 'alice@example.com')
 
-    print(f"\n✅ User registered with ID: {user_id}")
+    print(f'\n✅ User registered with ID: {user_id}')
 
 
 async def test_example() -> None:
     """Example: Testing with fast fakes (no mocks!)."""
-    print("\n" + "=" * 70)
-    print("TEST EXAMPLE - Fake Email + In-Memory Database")
-    print("=" * 70 + "\n")
+    print('\n' + '=' * 70)
+    print('TEST EXAMPLE - Fake Email + In-Memory Database')
+    print('=' * 70 + '\n')
 
     # Create test container
     test_container = Container()
@@ -217,29 +214,29 @@ async def test_example() -> None:
     registration_service = test_container.resolve(UserRegistrationService)
 
     # Use the service
-    user_id = await registration_service.register_user("Bob Jones", "bob@test.com")
+    user_id = await registration_service.register_user('Bob Jones', 'bob@test.com')
 
     # Verify behavior using the fake adapters (no mocks!)
     fake_email = test_container.resolve(EmailPort)
     fake_db = test_container.resolve(DatabasePort)
 
     assert len(fake_email.sent_emails) == 1
-    assert fake_email.sent_emails[0]["to"] == "bob@test.com"
-    assert fake_email.sent_emails[0]["subject"] == "Welcome!"
+    assert fake_email.sent_emails[0]['to'] == 'bob@test.com'
+    assert fake_email.sent_emails[0]['subject'] == 'Welcome!'
 
     saved_user = await fake_db.get_user(user_id)
     assert saved_user is not None
-    assert saved_user["name"] == "Bob Jones"
-    assert saved_user["email"] == "bob@test.com"
+    assert saved_user['name'] == 'Bob Jones'
+    assert saved_user['email'] == 'bob@test.com'
 
-    print(f"\n✅ All assertions passed! User ID: {user_id}")
+    print(f'\n✅ All assertions passed! User ID: {user_id}')
 
 
 async def development_example() -> None:
     """Example: Development usage with console logging."""
-    print("\n" + "=" * 70)
-    print("DEVELOPMENT EXAMPLE - Console Email + Postgres")
-    print("=" * 70 + "\n")
+    print('\n' + '=' * 70)
+    print('DEVELOPMENT EXAMPLE - Console Email + Postgres')
+    print('=' * 70 + '\n')
 
     # Create development container
     dev_container = Container()
@@ -249,29 +246,29 @@ async def development_example() -> None:
     registration_service = dev_container.resolve(UserRegistrationService)
 
     # Use the service
-    user_id = await registration_service.register_user("Charlie Brown", "charlie@dev.local")
+    user_id = await registration_service.register_user('Charlie Brown', 'charlie@dev.local')
 
-    print(f"\n✅ User registered with ID: {user_id}")
+    print(f'\n✅ User registered with ID: {user_id}')
 
 
 async def main() -> None:
     """Run all examples."""
-    print("\n🎯 Hexagonal Architecture with dioxide\n")
+    print('\n🎯 Hexagonal Architecture with dioxide\n')
 
     await production_example()
     await test_example()
     await development_example()
 
-    print("\n" + "=" * 70)
-    print("KEY TAKEAWAYS")
-    print("=" * 70)
-    print("✅ Core logic (services) has ZERO infrastructure knowledge")
-    print("✅ Testing uses fast fakes, not slow mocks")
-    print("✅ Swapping implementations = changing one line (profile)")
-    print("✅ Type-safe dependency injection via constructor hints")
-    print("✅ Ports (Protocols) define clear boundaries")
-    print("=" * 70 + "\n")
+    print('\n' + '=' * 70)
+    print('KEY TAKEAWAYS')
+    print('=' * 70)
+    print('✅ Core logic (services) has ZERO infrastructure knowledge')
+    print('✅ Testing uses fast fakes, not slow mocks')
+    print('✅ Swapping implementations = changing one line (profile)')
+    print('✅ Type-safe dependency injection via constructor hints')
+    print('✅ Ports (Protocols) define clear boundaries')
+    print('=' * 70 + '\n')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     asyncio.run(main())

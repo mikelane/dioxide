@@ -149,9 +149,7 @@ class DescribeHexagonalArchitecture:
         """Container resolves to fake adapters in TEST profile."""
         # Verify we're using fakes by checking for fake-specific attributes
         assert hasattr(db, "users")  # FakeDatabaseAdapter has users dict
-        assert hasattr(
-            email, "sent_emails"
-        )  # FakeEmailAdapter has sent_emails list
+        assert hasattr(email, "sent_emails")  # FakeEmailAdapter has sent_emails list
 
     def it_allows_direct_fake_inspection(
         self, client: TestClient, db: DatabasePort, email: EmailPort
@@ -201,9 +199,7 @@ class DescribeTestSpeed:
 class DescribeFakeConvenience:
     """Tests demonstrating fake convenience methods."""
 
-    def it_uses_fake_helper_methods(
-        self, client: TestClient, email: EmailPort
-    ) -> None:
+    def it_uses_fake_helper_methods(self, client: TestClient, email: EmailPort) -> None:
         """Fakes can provide convenient test helper methods."""
         # Create user
         client.post("/users", json={"name": "Alice", "email": "alice@example.com"})
