@@ -1016,6 +1016,58 @@ Total release time: ~90-120 minutes (all platforms + tests)
 - **Cross-platform Testing**: Built wheels tested on all target platforms
 - **Automated Validation**: Tests, linting, type checking before publish
 
+### Release Process Improvements (Phase 1 - Issue #137)
+
+The release process includes robust validation and staging to prevent failures:
+
+#### 1. Pre-flight Version Validation
+
+Before building any wheels, the workflow validates that `Cargo.toml` version matches the git tag:
+
+```bash
+# Validate version synchronization locally
+./scripts/validate_version.sh
+```
+
+This prevents wasting 90+ minutes building the wrong version. If there's a mismatch, the workflow fails immediately with clear instructions on how to fix it.
+
+#### 2. Wheel Structure Validation
+
+After building all wheels, the workflow validates ZIP structure and metadata:
+
+```bash
+# Validate wheels locally
+./scripts/validate_wheels.py
+```
+
+This catches:
+- ZIP corruption
+- Trailing data after End of Central Directory (EOCD)
+- Invalid wheel metadata
+
+Prevents PyPI upload failures due to structural issues.
+
+#### 3. Test PyPI Staging
+
+All releases upload to Test PyPI BEFORE production PyPI:
+
+1. Wheels uploaded to test.pypi.org
+2. Upload validated (no PyPI errors)
+3. Only after Test PyPI succeeds, upload to production PyPI
+
+This prevents:
+- Consuming production version numbers due to upload failures
+- Discovering issues after production upload
+- Requiring manual version bumps to retry
+
+**Test PyPI Configuration**: Requires separate OIDC Trusted Publishing setup at test.pypi.org
+
+**Benefits of this approach**:
+- Failures caught in staging, not production
+- No wasted version numbers on PyPI
+- Same validation as production, but reversible
+- Industry best practice for Python packaging
+
 ### Manual Release (if needed)
 
 For emergency releases or testing:
