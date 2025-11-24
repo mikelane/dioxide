@@ -28,47 +28,7 @@ Module Contents
    Bases: :py:obj:`str`, :py:obj:`enum.Enum`
 
 
-   Component lifecycle scope.
-
-   Defines how instances of a component are created and cached:
-
-   - SINGLETON: One shared instance for the lifetime of the container.
-     The factory is called once and the result is cached. Subsequent
-     resolve() calls return the same instance.
-
-   - FACTORY: New instance created on each resolve() call. The factory
-     is invoked every time the component is requested, creating a fresh
-     instance.
-
-   .. admonition:: Example
-
-      >>> from dioxide import Container, component, Scope
-      >>>
-      >>> @component  # Default: SINGLETON scope
-      ... class Database:
-      ...     pass
-      >>>
-      >>> @component(scope=Scope.FACTORY)
-      ... class RequestHandler:
-      ...     request_id: int = 0
-      ...
-      ...     def __init__(self):
-      ...         RequestHandler.request_id += 1
-      ...         self.id = RequestHandler.request_id
-      >>>
-      >>> container = Container()
-      >>> container.scan()
-      >>>
-      >>> # Singleton: same instance every time
-      >>> db1 = container.resolve(Database)
-      >>> db2 = container.resolve(Database)
-      >>> assert db1 is db2
-      >>>
-      >>> # Factory: new instance every time
-      >>> handler1 = container.resolve(RequestHandler)
-      >>> handler2 = container.resolve(RequestHandler)
-      >>> assert handler1 is not handler2
-      >>> assert handler1.id != handler2.id
+   Initialize self.  See help(type(self)) for accurate signature.
 
 
    .. py:attribute:: SINGLETON

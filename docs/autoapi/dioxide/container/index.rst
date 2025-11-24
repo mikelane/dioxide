@@ -38,74 +38,30 @@ Module Contents
 
 .. py:class:: Container(allowed_packages = None)
 
-   Dependency injection container.
+   Initialize a new dependency injection container.
 
-   The Container manages component registration and dependency resolution
-   for your application. It supports both automatic discovery via the
-   @component decorator and manual registration for fine-grained control.
+   Creates a new container with an empty registry. The container is
+   ready to accept registrations via scan() for @component classes
+   or via manual registration methods.
 
-   The container is backed by a high-performance Rust implementation that
-   handles provider caching, singleton management, and type resolution.
+   :param allowed_packages: Optional list of package prefixes allowed for scanning.
+                            If provided, only modules matching these prefixes can be imported.
+                            This prevents arbitrary code execution via package scanning.
+                            If None, no validation is performed (backward compatible).
+                            Example: ['myapp', 'tests.fixtures'] allows 'myapp.services'
+                            and 'tests.fixtures.mocks' but blocks 'os' or 'sys'.
 
-   Features:
-       - Type-safe dependency resolution with full IDE support
-       - Automatic dependency injection based on type hints
-       - SINGLETON and FACTORY lifecycle scopes
-       - Thread-safe singleton caching (Rust-backed)
-       - Automatic discovery via @component decorator
-       - Manual registration for non-decorated classes
+   .. admonition:: Example
 
-   .. admonition:: Examples
+      >>> from dioxide import Container
+      >>> container = Container()
+      >>> assert container.is_empty()
 
-      Automatic discovery with @component:
-          >>> from dioxide import Container, component
-          >>>
-          >>> @component
-          ... class Database:
-          ...     def query(self, sql):
-          ...         return f'Executing: {sql}'
-          >>>
-          >>> @component
-          ... class UserService:
-          ...     def __init__(self, db: Database):
-          ...         self.db = db
-          >>>
-          >>> container = Container()
-          >>> container.scan()  # Auto-discover @component classes
-          >>> service = container.resolve(UserService)
-          >>> result = service.db.query('SELECT * FROM users')
-
-      Manual registration:
-          >>> from dioxide import Container
-          >>>
-          >>> class Config:
-          ...     def __init__(self, env: str):
-          ...         self.env = env
-          >>>
-          >>> container = Container()
-          >>> container.register_singleton(Config, lambda: Config('production'))
-          >>> config = container.resolve(Config)
-          >>> assert config.env == 'production'
-
-      Factory scope for per-request objects:
-          >>> from dioxide import Container, component, Scope
-          >>>
-          >>> @component(scope=Scope.FACTORY)
-          ... class RequestContext:
-          ...     def __init__(self):
-          ...         self.id = id(self)
-          >>>
-          >>> container = Container()
-          >>> container.scan()
-          >>> ctx1 = container.resolve(RequestContext)
-          >>> ctx2 = container.resolve(RequestContext)
-          >>> assert ctx1 is not ctx2  # Different instances
-
-   .. note::
-
-      The container should be created once at application startup and
-      reused throughout the application lifecycle. Each container maintains
-      its own singleton cache and registration state.
+      Security example:
+      >>> # Only allow scanning within your application package
+      >>> container = Container(allowed_packages=['myapp', 'tests'])
+      >>> container.scan(package='myapp.services')  # OK
+      >>> container.scan(package='os')  # Raises ValueError
 
 
    .. py:method:: register_instance(component_type, instance)
@@ -376,43 +332,6 @@ Module Contents
 
 
 
-   .. py:method:: __getitem__(component_type)
-
-      Resolve a component using bracket syntax.
-
-      Provides an alternative, more Pythonic syntax for resolving components.
-      This method is equivalent to calling resolve() and simply delegates to it.
-
-      :param component_type: The type to resolve. Must have been previously
-                             registered via scan() or manual registration methods.
-
-      :returns: An instance of the requested type. For SINGLETON scope, the same
-                instance is returned on every call. For FACTORY scope, a new
-                instance is created on each call.
-
-      :raises KeyError: If the type is not registered in this container.
-
-      .. admonition:: Example
-
-         >>> from dioxide import container, component
-         >>>
-         >>> @component
-         ... class Logger:
-         ...     def log(self, msg: str):
-         ...         print(f'LOG: {msg}')
-         >>>
-         >>> container.scan()
-         >>> logger = container[Logger]  # Bracket syntax
-         >>> logger.log('Using bracket notation')
-
-      .. note::
-
-         This is purely a convenience method. Both container[Type] and
-         container.resolve(Type) work identically and return the same
-         instance for singleton-scoped components.
-
-
-
    .. py:method:: is_empty()
 
       Check if container has no registered providers.
@@ -429,31 +348,6 @@ Module Contents
          >>>
          >>> container.scan()  # Register @component classes
          >>> # If any @component classes exist, container is no longer empty
-
-
-
-   .. py:method:: __len__()
-
-      Get count of registered providers.
-
-      :returns: The number of types that have been registered in this container.
-
-      .. admonition:: Example
-
-         >>> from dioxide import Container, component
-         >>>
-         >>> @component
-         ... class ServiceA:
-         ...     pass
-         >>>
-         >>> @component
-         ... class ServiceB:
-         ...     pass
-         >>>
-         >>> container = Container()
-         >>> assert len(container) == 0
-         >>> container.scan()
-         >>> assert len(container) == 2
 
 
 
@@ -605,45 +499,6 @@ Module Contents
          >>> await container.start()
          >>> await container.stop()
          Database disconnected
-
-
-
-   .. py:method:: __aenter__()
-      :async:
-
-
-      Enter async context manager - calls start().
-
-      .. admonition:: Example
-
-         >>> from dioxide import Container, service, lifecycle
-         >>>
-         >>> @service
-         ... @lifecycle
-         ... class Database:
-         ...     async def initialize(self) -> None:
-         ...         print('Connected')
-         ...
-         ...     async def dispose(self) -> None:
-         ...         print('Disconnected')
-         >>>
-         >>> async with Container() as container:
-         ...     container.scan()
-         ...     # Use container
-         Connected
-         Disconnected
-
-
-
-   .. py:method:: __aexit__(exc_type, exc_val, exc_tb)
-      :async:
-
-
-      Exit async context manager - calls stop().
-
-      :param exc_type: Exception type if an exception was raised
-      :param exc_val: Exception value if an exception was raised
-      :param exc_tb: Exception traceback if an exception was raised
 
 
 

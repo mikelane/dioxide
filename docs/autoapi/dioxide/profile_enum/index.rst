@@ -28,46 +28,7 @@ Module Contents
    Bases: :py:obj:`str`, :py:obj:`enum.Enum`
 
 
-   Profile specification for adapters.
-
-   Profiles determine which adapter implementations are active
-   for a given environment. The Profile enum provides standard
-   environment profiles used throughout dioxide for adapter selection.
-
-   .. attribute:: PRODUCTION
-
-      Production environment profile
-
-   .. attribute:: TEST
-
-      Test environment profile
-
-   .. attribute:: DEVELOPMENT
-
-      Development environment profile
-
-   .. attribute:: STAGING
-
-      Staging environment profile
-
-   .. attribute:: CI
-
-      Continuous integration environment profile
-
-   .. attribute:: ALL
-
-      Universal profile - available in all environments
-
-   .. admonition:: Examples
-
-      >>> Profile.PRODUCTION
-      <Profile.PRODUCTION: 'production'>
-      >>> Profile.PRODUCTION.value
-      'production'
-      >>> str(Profile.TEST)
-      'test'
-      >>> Profile('production') == Profile.PRODUCTION
-      True
+   Initialize self.  See help(type(self)) for accurate signature.
 
 
    .. py:attribute:: PRODUCTION
