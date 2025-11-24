@@ -64,3 +64,4 @@ Thumbs.db
 
 # Sphinx documentation
 docs/_build/
+docs/autoapi/
