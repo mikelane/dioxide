@@ -125,19 +125,21 @@ jobs:
             platform: macos
             python-version: '3.14'
 
-          # Windows x86_64
-          - os: windows-2022  # Use stable Windows Server 2022 instead of windows-latest (2025 has wheel issues)
-            target: x86_64-pc-windows-msvc
-            platform: windows
-            python-version: '3.14'
-          - os: windows-2022
-            target: x86_64-pc-windows-msvc
-            platform: windows
-            python-version: '3.13'
-          - os: windows-2022
-            target: x86_64-pc-windows-msvc
-            platform: windows
-            python-version: '3.11'
+          # Windows x86_64 - TEMPORARILY DISABLED due to "ZIP archive trailing data" error
+          # Windows users can install from source distribution (sdist) which will compile locally
+          # TODO: Re-enable once issue is resolved
+          # - os: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          #   platform: windows
+          #   python-version: '3.14'
+          # - os: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          #   platform: windows
+          #   python-version: '3.13'
+          # - os: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          #   platform: windows
+          #   python-version: '3.11'
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
@@ -230,7 +232,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Windows removed - no Windows wheels in this release
+        os: [ubuntu-latest, macos-latest]
         python-version: ['3.13', '3.14']
 
     steps:
