@@ -69,6 +69,7 @@ addopts = [
 ]
 markers = [
     "asyncio: mark test as an async test using asyncio",
+    "slow: mark test as slow (deselect with '-m \"not slow\"')",
 ]
 
 [tool.mypy]
