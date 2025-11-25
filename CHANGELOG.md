@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-11-25
+
+🎉 **First Stable Release!** dioxide is now production-ready and published to PyPI.
+
+### Changed
+- Promoted from beta to stable release
+- Updated documentation to reflect stable status
+- Added Python 3.14 to tox test matrix
+
+### Fixed
+- Fixed mypy integration tests to use hermetic inline code strings instead of temp files
+- Fixed PyPI deployment branch policy to allow stable release tags
+
+### Infrastructure
+- Added `v[0-9]*.[0-9]*.[0-9]*` deployment policy for stable releases to pypi environment
+
 ## [0.1.0-beta.2] - 2025-11-23
 
 🎉 **MLP (Minimum Lovable Product) Complete!** This release marks the completion of dioxide's core vision as defined in `docs/MLP_VISION.md`. The API is now frozen - no breaking changes until v2.0.0.

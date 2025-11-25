@@ -39,13 +39,13 @@ pip install dioxide
 
 ## Status
 
-**✨ BETA**: dioxide v0.1.0-beta is production-ready with a stable, frozen API.
+**✨ STABLE**: dioxide v0.1.1 is production-ready with a stable, frozen API.
 
-- **Latest Release**: [v0.1.0-beta.2](https://github.com/mikelane/dioxide/releases/tag/v0.1.0-beta.2) (Nov 24, 2025) - Published to PyPI
+- **Latest Release**: [v0.1.1](https://github.com/mikelane/dioxide/releases/tag/v0.1.1) (Nov 25, 2025) - Published to PyPI
 - **API Status**: Frozen - No breaking changes until v2.0
 - **Production Ready**: All MLP features complete, comprehensive test coverage, battle-tested
 
-**Migrating from alpha versions?** See [MIGRATION.md](MIGRATION.md) for the complete migration guide.
+**Migrating from alpha/beta versions?** See [MIGRATION.md](MIGRATION.md) for the complete migration guide.
 
 See [ROADMAP.md](ROADMAP.md) for post-MLP features and [Issues](https://github.com/mikelane/dioxide/issues) for current work.
 
@@ -394,7 +394,7 @@ async def test_send_welcome_email(test_container):
 
 ## Features
 
-### v0.1.0-beta ✅ COMPLETE (Nov 24, 2025) - MLP Production Ready
+### v0.1.1 ✅ STABLE (Nov 25, 2025) - MLP Production Ready
 
 **Core Dependency Injection**:
 - [x] `@adapter.for_(Port, profile=...)` decorator for hexagonal architecture
@@ -572,9 +572,9 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**✨ Production Ready**: dioxide v0.1.0-beta is production-ready with a stable, frozen API. All MLP (Minimum Loveable Product) features are complete, thoroughly tested, and battle-proven.
+**✨ Production Ready**: dioxide v0.1.1 is production-ready with a stable, frozen API. All MLP (Minimum Loveable Product) features are complete, thoroughly tested, and battle-proven.
 
-**API Guarantee**: No breaking changes until v2.0. Your code written against v0.1.0-beta will continue to work through all v0.x and v1.x releases.
+**API Guarantee**: No breaking changes until v2.0. Your code written against v0.1.x will continue to work through all v0.x and v1.x releases.
 
 **What's Next**:
 - **v0.2.0+**: Post-MLP enhancements (request scoping, property injection, framework integrations)
