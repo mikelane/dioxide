@@ -505,9 +505,10 @@ e1eddd5 chore: add Python 3.14 to package classifiers and CI matrix
 ## CI/CD Infrastructure (Completed Nov 4, 2025)
 
 ### GitHub Actions CI Pipeline ✅
-- **Test Matrix**: 3 Python versions (3.11, 3.12, 3.13) × 3 OS (Ubuntu, macOS, Windows)
-- **Coverage**: Codecov integration with 95% branch coverage requirement
+- **Test Matrix**: 4 Python versions (3.11, 3.12, 3.13, 3.14) × 3 OS (Ubuntu, macOS, Windows)
+- **Coverage**: Codecov integration with 92.5% branch coverage requirement
 - **Linting**: Python (ruff, mypy, isort) + Rust (clippy, fmt)
+- **Documentation**: Sphinx build validation (fails on build errors)
 - **Runtime**: ~3 minutes per run
 - **Status**: All jobs passing
 
