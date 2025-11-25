@@ -95,10 +95,10 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 strict_concatenate = true
-exclude = ["features/", "tests/type_checking/invalid/"]
+exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

@@ -105,9 +105,9 @@ def step_error_message_indicates(context: Context, dependency_name: str) -> None
     """Verify the error message mentions the dependency name."""
     assert context.exception is not None, 'No exception was raised'
     error_message = str(context.exception)
-    assert (
-        dependency_name in error_message or 'UserService' in error_message
-    ), f'Error message does not mention dependency: {error_message}'
+    assert dependency_name in error_message or 'UserService' in error_message, (
+        f'Error message does not mention dependency: {error_message}'
+    )
 
 
 @when('the developer accesses the container from multiple threads')

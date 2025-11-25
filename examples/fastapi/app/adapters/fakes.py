@@ -12,7 +12,7 @@ Why fakes instead of mocks?
 - Fakes are fast - no I/O, no network calls
 """
 
-from dioxide import adapter, Profile
+from dioxide import Profile, adapter
 
 from ..domain.ports import DatabasePort, EmailPort
 

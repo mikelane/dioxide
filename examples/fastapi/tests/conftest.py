@@ -14,8 +14,8 @@ from fastapi.testclient import TestClient
 # Set TEST profile BEFORE importing app
 os.environ["PROFILE"] = "test"
 
-from app.main import app, container  # noqa: E402
 from app.domain.ports import DatabasePort, EmailPort  # noqa: E402
+from app.main import app, container  # noqa: E402
 
 
 @pytest.fixture

@@ -7,7 +7,7 @@ connections. It uses the @lifecycle decorator for connection pool management.
 import os
 from typing import Any
 
-from dioxide import adapter, lifecycle, Profile
+from dioxide import Profile, adapter, lifecycle
 
 from ..domain.ports import DatabasePort
 
@@ -43,7 +43,9 @@ class PostgresAdapter:
                 max_size=20
             )
         """
-        database_url = os.getenv("DATABASE_URL", "postgresql://localhost/dioxide_example")
+        database_url = os.getenv(
+            "DATABASE_URL", "postgresql://localhost/dioxide_example"
+        )
         print(f"[PostgresAdapter] Connecting to {database_url}")
 
         # Mock pool creation - replace with real asyncpg in production
