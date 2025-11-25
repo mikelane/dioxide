@@ -47,8 +47,10 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/mikelane/dioxide"
+Documentation = "https://dioxide.readthedocs.io"
 Repository = "https://github.com/mikelane/dioxide"
 Issues = "https://github.com/mikelane/dioxide/issues"
+Changelog = "https://github.com/mikelane/dioxide/blob/main/CHANGELOG.md"
 
 [tool.maturin]
 python-source = "python"
