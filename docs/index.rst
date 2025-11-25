@@ -118,11 +118,12 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Examples
+   :caption: Tutorial Examples
 
-   examples/basic_example
-   examples/fastapi_integration
-   examples/testing_patterns
+   examples/01-basic-dependency-injection
+   examples/02-email-service-with-profiles
+   examples/03-multi-tier-application
+   examples/04-lifecycle-management
 
 .. toctree::
    :maxdepth: 2
