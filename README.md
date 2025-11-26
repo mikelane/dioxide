@@ -249,7 +249,10 @@ from dioxide import Container, Profile, adapter, service
 # --- Ports (interfaces) ---
 
 class ConfigPort(Protocol):
-    def get(self, key: str) -> str: ...
+    """Port for configuration access."""
+    def get(self, key: str, default: str = "") -> str:
+        """Get configuration value by key."""
+        ...
 
 class EmailPort(Protocol):
     async def send(self, to: str, subject: str, body: str) -> None: ...
@@ -263,9 +266,9 @@ class UserRepository(Protocol):
 @adapter.for_(ConfigPort, profile=Profile.PRODUCTION)
 class EnvConfigAdapter:
     """Configuration from environment variables."""
-    def get(self, key: str) -> str:
+    def get(self, key: str, default: str = "") -> str:
         import os
-        return os.environ.get(key, "")
+        return os.environ.get(key, default)
 
 @adapter.for_(ConfigPort, profile=Profile.TEST)
 class FakeConfigAdapter:
@@ -273,8 +276,8 @@ class FakeConfigAdapter:
     def __init__(self) -> None:
         self.values = {"SENDGRID_API_KEY": "test-key", "DATABASE_URL": ":memory:"}
 
-    def get(self, key: str) -> str:
-        return self.values.get(key, "")
+    def get(self, key: str, default: str = "") -> str:
+        return self.values.get(key, default)
 
 # --- Email adapter (depends on ConfigPort) ---
 
