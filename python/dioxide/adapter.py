@@ -154,17 +154,18 @@ class AdapterDecorator:
         port: type[Any],
         *,
         profile: str | list[str] = '*',
+        scope: Scope = Scope.SINGLETON,
     ) -> Callable[[type[T]], type[T]]:
-        """Register an adapter for a port with profile(s).
+        """Register an adapter for a port with profile(s) and optional scope.
 
         This method marks a concrete class as an adapter implementation for an
         abstract port (Protocol/ABC), associated with one or more environment profiles.
         The adapter will be activated when the container scans with a matching profile.
 
         The decorator:
-            1. Stores port and profile metadata on the class
+            1. Stores port, profile, and scope metadata on the class
             2. Registers the adapter in the global registry for auto-discovery
-            3. Marks the adapter as SINGLETON scope by default
+            3. Uses the specified scope (default: SINGLETON) for instance lifecycle
             4. Normalizes profile names to lowercase for consistent matching
 
         Args:
@@ -181,6 +182,13 @@ class AdapterDecorator:
 
                 Profile names are normalized to lowercase for case-insensitive matching.
                 Default is '*' (available in all profiles).
+            scope: Instance lifecycle scope. Controls how instances are created:
+
+                - ``Scope.SINGLETON`` (default): Same instance returned on every
+                  resolution. Use for stateless adapters or shared resources.
+                - ``Scope.FACTORY``: New instance created on each resolution.
+                  Use for test fakes that need fresh state per resolution,
+                  or adapters that should not share state between callers.
 
         Returns:
             Decorator function that marks the class as an adapter. The decorated
@@ -239,7 +247,24 @@ class AdapterDecorator:
                     async def dispose(self) -> None:
                         self.redis.close()
 
+            With FACTORY scope (new instance per resolution)::
+
+                @adapter.for_(EmailPort, profile=Profile.TEST, scope=Scope.FACTORY)
+                class FreshFakeEmailAdapter:
+                    def __init__(self):
+                        self.sent_emails = []  # Fresh state each time
+
+                    async def send(self, to: str, subject: str, body: str) -> None:
+                        self.sent_emails.append({'to': to, 'subject': subject, 'body': body})
+
+
+                # Each resolution returns a new instance with empty sent_emails
+                email1 = container.resolve(EmailPort)
+                email2 = container.resolve(EmailPort)
+                assert email1 is not email2  # Different instances
+
         See Also:
+            - :class:`dioxide.scope.Scope` - SINGLETON vs FACTORY scope
             - :class:`dioxide.profile_enum.Profile` - Standard profile enum values
             - :class:`dioxide.container.Container.scan` - Profile-based scanning
             - :class:`dioxide.lifecycle.lifecycle` - For initialization/cleanup
@@ -257,7 +282,7 @@ class AdapterDecorator:
             # Store metadata on class
             cls.__dioxide_port__ = port  # type: ignore[attr-defined]
             cls.__dioxide_profiles__ = frozenset(profiles)  # type: ignore[attr-defined]
-            cls.__dioxide_scope__ = Scope.SINGLETON  # type: ignore[attr-defined]
+            cls.__dioxide_scope__ = scope  # type: ignore[attr-defined]
 
             # Register with global registry
             _adapter_registry.add(cls)
