@@ -69,7 +69,12 @@ class DescribeContainerReset:
         assert isinstance(instance, MyService)
 
     def it_clears_lifecycle_instances_cache(self) -> None:
-        """After reset, lifecycle cache is cleared."""
+        """After reset, lifecycle cache is cleared.
+
+        Note: This test directly manipulates the internal _lifecycle_instances
+        attribute to verify cache clearing without requiring async lifecycle
+        setup/teardown. This is intentional for test simplicity.
+        """
         # Arrange
         container = Container()
         container._lifecycle_instances = ['fake_instance']  # Simulate cached lifecycle
@@ -147,6 +152,33 @@ class DescribeContainerReset:
         container.resolve(StatefulService)
         assert len(instance_ids) == 2
         assert instance_ids[0] != instance_ids[1]  # Different instances
+
+    def it_handles_reset_on_empty_container(self) -> None:
+        """Reset on empty container does not raise."""
+        container = Container()
+        # Should not raise
+        container.reset()
+        assert container.is_empty()
+
+    def it_handles_multiple_sequential_resets(self) -> None:
+        """Multiple resets work correctly."""
+
+        @service
+        class SequentialService:
+            pass
+
+        container = Container()
+        container.scan()
+
+        first = container.resolve(SequentialService)
+        container.reset()
+        second = container.resolve(SequentialService)
+        container.reset()
+        third = container.resolve(SequentialService)
+
+        assert first is not second
+        assert second is not third
+        assert first is not third
 
 
 class DescribeContainerResetWithManualRegistration:
