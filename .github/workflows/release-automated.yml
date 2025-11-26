@@ -416,11 +416,25 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
-  # Phase 1 Fix: Test PyPI staging
-  # Upload to Test PyPI BEFORE production PyPI
-  # Catches upload issues without consuming production version numbers (issue #137)
-  publish-test-pypi:
-    name: Publish to Test PyPI (Staging)
+  # REMOVED: Test PyPI staging
+  # Test PyPI was CAUSING version burn problems, not preventing them!
+  #
+  # The problem: Test PyPI and Production PyPI are SEPARATE registries with the
+  # SAME version-burn policy. Once a version is uploaded to Test PyPI (even if
+  # deleted later), that version number is burned FOREVER on Test PyPI.
+  #
+  # This caused failures when:
+  # 1. Test PyPI upload succeeded
+  # 2. Production PyPI failed for any reason (trailing data, etc.)
+  # 3. We'd have to bump the patch version just to release
+  #
+  # The fix: Skip Test PyPI for stable releases. Go straight to Production PyPI.
+  # Test PyPI is only useful for testing the upload PROCESS, not the code.
+  # If CI passes (tests, wheel validation), go directly to Production.
+
+  # Pre-flight check: Verify version is available on PyPI before attempting upload
+  check-pypi-availability:
+    name: Check PyPI Version Availability
     needs: [determine-release, semantic-release, build-wheels, build-sdist, validate-wheels, test-wheels]
     runs-on: ubuntu-latest
     if: |
@@ -428,118 +442,37 @@ jobs:
         needs.determine-release.outputs.should_release == 'true' ||
         needs.semantic-release.outputs.released == 'true'
       )
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/project/dioxide/
-    permissions:
-      id-token: write
-
     steps:
-      - name: Download all wheels
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53  # v6.0.0
-        with:
-          pattern: wheels-*
-          path: dist
-          merge-multiple: true
-
-      - name: Download sdist
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53  # v6.0.0
-        with:
-          pattern: sdist
-          path: dist
-          merge-multiple: true
-
-      - name: Setup Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # v6.0.0
-        with:
-          python-version: '3.13'
-
-      - name: Strip trailing data from wheels (PyPI validation fix)
-        run: |
-          python3 << 'EOF'
-          import os
-          import zipfile
-          from pathlib import Path
-
-          def strip_trailing_data(wheel_path):
-              """Remove trailing NULL bytes after ZIP End of Central Directory.
-
-              PyPI now rejects wheels with trailing data to prevent ZIP confusion attacks.
-              Some wheel builders (including maturin on Windows) add trailing NULL bytes.
-
-              See: https://blog.pypi.org/posts/2025-08-07-wheel-archive-confusion-attacks/
-              """
-              with open(wheel_path, 'rb') as f:
-                  data = f.read()
-
-              # Find End of Central Directory signature (last occurrence)
-              eocd_sig = b'PK\x05\x06'
-              pos = data.rfind(eocd_sig)
-
-              if pos == -1:
-                  print(f"  ⚠️  No EOCD found in {wheel_path.name}")
-                  return False
-
-              # EOCD is 22 bytes minimum + comment
-              comment_len = int.from_bytes(data[pos+20:pos+22], 'little')
-              eocd_end = pos + 22 + comment_len
-
-              trailing_bytes = len(data) - eocd_end
-
-              if trailing_bytes > 0:
-                  print(f"  ✂️  {wheel_path.name}: Removing {trailing_bytes} trailing bytes")
-                  # Write file without trailing data
-                  with open(wheel_path, 'wb') as f:
-                      f.write(data[:eocd_end])
-                  return True
-              else:
-                  print(f"  ✓  {wheel_path.name}: No trailing data")
-                  return False
-
-          # Process all wheels
-          dist_dir = Path('dist')
-          wheels = list(dist_dir.glob('*.whl'))
-
-          print(f"Checking {len(wheels)} wheel(s) for trailing data...")
-          fixed = 0
-
-          for wheel in sorted(wheels):
-              if strip_trailing_data(wheel):
-                  fixed += 1
-
-          if fixed > 0:
-              print(f"\n✅ Fixed {fixed} wheel(s)")
-          else:
-              print(f"\n✅ All wheels clean")
-          EOF
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Publish to Test PyPI with Trusted Publishing
-        run: |
-          # Upload to Test PyPI first to catch issues before production
-          # Test PyPI uses separate OIDC configuration
-          maturin upload --repository testpypi dist/*
-
-      - name: Verify Test PyPI upload
+      - name: Check if version exists on PyPI
         run: |
           VERSION="${{ needs.determine-release.outputs.version || needs.semantic-release.outputs.version }}"
-          echo "Verifying upload of dioxide $VERSION to Test PyPI..."
+          echo "Checking if dioxide $VERSION already exists on PyPI..."
 
-          # Wait a few seconds for Test PyPI to process
-          sleep 10
+          # Check PyPI JSON API for existing version
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/dioxide/$VERSION/json")
 
-          # Try to view the package on Test PyPI
-          curl -f "https://test.pypi.org/project/dioxide/$VERSION/" || {
-            echo "⚠️  Package not yet visible on Test PyPI (may take a few moments)"
-          }
-
-          echo "✅ Test PyPI upload successful"
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo ""
+            echo "❌ ERROR: Version $VERSION already exists on PyPI!"
+            echo ""
+            echo "This version has already been published. You cannot reuse version numbers."
+            echo ""
+            echo "To fix:"
+            echo "  1. Bump the version in Cargo.toml"
+            echo "  2. Update CHANGELOG.md"
+            echo "  3. Create a new tag"
+            echo ""
+            exit 1
+          elif [ "$HTTP_CODE" = "404" ]; then
+            echo "✅ Version $VERSION is available on PyPI"
+          else
+            echo "⚠️  Unexpected response from PyPI API (HTTP $HTTP_CODE)"
+            echo "Proceeding with upload attempt..."
+          fi
 
   publish-pypi:
     name: Publish to PyPI (Production)
-    needs: [determine-release, semantic-release, build-wheels, build-sdist, validate-wheels, test-wheels, publish-test-pypi]
+    needs: [determine-release, semantic-release, build-wheels, build-sdist, validate-wheels, test-wheels, check-pypi-availability]
     runs-on: ubuntu-latest
     if: |
       always() && (
