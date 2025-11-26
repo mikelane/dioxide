@@ -147,17 +147,22 @@ class DescribeFreshContainer:
             assert cache.cache_type() == 'in-memory'
 
     @pytest.mark.asyncio
-    async def it_accepts_package_parameter(self) -> None:
-        """Can specify package to scan."""
+    async def it_passes_package_parameter_to_container_scan(self) -> None:
+        """Package parameter is passed to container.scan()."""
 
-        # Arrange
+        # Create a service in the tests module namespace
         @service
-        class PackagedService:
+        class ScanTestService:
             pass
 
-        # Act & Assert - should work with package parameter
-        # Note: package parameter is passed to scan(), but since we're not
-        # actually in a package hierarchy in tests, we just verify it doesn't error
-        async with fresh_container(package=None) as container:
-            instance = container.resolve(PackagedService)
+        # Scan specifically the 'tests' package with TEST profile.
+        # This tests that:
+        # 1. The package parameter is accepted and passed to scan()
+        # 2. Services from the specified package are registered
+        # 3. Profile filtering works in combination with package filtering
+        async with fresh_container(profile=Profile.TEST, package='tests') as container:
+            # ScanTestService is in 'tests.test_testing_module' which starts with 'tests',
+            # so it should be found when scanning the 'tests' package.
+            instance = container.resolve(ScanTestService)
             assert instance is not None
+            assert isinstance(instance, ScanTestService)
