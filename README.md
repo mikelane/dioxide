@@ -5,10 +5,13 @@
 [![CI](https://github.com/mikelane/dioxide/workflows/CI/badge.svg)](https://github.com/mikelane/dioxide/actions)
 [![Release](https://github.com/mikelane/dioxide/actions/workflows/release-automated.yml/badge.svg)](https://github.com/mikelane/dioxide/actions/workflows/release-automated.yml)
 [![PyPI version](https://badge.fury.io/py/dioxide.svg)](https://pypi.org/project/dioxide/)
+[![Documentation](https://readthedocs.org/projects/dioxide/badge/?version=latest)](https://dioxide.readthedocs.io/en/latest/?badge=latest)
 [![Python Versions](https://img.shields.io/pypi/pyversions/dioxide.svg)](https://pypi.org/project/dioxide/)
 [![Platform Support](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue)](https://github.com/mikelane/dioxide)
 [![Architecture](https://img.shields.io/badge/arch-x86__64%20%7C%20aarch64-green)](https://github.com/mikelane/dioxide)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **[📖 Read the Documentation](https://dioxide.readthedocs.io)** | **[🚀 Quick Start](#quick-start)** | **[💡 Examples](https://dioxide.readthedocs.io/en/latest/examples/)** | **[📋 API Reference](https://dioxide.readthedocs.io/en/latest/autoapi/dioxide/)**
 
 ---
 
@@ -622,7 +625,26 @@ async def test_send_welcome_email(test_container):
 
 dioxide makes testing easy through **fakes at the seams** instead of mocks. The key pattern is creating a fresh `Container` instance per test for complete isolation.
 
+> **[📖 Full Testing Guide](https://dioxide.readthedocs.io/en/latest/testing/)** - Comprehensive patterns for testing with dioxide
+
 ### Fresh Container Per Test (Recommended)
+
+The simplest approach uses the `fresh_container` helper from `dioxide.testing`:
+
+```python
+import pytest
+from dioxide import Profile
+from dioxide.testing import fresh_container
+
+@pytest.fixture
+async def container():
+    """Fresh container per test - complete test isolation."""
+    async with fresh_container(profile=Profile.TEST) as c:
+        yield c
+    # Cleanup happens automatically
+```
+
+Or create the container manually for more control:
 
 ```python
 import pytest
@@ -694,9 +716,22 @@ async def test_user_registration_sends_welcome_email(container, email, db):
 - **Fast**: In-memory fakes, no I/O
 - **Deterministic**: Controllable fakes (FakeClock, etc.)
 
-### Alternative: Clear State Between Tests
+### Alternative: Reset Container Between Tests
 
-If you need a shared container (e.g., for TestClient integration tests), clear fake state instead:
+If you need a shared container (e.g., for TestClient integration tests), use `container.reset()`:
+
+```python
+from dioxide import container, Profile
+
+@pytest.fixture(autouse=True)
+def setup_container():
+    """Reset container between tests for isolation."""
+    container.scan(profile=Profile.TEST)
+    yield
+    container.reset()  # Clears singleton cache, keeps registrations
+```
+
+Or clear fake state manually if you need more control:
 
 ```python
 @pytest.fixture(autouse=True)
@@ -738,18 +773,25 @@ For comprehensive testing patterns, see [TESTING_GUIDE.md](docs/TESTING_GUIDE.md
 - [x] Reverse-order disposal with error resilience
 - [x] Graceful rollback on initialization failures
 
+**Test Ergonomics**:
+- [x] `fresh_container()` helper for isolated test containers
+- [x] `container.reset()` to clear singleton cache between tests
+- [x] `scope=Scope.FACTORY` on adapters for fresh instances per resolution
+- [x] Complete test isolation with fresh Container per test pattern
+
 **Reliability**:
 - [x] Circular dependency detection at startup (fail-fast)
 - [x] Excellent error messages with actionable suggestions
 - [x] Package scanning: `container.scan(package="app.services")`
-- [x] High test coverage (~91%, 196+ tests)
+- [x] High test coverage (~93%, 213+ tests)
 - [x] Full CI/CD automation with multi-platform wheels
 
 **Documentation & Examples**:
+- [x] **[ReadTheDocs](https://dioxide.readthedocs.io)** - Full documentation with API reference
 - [x] Complete FastAPI integration example
 - [x] Comprehensive testing guide (fakes > mocks philosophy)
 - [x] Performance benchmarks (167-300ns resolution, 10,000x faster than target)
-- [x] Comprehensive in-repo documentation (API reference, guides, examples)
+- [x] Tutorials, guides, and architectural patterns
 - [x] Migration guides for all versions
 
 **Production Ready**:
@@ -882,7 +924,11 @@ Contributions are welcome! We follow a strict workflow to maintain code quality:
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
-See [ROADMAP.md](ROADMAP.md) for the complete product roadmap, [MLP_VISION.md](docs/MLP_VISION.md) for the design philosophy, and [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for comprehensive testing patterns with dioxide's "fakes over mocks" philosophy.
+**Resources:**
+- **[📖 Documentation](https://dioxide.readthedocs.io)** - Full documentation with tutorials and API reference
+- **[🗺️ Roadmap](ROADMAP.md)** - Complete product roadmap
+- **[💡 Design Philosophy](docs/MLP_VISION.md)** - MLP vision and architectural decisions
+- **[🧪 Testing Guide](docs/TESTING_GUIDE.md)** - Comprehensive testing patterns (fakes > mocks)
 
 ## License
 
@@ -905,4 +951,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 - **v1.0.0**: Stable release after ecosystem adoption and feedback
 - **v2.0.0+**: Major enhancements based on community needs
 
-See [ROADMAP.md](ROADMAP.md) for detailed plans.
+**Get Started**: **[📖 Read the Documentation](https://dioxide.readthedocs.io)** | **[📦 Install from PyPI](https://pypi.org/project/dioxide/)** | **[💻 View on GitHub](https://github.com/mikelane/dioxide)**
