@@ -58,6 +58,7 @@ Thumbs.db
 # Project-specific
 *.log
 *.profraw
+strategic-roadmap.md
 
 .claude
 .worktrees/
