@@ -392,6 +392,104 @@ async def test_send_welcome_email(test_container):
 - ✅ **No magic**: Just default parameters with `container.resolve()`
 - ✅ **Type-safe**: Full mypy support for injected types
 
+## Testing with dioxide
+
+dioxide makes testing easy through **fakes at the seams** instead of mocks. The key pattern is creating a fresh `Container` instance per test for complete isolation.
+
+### Fresh Container Per Test (Recommended)
+
+```python
+import pytest
+from dioxide import Container, Profile
+
+@pytest.fixture
+async def container():
+    """Fresh container per test - complete test isolation.
+
+    Each test gets a fresh Container instance with:
+    - Clean singleton cache (no state from previous tests)
+    - Fresh adapter instances
+    - Automatic lifecycle management via async context manager
+
+    This is the RECOMMENDED pattern for test isolation.
+    """
+    c = Container()
+    c.scan(profile=Profile.TEST)
+    async with c:
+        yield c
+    # Cleanup happens automatically
+```
+
+**Why this works:**
+- **Complete isolation**: Each test starts with a clean slate
+- **No state leakage**: Singletons are scoped to the container instance
+- **Lifecycle handled**: `@lifecycle` components are properly initialized/disposed
+- **Simple**: No need to track or clear fake state
+
+### Typed Fixtures for Fakes
+
+Create typed fixtures to access your fake adapters with IDE support:
+
+```python
+from app.adapters.fakes import FakeEmailAdapter, FakeDatabaseAdapter
+from app.domain.ports import EmailPort, DatabasePort
+
+@pytest.fixture
+def email(container) -> FakeEmailAdapter:
+    """Typed access to fake email for assertions."""
+    return container.resolve(EmailPort)
+
+@pytest.fixture
+def db(container) -> FakeDatabaseAdapter:
+    """Typed access to fake db for seeding test data."""
+    return container.resolve(DatabasePort)
+```
+
+### Complete Test Example
+
+```python
+async def test_user_registration_sends_welcome_email(container, email, db):
+    """Test that registering a user sends a welcome email."""
+    # Arrange: Get the service (dependencies auto-injected)
+    service = container.resolve(UserService)
+
+    # Act: Call the real service with real fakes
+    await service.register_user("alice@example.com", "Alice")
+
+    # Assert: Check observable outcomes (no mock verification!)
+    assert len(email.sent_emails) == 1
+    assert email.sent_emails[0]["to"] == "alice@example.com"
+    assert "Welcome" in email.sent_emails[0]["subject"]
+```
+
+**Benefits over mocking:**
+- **Test real behavior**: Business logic actually runs
+- **No brittle mocks**: Tests don't break when you refactor
+- **Fast**: In-memory fakes, no I/O
+- **Deterministic**: Controllable fakes (FakeClock, etc.)
+
+### Alternative: Clear State Between Tests
+
+If you need a shared container (e.g., for TestClient integration tests), clear fake state instead:
+
+```python
+@pytest.fixture(autouse=True)
+def clear_fakes():
+    """Clear fake state before each test."""
+    # Clear adapters from global container before test runs
+    db = container.resolve(DatabasePort)
+    if hasattr(db, "users"):
+        db.users.clear()
+
+    email = container.resolve(EmailPort)
+    if hasattr(email, "sent_emails"):
+        email.sent_emails.clear()
+```
+
+**Note**: The fresh container pattern is preferred because it requires no knowledge of fake internals.
+
+For comprehensive testing patterns, see [TESTING_GUIDE.md](docs/TESTING_GUIDE.md).
+
 ## Features
 
 ### v0.1.1 ✅ STABLE (Nov 25, 2025) - MLP Production Ready
