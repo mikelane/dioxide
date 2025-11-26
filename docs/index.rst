@@ -132,6 +132,12 @@ Contents
    autoapi/index
 
 .. toctree::
+   :maxdepth: 2
+   :caption: Migration Guides
+
+   migration-from-dependency-injector
+
+.. toctree::
    :maxdepth: 1
    :caption: Development
 
