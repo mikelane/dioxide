@@ -137,6 +137,229 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 - **Profiles** (`Profile.PRODUCTION`, `Profile.TEST`): Environment selection
 - **Container**: Auto-wires dependencies based on type hints
 
+## Constructor Dependency Injection
+
+When you create an adapter or service with constructor parameters, dioxide **automatically injects dependencies** based on type hints. This is the core mechanism that makes dependency injection "just work".
+
+### How It Works
+
+When you write:
+
+```python
+@adapter.for_(UserRepository, profile=Profile.PRODUCTION)
+class SqliteUserRepository:
+    def __init__(self, db: Connection) -> None:  # <-- type hint tells dioxide what to inject
+        self.db = db
+```
+
+You might ask: "How does dioxide know where to get `db`?"
+
+The answer: **The dependency must be registered in the container.**
+
+dioxide:
+1. Reads the type hints from your constructor (`db: Connection`)
+2. Looks up `Connection` in the container registry
+3. Resolves `Connection` (creating an instance if needed)
+4. Passes it to your constructor
+
+### The Dependency Must Be Registered
+
+Constructor dependencies **must** be registered in the container before dioxide can inject them. There are three ways to register a dependency:
+
+#### Option 1: Make it an Adapter for a Port
+
+The most common pattern - create a port and register an adapter:
+
+```python
+from typing import Protocol
+from dioxide import Container, Profile, adapter, service
+
+# Define a port (interface) for database connections
+class DatabaseConnection(Protocol):
+    def execute(self, sql: str) -> Any: ...
+
+# Register an adapter for the port
+@adapter.for_(DatabaseConnection, profile=Profile.PRODUCTION)
+class SqliteConnection:
+    def __init__(self) -> None:
+        import sqlite3
+        self.conn = sqlite3.connect("app.db")
+
+    def execute(self, sql: str) -> Any:
+        return self.conn.execute(sql)
+
+# Now other adapters can depend on DatabaseConnection
+@adapter.for_(UserRepository, profile=Profile.PRODUCTION)
+class SqliteUserRepository:
+    def __init__(self, db: DatabaseConnection) -> None:  # Auto-injected!
+        self.db = db
+
+    async def get_user(self, user_id: str) -> dict | None:
+        result = self.db.execute(f"SELECT * FROM users WHERE id = ?", (user_id,))
+        # ...
+```
+
+#### Option 2: Make it a Service
+
+If the dependency is core domain logic (not infrastructure), use `@service`:
+
+```python
+from dioxide import service
+
+@service
+class AppConfig:
+    """Configuration loaded from environment."""
+    def __init__(self) -> None:
+        import os
+        self.database_url = os.getenv("DATABASE_URL", "sqlite:///dev.db")
+        self.sendgrid_api_key = os.getenv("SENDGRID_API_KEY", "")
+
+# Adapters can depend on services
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    def __init__(self, config: AppConfig) -> None:  # Auto-injected!
+        self.api_key = config.sendgrid_api_key
+```
+
+#### Option 3: Manual Registration
+
+For external dependencies or special cases, register manually:
+
+```python
+import sqlite3
+from dioxide import Container, Profile
+
+container = Container()
+
+# Register a factory that creates the dependency
+container.register_singleton(sqlite3.Connection, lambda: sqlite3.connect("app.db"))
+
+# Now scan - adapters depending on sqlite3.Connection will get it injected
+container.scan(profile=Profile.PRODUCTION)
+```
+
+### Complete Example: Adapters with Dependencies
+
+Here's a complete example showing adapters that depend on other components:
+
+```python
+from typing import Protocol
+from dioxide import Container, Profile, adapter, service
+
+# --- Ports (interfaces) ---
+
+class ConfigPort(Protocol):
+    def get(self, key: str) -> str: ...
+
+class EmailPort(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
+
+class UserRepository(Protocol):
+    async def save(self, user: dict) -> dict: ...
+    async def get(self, user_id: str) -> dict | None: ...
+
+# --- Configuration adapter ---
+
+@adapter.for_(ConfigPort, profile=Profile.PRODUCTION)
+class EnvConfigAdapter:
+    """Configuration from environment variables."""
+    def get(self, key: str) -> str:
+        import os
+        return os.environ.get(key, "")
+
+@adapter.for_(ConfigPort, profile=Profile.TEST)
+class FakeConfigAdapter:
+    """Fake configuration for testing."""
+    def __init__(self) -> None:
+        self.values = {"SENDGRID_API_KEY": "test-key", "DATABASE_URL": ":memory:"}
+
+    def get(self, key: str) -> str:
+        return self.values.get(key, "")
+
+# --- Email adapter (depends on ConfigPort) ---
+
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    def __init__(self, config: ConfigPort) -> None:  # ConfigPort auto-injected!
+        self.api_key = config.get("SENDGRID_API_KEY")
+
+    async def send(self, to: str, subject: str, body: str) -> None:
+        # Use self.api_key to call SendGrid API
+        print(f"Sending via SendGrid to {to}: {subject}")
+
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    def __init__(self) -> None:  # No dependencies needed for test fake
+        self.sent_emails: list[dict] = []
+
+    async def send(self, to: str, subject: str, body: str) -> None:
+        self.sent_emails.append({"to": to, "subject": subject, "body": body})
+
+# --- Service (depends on ports) ---
+
+@service
+class UserService:
+    def __init__(self, repo: UserRepository, email: EmailPort) -> None:
+        self.repo = repo
+        self.email = email
+
+    async def register_user(self, name: str, email_addr: str) -> dict:
+        user = await self.repo.save({"name": name, "email": email_addr})
+        await self.email.send(email_addr, "Welcome!", f"Hello {name}!")
+        return user
+
+# --- Usage ---
+
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+
+# When UserService is resolved:
+# 1. dioxide sees UserService needs UserRepository and EmailPort
+# 2. Resolves UserRepository -> gets SqliteUserRepository (if registered)
+# 3. Resolves EmailPort -> gets SendGridAdapter
+# 4. SendGridAdapter needs ConfigPort -> gets EnvConfigAdapter
+# 5. Everything is wired up automatically!
+
+service = container.resolve(UserService)
+```
+
+### Key Points
+
+1. **Type hints are required**: Constructor parameters must have type hints for injection to work
+2. **Dependencies must be registered**: Either via `@adapter.for_()`, `@service`, or manual registration
+3. **Resolution is recursive**: If your dependency has dependencies, those are resolved too
+4. **Circular dependencies are detected**: dioxide fails fast if A depends on B and B depends on A
+5. **Test fakes often have no dependencies**: Fakes are typically simpler and don't need injection
+
+### Common Patterns
+
+**Config Adapter Pattern**: Create a `ConfigPort` that adapters depend on for configuration:
+
+```python
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    def __init__(self, config: ConfigPort) -> None:
+        self.api_key = config.get("SENDGRID_API_KEY")
+```
+
+**Database Connection Pattern**: Wrap database connections in a port for injection:
+
+```python
+@adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+class PostgresAdapter:
+    def __init__(self, config: ConfigPort) -> None:
+        self.url = config.get("DATABASE_URL")
+```
+
+**Test Fakes Without Dependencies**: Test adapters are often simple and don't need dependencies:
+
+```python
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    def __init__(self) -> None:  # No dependencies - just in-memory storage
+        self.sent_emails = []
+```
+
 ## Lifecycle Management
 
 Services and adapters can opt into lifecycle management using the `@lifecycle` decorator for components that need initialization and cleanup:

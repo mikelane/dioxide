@@ -2,6 +2,14 @@
 
 This adapter implements EmailPort by logging emails instead of sending them,
 which is useful for local development where you don't want to send real emails.
+
+Note on constructor injection:
+    This adapter does NOT use constructor injection because it doesn't need
+    any configuration. Compare to SendGridAdapter which injects ConfigPort
+    to get API keys.
+
+    Constructor injection is optional - only use it when your adapter
+    actually needs dependencies.
 """
 
 from dioxide import Profile, adapter
@@ -15,10 +23,28 @@ class LoggingEmailAdapter:
 
     This adapter is useful for local development and CI environments where
     you want to see what emails would be sent without actually sending them.
+
+    Unlike SendGridAdapter, this adapter has no constructor dependencies:
+    - No ConfigPort needed (doesn't require API keys or config)
+    - Simple, self-contained implementation
+    - This is common for development/logging adapters
+
+    Constructor injection is only necessary when an adapter needs external
+    configuration or depends on other ports/services.
     """
 
     def __init__(self) -> None:
-        """Initialize logging adapter."""
+        """Initialize logging adapter.
+
+        Note: No dependencies needed! This adapter is self-contained.
+
+        Compare to SendGridAdapter:
+            def __init__(self, config: ConfigPort) -> None:
+                self.api_key = config.get("SENDGRID_API_KEY")
+
+        The key insight: use constructor injection when you NEED dependencies,
+        not because you can.
+        """
         print("[LoggingEmailAdapter] Initialized (emails will be logged, not sent)")
 
     async def send_welcome_email(self, to: str, name: str) -> None:

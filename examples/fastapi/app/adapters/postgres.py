@@ -1,15 +1,20 @@
 """PostgreSQL adapter for production database operations.
 
-This adapter implements DatabasePort using asyncpg for real PostgreSQL
-connections. It uses the @lifecycle decorator for connection pool management.
+This adapter demonstrates CONSTRUCTOR DEPENDENCY INJECTION - it depends on
+ConfigPort to get its database URL instead of reading os.environ directly.
+
+Why inject ConfigPort instead of using os.environ?
+    1. Testability: Tests can provide fake config without env var manipulation
+    2. Consistency: All configuration comes through the same interface
+    3. Flexibility: Different profiles can have different config sources
+    4. Explicitness: Dependencies are visible in the constructor signature
 """
 
-import os
 from typing import Any
 
 from dioxide import Profile, adapter, lifecycle
 
-from ..domain.ports import DatabasePort
+from ..domain.ports import ConfigPort, DatabasePort
 
 
 @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
@@ -17,16 +22,35 @@ from ..domain.ports import DatabasePort
 class PostgresAdapter:
     """Production PostgreSQL adapter with connection pooling.
 
-    This adapter manages a connection pool that is initialized when the
-    container starts and cleaned up when it stops. In a real application,
-    you would use asyncpg or SQLAlchemy async.
+    This adapter demonstrates constructor dependency injection:
 
-    Example configuration via environment variables:
-        DATABASE_URL=postgresql://user:pass@localhost/dbname
+        def __init__(self, config: ConfigPort) -> None:
+            self.database_url = config.get("DATABASE_URL")
+
+    When dioxide resolves PostgresAdapter, it:
+    1. Sees the constructor needs ConfigPort
+    2. Resolves ConfigPort -> gets EnvConfigAdapter (production profile)
+    3. Creates EnvConfigAdapter instance
+    4. Passes it to PostgresAdapter.__init__
+
+    This way, PostgresAdapter doesn't need to know WHERE config comes from -
+    it just depends on the ConfigPort interface.
     """
 
-    def __init__(self) -> None:
-        """Initialize adapter (connection pool created in initialize())."""
+    def __init__(self, config: ConfigPort) -> None:
+        """Initialize adapter with injected configuration.
+
+        Args:
+            config: Configuration port - automatically injected by dioxide!
+
+        Note: The config parameter is type-hinted with ConfigPort, so dioxide
+        knows to inject it. The actual adapter instance (EnvConfigAdapter)
+        is determined by the active profile.
+        """
+        # Get database URL from injected config (NOT os.environ directly)
+        self.database_url = config.get(
+            "DATABASE_URL", "postgresql://localhost/dioxide_example"
+        )
         self.pool: Any | None = None
         self._users_table: dict[str, dict] = {}  # Mock storage for demo
 
@@ -38,18 +62,15 @@ class PostgresAdapter:
 
             import asyncpg
             self.pool = await asyncpg.create_pool(
-                os.getenv("DATABASE_URL"),
+                self.database_url,  # <-- Uses config from constructor
                 min_size=5,
                 max_size=20
             )
         """
-        database_url = os.getenv(
-            "DATABASE_URL", "postgresql://localhost/dioxide_example"
-        )
-        print(f"[PostgresAdapter] Connecting to {database_url}")
+        print(f"[PostgresAdapter] Connecting to {self.database_url}")
 
         # Mock pool creation - replace with real asyncpg in production
-        self.pool = f"Connection pool to {database_url}"
+        self.pool = f"Connection pool to {self.database_url}"
         print("[PostgresAdapter] Connection pool created")
 
     async def dispose(self) -> None:
