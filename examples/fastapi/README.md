@@ -73,6 +73,7 @@ pytest tests/test_api.py::DescribeUserCreation -v
 │  └────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │  Ports (app/domain/ports.py)                           │ │
+│  │  - ConfigPort: Protocol for configuration              │ │
 │  │  - DatabasePort: Protocol for data persistence         │ │
 │  │  - EmailPort: Protocol for email sending               │ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -98,12 +99,13 @@ pytest tests/test_api.py::DescribeUserCreation -v
 app/
 ├── main.py              # FastAPI app + container setup
 ├── domain/
-│   ├── ports.py        # Port definitions (Protocols)
+│   ├── ports.py        # Port definitions (Protocols) including ConfigPort
 │   └── services.py     # Business logic (@service)
 └── adapters/
-    ├── postgres.py     # Production database (@adapter + @lifecycle)
-    ├── sendgrid.py     # Production email (@adapter)
-    ├── logging_email.py # Development email (@adapter)
+    ├── config.py       # Configuration adapters (demonstrates constructor injection)
+    ├── postgres.py     # Production database (@adapter + @lifecycle, injects ConfigPort)
+    ├── sendgrid.py     # Production email (@adapter, injects ConfigPort)
+    ├── logging_email.py # Development email (@adapter, no dependencies)
     └── fakes.py        # Test adapters (@adapter)
 
 tests/
@@ -241,12 +243,14 @@ def test_create_user(client, db, email):
 
 Different environments use different adapters:
 
-| Profile | Database | Email | Use Case |
-|---------|----------|-------|----------|
-| `production` | PostgreSQL | SendGrid | Real production deployment |
-| `development` | In-memory | Console logging | Local development |
-| `test` | In-memory fake | Recording fake | Automated testing |
-| `ci` | In-memory | Console logging | CI/CD pipelines |
+| Profile | Config | Database | Email | Use Case |
+|---------|--------|----------|-------|----------|
+| `production` | Env vars | PostgreSQL | SendGrid | Real production deployment |
+| `development` | Defaults + env | In-memory | Console logging | Local development |
+| `test` | In-memory fake | In-memory fake | Recording fake | Automated testing |
+| `ci` | Defaults + env | In-memory | Console logging | CI/CD pipelines |
+
+**Constructor Injection**: PostgresAdapter and SendGridAdapter inject ConfigPort to get their settings. This is cleaner than reading `os.environ` directly because tests can provide fake config.
 
 ### Lifecycle Management
 
@@ -270,6 +274,61 @@ The container lifecycle integrates with FastAPI:
 ```
 App Start → lifespan.__aenter__ → container.__aenter__ → initialize() on adapters → Ready
 App Stop  → lifespan.__aexit__  → container.__aexit__  → dispose() on adapters → Shutdown
+```
+
+### Constructor Dependency Injection
+
+Adapters can depend on other adapters or services through constructor injection. dioxide automatically resolves and injects dependencies based on type hints.
+
+**Example: Config Adapter Pattern**
+
+This example uses a `ConfigPort` that other adapters depend on:
+
+```python
+# app/domain/ports.py
+class ConfigPort(Protocol):
+    def get(self, key: str, default: str = "") -> str: ...
+
+# app/adapters/config.py - Configuration adapter
+@adapter.for_(ConfigPort, profile=Profile.PRODUCTION)
+class EnvConfigAdapter:
+    def get(self, key: str, default: str = "") -> str:
+        return os.environ.get(key, default)
+
+@adapter.for_(ConfigPort, profile=Profile.TEST)
+class FakeConfigAdapter:
+    def __init__(self):
+        self.values = {"SENDGRID_API_KEY": "test-key"}
+
+    def get(self, key: str, default: str = "") -> str:
+        return self.values.get(key, default)
+
+# app/adapters/sendgrid.py - Depends on ConfigPort
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    def __init__(self, config: ConfigPort) -> None:  # <-- Auto-injected!
+        self.api_key = config.get("SENDGRID_API_KEY")
+```
+
+**How it works:**
+
+1. When `SendGridAdapter` is resolved, dioxide sees it needs `ConfigPort`
+2. dioxide looks up `ConfigPort` in the container
+3. For PRODUCTION profile, it finds `EnvConfigAdapter`
+4. Creates `EnvConfigAdapter` and passes it to `SendGridAdapter.__init__`
+
+**Key insight:** The dependency (`ConfigPort`) must be registered in the container. Use:
+- `@adapter.for_(Port, profile=...)` for infrastructure dependencies
+- `@service` for domain logic dependencies
+- `container.register_singleton()` for external types
+
+**Test fakes often have no dependencies:**
+
+```python
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    def __init__(self):  # No dependencies needed!
+        self.sent_emails = []
 ```
 
 ### Testing with Fakes (Not Mocks)

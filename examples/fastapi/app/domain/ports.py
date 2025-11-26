@@ -7,6 +7,32 @@ protocol definitions with no implementation details or framework dependencies.
 from typing import Protocol
 
 
+class ConfigPort(Protocol):
+    """Port for application configuration.
+
+    This port demonstrates constructor dependency injection - adapters for
+    DatabasePort and EmailPort can depend on ConfigPort to get their settings.
+
+    Using a port for configuration (instead of reading os.environ directly)
+    allows:
+    - Different config sources per profile (env vars, files, in-memory)
+    - Easy testing with controllable configuration
+    - Centralized configuration management
+    """
+
+    def get(self, key: str, default: str = "") -> str:
+        """Get a configuration value.
+
+        Args:
+            key: Configuration key (e.g., "DATABASE_URL", "SENDGRID_API_KEY")
+            default: Default value if key is not found
+
+        Returns:
+            Configuration value or default
+        """
+        ...
+
+
 class DatabasePort(Protocol):
     """Port for database operations.
 
