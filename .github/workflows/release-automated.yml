@@ -484,6 +484,7 @@ jobs:
       url: https://pypi.org/project/dioxide/
     permissions:
       id-token: write
+      attestations: write  # Required for PEP 740 attestations
 
     steps:
       - name: Download all wheels
@@ -564,14 +565,15 @@ jobs:
               print(f"\n✅ All wheels clean")
           EOF
 
-      - name: Install maturin
-        run: pip install maturin
-
       - name: Publish to PyPI with Trusted Publishing
-        run: |
-          # Maturin automatically uses OIDC when id-token: write is set
-          # and MATURIN_PYPI_TOKEN is not provided
-          maturin upload dist/*
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # v1.12.4
+        with:
+          # Use attestations for supply chain security (PEP 740)
+          attestations: true
+          # Print hash of files being uploaded
+          print-hash: true
+          # Verify package metadata before upload
+          verify-metadata: true
 
   create-github-release:
     name: Create GitHub Release
