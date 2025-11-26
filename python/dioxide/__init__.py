@@ -55,6 +55,7 @@ from .lifecycle import lifecycle
 from .profile_enum import Profile
 from .scope import Scope
 from .services import service
+from .testing import fresh_container
 
 __version__ = '0.1.0'
 __all__ = [
@@ -67,6 +68,7 @@ __all__ = [
     '_get_registered_components',
     'adapter',
     'container',
+    'fresh_container',
     'lifecycle',
     'service',
 ]
