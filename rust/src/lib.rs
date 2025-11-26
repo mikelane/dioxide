@@ -259,6 +259,11 @@ impl RustContainer {
     pub fn len(&self) -> usize {
         self.providers.read().unwrap().len()
     }
+
+    /// Clear the singleton instance cache (keep provider registrations)
+    pub fn reset(&self) {
+        self.singletons.write().unwrap().clear();
+    }
 }
 
 impl Default for RustContainer {
@@ -351,6 +356,11 @@ impl Container {
     /// Get count of registered providers
     fn __len__(&self) -> usize {
         self.rust_core.len()
+    }
+
+    /// Clear cached singleton instances for test isolation
+    fn reset(&self) {
+        self.rust_core.reset();
     }
 }
 

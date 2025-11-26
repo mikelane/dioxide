@@ -1587,6 +1587,38 @@ class Container:
         """
         await self.stop()
 
+    def reset(self) -> None:
+        """Clear cached instances for test isolation.
+
+        Clears the singleton cache but preserves provider registrations.
+        Use this between tests to ensure fresh instances without re-scanning.
+
+        This method is particularly useful in pytest fixtures to ensure
+        test isolation while avoiding the overhead of re-scanning:
+
+        Example::
+
+            @pytest.fixture(autouse=True)
+            def setup_container():
+                container.scan(profile=Profile.TEST)
+                yield
+                container.reset()  # Fresh instances for next test
+
+        For complete isolation (including new provider registrations),
+        consider using fresh Container instances instead.
+
+        Note:
+            - Instance registrations (via register_instance) are NOT cleared
+              because they reference external objects
+            - Provider registrations are preserved (no need to re-scan)
+            - Lifecycle instance cache is cleared
+
+        See Also:
+            Container: Create fresh instances for complete isolation
+        """
+        self._rust_core.reset()
+        self._lifecycle_instances = None
+
 
 # Global singleton container instance for simplified API
 # This provides the MLP-style ergonomic API while keeping Container class
