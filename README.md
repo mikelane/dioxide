@@ -432,6 +432,7 @@ Create typed fixtures to access your fake adapters with IDE support:
 
 ```python
 from app.adapters.fakes import FakeEmailAdapter, FakeDatabaseAdapter
+from app.domain.ports import EmailPort, DatabasePort
 
 @pytest.fixture
 def email(container) -> FakeEmailAdapter:
@@ -473,10 +474,13 @@ If you need a shared container (e.g., for TestClient integration tests), clear f
 
 ```python
 @pytest.fixture(autouse=True)
-def clear_fakes(container):
+def clear_fakes():
     """Clear fake state before each test."""
-    yield
-    # Clear email outbox
+    # Clear adapters from global container before test runs
+    db = container.resolve(DatabasePort)
+    if hasattr(db, "users"):
+        db.users.clear()
+
     email = container.resolve(EmailPort)
     if hasattr(email, "sent_emails"):
         email.sent_emails.clear()
