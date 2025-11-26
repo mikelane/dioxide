@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-11-25
+
+### Added
+- **Test Ergonomics Epic** - Complete solution for test isolation (#167)
+  - `container.reset()` method for clearing singleton cache without re-scanning (#175)
+  - `scope=` parameter on `@adapter.for_()` for transient instances (#173)
+  - `dioxide.testing` module with `fresh_container()` async context manager (#177)
+  - Comprehensive documentation for fresh container per test pattern (#174)
+
+- `dioxide.testing` module (#177)
+  - `fresh_container(profile, package)` async context manager
+  - Creates isolated containers for each test
+  - Handles lifecycle automatically (start/stop)
+  - Type stub for full mypy support
+
+- `container.reset()` method (#175)
+  - Clears singleton cache while preserving provider registrations
+  - Fast reset without re-scanning
+  - Useful for test isolation between tests
+
+- `scope=Scope.FACTORY` support for adapters (#173)
+  - Adapters can now use `scope=Scope.FACTORY` for transient instances
+  - Fresh instance on every `resolve()` call
+  - Perfect for test fakes that need isolated state
+
+### Documentation
+- Added ReadTheDocs badge and prominent documentation links to README
+- Added Test Ergonomics section to README Features
+- Added Resources section with documentation links
+- Documented constructor dependency injection for adapters (#176)
+- Documented fresh container per test pattern (#174)
+
 ## [0.1.1] - 2025-11-25
 
 🎉 **First Stable Release!** dioxide is now production-ready and published to PyPI.
@@ -175,6 +207,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - COVERAGE.md explaining testing strategy for Python/Rust hybrid projects
 - CLAUDE.md with project guidelines and best practices
 
+[0.2.0]: https://github.com/mikelane/dioxide/releases/tag/v0.2.0
+[0.1.1]: https://github.com/mikelane/dioxide/releases/tag/v0.1.1
 [0.1.0-beta.2]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0-beta.2
 [0.1.0-beta]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0-beta
 [0.1.0]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0
