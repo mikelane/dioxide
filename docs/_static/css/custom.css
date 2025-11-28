@@ -13,11 +13,9 @@ h1:has(+ .landing-hero) {
     display: none;
 }
 
-/* Hero text styling - keep clear of theme icons */
+/* Hero text styling - keep clear of theme icons at top right */
 .landing-hero {
-    max-width: calc(100% - 120px);
-    margin-left: auto;
-    margin-right: auto;
+    padding-top: 2rem;
 }
 
 /* Additional spacing for API documentation sections */
