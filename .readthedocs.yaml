@@ -1,26 +1,39 @@
 # Read the Docs configuration file for Dioxide
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
-# Required
 version: 2
 
-# Set the OS, Python version and other tools you might need
-build:
-  os: ubuntu-22.04
-  tools:
-    python: "3.11"
-  commands:
-    # Install uv
-    - pip install uv
-    # Install all dependencies including the project itself
-    - uv sync --group docs
-    # Let uv run Sphinx to avoid dependency conflicts
-    - uv run sphinx-build -b html docs $READTHEDOCS_OUTPUT/html
+# Sphinx configuration
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: false  # Set to true once warnings are resolved
 
-# Build documentation formats
+# Build additional formats
 formats:
   - pdf
   - epub
+
+# Build configuration using uv package manager
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+    rust: "1.82"
+
+  jobs:
+    # Install uv via asdf before environment creation
+    pre_create_environment:
+      - asdf plugin add uv
+      - asdf install uv 0.9.13
+      - asdf global uv 0.9.13
+
+    # Create virtual environment using uv
+    create_environment:
+      - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
+
+    # Install dependencies using uv sync with docs group
+    install:
+      - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group docs
 
 # Versioning strategy for ReadTheDocs
 # This configures which versions appear in the version switcher dropdown
