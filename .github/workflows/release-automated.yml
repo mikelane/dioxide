@@ -412,7 +412,7 @@ jobs:
           uv pip install --system --find-links=dist --no-index dioxide
 
       - name: Install test dependencies
-        run: uv pip install --system pytest pytest-cov mypy
+        run: uv pip install --system pytest pytest-cov pytest-asyncio mypy
 
       - name: Run smoke tests
         run: python tests/smoke_test.py
