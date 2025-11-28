@@ -202,7 +202,7 @@ texinfo_documents = [
         'dioxide Documentation',
         author,
         'dioxide',
-        'Fast, Rust-backed declarative dependency injection framework for Python.',
+        'Declarative dependency injection framework for Python that makes clean architecture inevitable.',
         'Miscellaneous',
     ),
 ]

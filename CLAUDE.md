@@ -4,11 +4,11 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 
 ## Project Overview
 
-**dioxide** is a fast, Rust-backed declarative dependency injection framework for Python that combines:
+**dioxide** is a declarative dependency injection framework for Python that makes the Dependency Inversion Principle feel inevitable. It combines:
 - **Hexagonal Architecture API** - `@adapter.for_()` and `@service` decorators with type hints
-- **Rust-backed performance** - Fast container operations via PyO3
 - **Type safety** - Full support for mypy and type checkers
 - **Clean architecture** - Encourages loose coupling and testability
+- **Rust-backed core** - Fast container operations via PyO3
 
 **Note**: The package was recently renamed from `rivet_di` to `dioxide`. All references in code, tests, and documentation have been updated to use `dioxide`.
 
