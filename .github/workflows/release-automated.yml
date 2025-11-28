@@ -406,59 +406,9 @@ jobs:
   # Test PyPI is only useful for testing the upload PROCESS, not the code.
   # If CI passes (tests, wheel validation), go directly to Production.
 
-  github-release:
-    name: Create GitHub Release
-    needs: [validate, build-wheels, build-sdist, validate-wheels, test-wheels]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    permissions:
-      contents: write
-      actions: read
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v6
-        with:
-          pattern: wheels-*
-          path: dist
-          merge-multiple: true
-
-      - name: Download sdist
-        uses: actions/download-artifact@v6
-        with:
-          pattern: sdist
-          path: dist
-          merge-multiple: true
-
-      - name: Extract release notes
-        id: extract_notes
-        run: |
-          VERSION=${{ needs.validate.outputs.version }}
-          # Extract the section for this version from CHANGELOG.md
-          awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | sed '1d;$d' > release_notes.md
-          if [ ! -s release_notes.md ]; then
-            echo "No release notes found for version $VERSION, using default message"
-            echo "Release version $VERSION" > release_notes.md
-          fi
-          cat release_notes.md
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: release_notes.md
-          files: |
-            dist/*
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   publish-pypi:
     name: Publish to PyPI
-    needs: [validate, build-wheels, build-sdist, validate-wheels, test-wheels, github-release]
+    needs: [validate, build-wheels, build-sdist, validate-wheels, test-wheels]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     environment:
@@ -530,6 +480,56 @@ jobs:
         with:
           print-hash: true
           verbose: true
+
+  github-release:
+    name: Create GitHub Release
+    needs: [validate, publish-pypi]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v6
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download sdist
+        uses: actions/download-artifact@v6
+        with:
+          pattern: sdist
+          path: dist
+          merge-multiple: true
+
+      - name: Extract release notes
+        id: extract_notes
+        run: |
+          VERSION=${{ needs.validate.outputs.version }}
+          # Extract the section for this version from CHANGELOG.md
+          awk "/## \[$VERSION\]/,/## \[/" CHANGELOG.md | sed '1d;$d' > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "No release notes found for version $VERSION, using default message"
+            echo "Release version $VERSION" > release_notes.md
+          fi
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: |
+            dist/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   verify-pypi:
     name: Verify PyPI Publication
