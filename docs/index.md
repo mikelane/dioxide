@@ -203,13 +203,13 @@ async with container:
 dioxide encourages using fast fakes instead of mocking frameworks:
 
 ```python
-# Traditional approach - mocking
+# ❌ Traditional approach - mocking
 @patch('sendgrid.send')
 def test_notification(mock_email):
     mock_email.return_value = True
     # Testing mock behavior, not real code
 
-# dioxide approach - fakes
+# ✅ dioxide approach - fakes
 async def test_notification():
     # Arrange: Real fake implementation
     container.scan("app", profile=Profile.TEST)
