@@ -356,6 +356,7 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import logging
 import pkgutil
 from collections.abc import Callable
 from typing import (
@@ -370,6 +371,8 @@ from dioxide.exceptions import (
     AdapterNotFoundError,
     ServiceNotFoundError,
 )
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from dioxide.profile_enum import Profile
@@ -1239,6 +1242,13 @@ class Container:
                     # (This will happen with multiple implementations - we'll handle
                     # profile-based selection in a future iteration)
                     pass
+
+        # Warn if profile was specified but matched zero components
+        if normalized_profile is not None and len(self) == 0:
+            logger.warning(
+                "Profile '%s' matched zero components. Verify @adapter.for_() decorators are correctly applied.",
+                normalized_profile,
+            )
 
     def _create_auto_injecting_factory(self, cls: type[T]) -> Callable[[], T]:
         """Create a factory function that auto-injects dependencies from type hints.
