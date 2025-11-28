@@ -1,6 +1,6 @@
 # dioxide
 
-**Fast, Rust-backed declarative dependency injection for Python**
+**Zero-ceremony dependency injection for Python with built-in hexagonal architecture**
 
 [![CI](https://github.com/mikelane/dioxide/workflows/CI/badge.svg)](https://github.com/mikelane/dioxide/actions)
 [![Release](https://github.com/mikelane/dioxide/actions/workflows/release-automated.yml/badge.svg)](https://github.com/mikelane/dioxide/actions/workflows/release-automated.yml)
@@ -17,12 +17,13 @@
 
 ## Overview
 
-`dioxide` is a dependency injection framework for Python that combines:
+`dioxide` is a dependency injection framework for Python designed to make clean architecture the path of least resistance:
 
-- **Declarative Python API** - Simple decorators and type hints
-- **Rust-backed performance** - Fast graph construction and resolution via PyO3
-- **Type safety** - Full support for mypy and type checkers
-- **Clean architecture** - Encourages loose coupling and testability
+- **Zero-ceremony API** - Just type hints and decorators, no XML or configuration files
+- **Built-in Profile system** - Swap PostgreSQL for in-memory with `profile=Profile.TEST`
+- **Hexagonal architecture made easy** - `@adapter.for_(Port)` and `@service` guide you to clean code
+- **Type safety** - Full mypy and pyright support; if it type-checks, it wires correctly
+- **Rust-backed** - Fast container operations via PyO3 for competitive runtime performance
 
 ## Installation
 
@@ -52,18 +53,21 @@ pip install dioxide
 
 See [ROADMAP.md](ROADMAP.md) for post-MLP features and [Issues](https://github.com/mikelane/dioxide/issues) for current work.
 
-## Vision
+## Why dioxide?
 
 **Make the Dependency Inversion Principle feel inevitable.**
 
-dioxide exists to make clean architecture (ports-and-adapters) the path of least resistance. We combine:
+dioxide exists to make clean architecture (ports-and-adapters) the path of least resistance:
 
-1. **Type-safe DI** - If mypy passes, the wiring is correct
-2. **Profile-based implementations** - Swap PostgreSQL ↔ in-memory with one line
-3. **Testing without mocks** - Fast fakes at the seams, not mock behavior ([testing guide](docs/TESTING_GUIDE.md))
-4. **Rust-backed performance** - Fast graph operations and resolution
+| What you get | How dioxide helps |
+|--------------|-------------------|
+| **Testable code** | Profile system swaps real adapters for fakes with one line |
+| **Type-safe wiring** | If mypy passes, your dependencies are correct |
+| **Clean boundaries** | `@adapter.for_(Port)` makes seams explicit and visible |
+| **Fast tests** | In-memory fakes, not slow mocks or external services |
+| **Competitive performance** | Rust-backed container with sub-microsecond resolution |
 
-See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy.
+See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy and [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for testing patterns.
 
 ## Quick Start
 
@@ -790,7 +794,7 @@ For comprehensive testing patterns, see [TESTING_GUIDE.md](docs/TESTING_GUIDE.md
 - [x] **[ReadTheDocs](https://dioxide.readthedocs.io)** - Full documentation with API reference
 - [x] Complete FastAPI integration example
 - [x] Comprehensive testing guide (fakes > mocks philosophy)
-- [x] Performance benchmarks (167-300ns resolution, 10,000x faster than target)
+- [x] Performance benchmarks with [honest comparisons](benchmarks/)
 - [x] Tutorials, guides, and architectural patterns
 - [x] Migration guides for all versions
 
@@ -885,25 +889,26 @@ dioxide/
 
 ### Key Design Decisions
 
-1. **Rust for graph operations** - Dependency graphs can get complex; Rust's performance and safety help scale
-2. **Python-first API** - Developers work in pure Python; Rust is an implementation detail
-3. **Type hints as the contract** - Leverage Python's type system for DI metadata
-4. **Explicit over implicit** - Registration is manual to avoid surprises
-5. **Test-driven development** - Every feature starts with failing tests
+1. **Python-first API** - Developers work in pure Python; Rust is an implementation detail
+2. **Type hints as the contract** - Leverage Python's type system for DI metadata
+3. **Hexagonal architecture by design** - `@adapter.for_(Port)` makes clean architecture obvious
+4. **Profile-based testing** - Built-in support for swapping implementations by environment
+5. **Rust for container operations** - Memory-efficient singleton caching and graph traversal
+6. **Test-driven development** - Every feature starts with failing tests
 
 ## Comparison to Other Frameworks
 
 | Feature | dioxide | dependency-injector | injector |
 |---------|----------|---------------------|----------|
+| Zero-ceremony API | ✅ | ❌ | ✅ |
+| Built-in Profile system | ✅ | ❌ | ❌ |
+| Hexagonal architecture support | ✅ | ❌ | ❌ |
 | Type-based DI | ✅ | ✅ | ✅ |
-| Hexagonal architecture | ✅ | ❌ | ❌ |
-| Profile system | ✅ | ❌ | ❌ |
-| Rust-backed | ✅ | ❌ | ❌ |
 | Lifecycle management | ✅ | ✅ | ❌ |
 | Circular dependency detection | ✅ | ❌ | ❌ |
-| Performance* | 🚀 167-300ns | ⚡ | ⚡ |
+| Memory efficiency | ✅ | ⚡ | ⚡ |
 
-*Resolution time: dioxide averages 167-300ns per resolve operation
+**Performance notes**: Both dioxide (Rust/PyO3) and dependency-injector (Cython) offer excellent performance for cached singleton resolution. dependency-injector's mature Cython backend is slightly faster for raw lookups; dioxide is more memory-efficient. Both handle concurrent workloads equally well. See [benchmarks/](benchmarks/) for detailed, honest comparisons.
 
 ## Contributing
 
