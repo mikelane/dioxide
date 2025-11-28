@@ -154,6 +154,43 @@ jobs:
           manylinux: auto  # Use manylinux_2_28 where available
           docker-options: -e CI  # Pass CI env to docker
 
+      # Fix: Strip trailing data from wheels immediately after build
+      # Windows builds with certain Rust/PyO3 versions add trailing NULL bytes
+      # that cause PyPI upload failures. Strip them here before uploading artifacts.
+      - name: Strip trailing data from wheels
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def strip_trailing_data(wheel_path):
+              """Remove trailing bytes after ZIP End of Central Directory."""
+              with open(wheel_path, 'rb') as f:
+                  data = f.read()
+
+              eocd_sig = b'PK\x05\x06'
+              pos = data.rfind(eocd_sig)
+
+              if pos == -1:
+                  print(f"  Warning: No EOCD found in {wheel_path.name}")
+                  return False
+
+              comment_len = int.from_bytes(data[pos+20:pos+22], 'little')
+              eocd_end = pos + 22 + comment_len
+              trailing_bytes = len(data) - eocd_end
+
+              if trailing_bytes > 0:
+                  print(f"  Stripped {trailing_bytes} trailing bytes from {wheel_path.name}")
+                  with open(wheel_path, 'wb') as f:
+                      f.write(data[:eocd_end])
+                  return True
+              return False
+
+          dist_dir = Path('dist')
+          wheels = list(dist_dir.glob('*.whl'))
+          fixed = sum(1 for w in wheels if strip_trailing_data(w))
+          if fixed:
+              print(f"Fixed {fixed} wheel(s)")
+
       - name: Upload wheels
         uses: actions/upload-artifact@v5
         with:
