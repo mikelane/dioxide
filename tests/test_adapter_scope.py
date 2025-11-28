@@ -132,3 +132,33 @@ class DescribeAdapterScope:
 
         # Original instance unchanged
         assert email1.get_sent_count() == 2
+
+
+class DescribeScopeRequestEnum:
+    """Tests for Scope.REQUEST enum value."""
+
+    def it_has_request_scope_value(self) -> None:
+        """Scope.REQUEST exists with value 'request'."""
+        assert Scope.REQUEST.value == 'request'
+
+    def it_can_be_used_with_adapter_decorator(self) -> None:
+        """Request scope can be specified on @adapter.for_() decorator."""
+
+        class RequestPort(Protocol):
+            def get_request_id(self) -> int: ...
+
+        @adapter.for_(RequestPort, profile='request-scope-test', scope=Scope.REQUEST)
+        class RequestScopedAdapter:
+            def get_request_id(self) -> int:
+                return id(self)
+
+        assert hasattr(RequestScopedAdapter, '__dioxide_scope__')
+        assert RequestScopedAdapter.__dioxide_scope__ == Scope.REQUEST
+
+    def it_is_a_valid_member_of_scope_enum(self) -> None:
+        """REQUEST is a valid member of the Scope enum alongside SINGLETON and FACTORY."""
+        scope_members = {member.value for member in Scope}
+        assert 'request' in scope_members
+        assert 'singleton' in scope_members
+        assert 'factory' in scope_members
+        assert len(scope_members) == 3
