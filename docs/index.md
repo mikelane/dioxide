@@ -4,7 +4,7 @@
 ```
 
 ::::{div} sd-text-center sd-fs-1 sd-font-weight-bold sd-mb-3
-Clean Architecture Made Simple
+Clean Architecture Simplified
 ::::
 
 ::::{div} sd-text-center sd-fs-5 sd-text-muted sd-mb-4
