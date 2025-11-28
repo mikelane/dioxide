@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 
 ## Project Overview
 
-**dioxide** is a declarative dependency injection framework for Python that makes the Dependency Inversion Principle feel inevitable. It combines:
+**dioxide** is a declarative dependency injection framework for Python that makes clean architecture simple. It combines:
 - **Hexagonal Architecture API** - `@adapter.for_()` and `@service` decorators with type hints
 - **Type safety** - Full support for mypy and type checkers
 - **Clean architecture** - Encourages loose coupling and testability

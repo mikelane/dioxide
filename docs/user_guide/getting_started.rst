@@ -10,7 +10,7 @@ Welcome to dioxide! This guide will help you understand dioxide and get your fir
 What is dioxide?
 ----------------
 
-**dioxide** is a declarative dependency injection framework for Python that makes clean architecture feel inevitable.
+**dioxide** is a declarative dependency injection framework for Python that makes clean architecture simple.
 
 Why dioxide exists
 ^^^^^^^^^^^^^^^^^^

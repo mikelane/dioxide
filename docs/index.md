@@ -8,7 +8,7 @@ Clean Architecture Made Simple
 ::::
 
 ::::{div} sd-text-center sd-fs-5 sd-text-muted sd-mb-4
-A declarative dependency injection framework for Python that makes the Dependency Inversion Principle feel inevitable.
+A declarative dependency injection framework for Python that makes clean architecture simple.
 ::::
 
 ::::{div} sd-text-center sd-mb-5
