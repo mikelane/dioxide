@@ -426,7 +426,17 @@ uv run sphinx-build -b html docs docs/_build/html
 open docs/_build/html/index.html  # macOS
 xdg-open docs/_build/html/index.html  # Linux
 start docs/_build/html/index.html  # Windows
+
+# Live reload server (recommended for development)
+./scripts/docs-serve.sh              # Opens browser automatically
+./scripts/docs-serve.sh --no-open    # Without auto-opening browser
 ```
+
+**Live Reload Development**: The `docs-serve.sh` script uses `sphinx-autobuild` to provide:
+- Automatic rebuild when `.md`, `.rst`, or Python docstring files change
+- Browser auto-refresh on rebuild
+- Serves at http://localhost:8000
+- Watches both `docs/` and `python/dioxide/` directories
 
 ## Repository Structure
 
