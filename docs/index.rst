@@ -129,7 +129,7 @@ Contents
    :maxdepth: 2
    :caption: API Reference
 
-   autoapi/index
+   api/index
 
 .. toctree::
    :maxdepth: 2
