@@ -61,6 +61,36 @@ jobs:
           fi
           echo "✅ Version validation passed: $TAG_VERSION"
 
+      - name: Validate changelog has entry for this version
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${{ steps.get-version.outputs.version }}"
+          # Check for both formats: "## [version]" and "## vversion" (commitizen style)
+          if ! grep -q "## \[${VERSION}\]" CHANGELOG.md && ! grep -q "## v${VERSION}" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md missing entry for version ${VERSION}"
+            echo ""
+            echo "Expected one of these formats in CHANGELOG.md:"
+            echo "  ## [${VERSION}]"
+            echo "  ## v${VERSION}"
+            echo ""
+            echo "Please add a changelog entry before releasing."
+            exit 1
+          fi
+          echo "✅ CHANGELOG.md has entry for ${VERSION}"
+
+      - name: Check for uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Repository has uncommitted changes"
+            echo ""
+            echo "Uncommitted files:"
+            git status --porcelain
+            echo ""
+            echo "Please commit or stash all changes before releasing."
+            exit 1
+          fi
+          echo "✅ No uncommitted changes"
+
   build-wheels:
     name: Build wheels on ${{ matrix.platform || matrix.os }} for ${{ matrix.target }}
     needs: validate
