@@ -13,6 +13,11 @@ h1:has(+ .landing-hero) {
     display: none;
 }
 
+/* Prevent hero text from wrapping awkwardly */
+.landing-hero {
+    white-space: nowrap;
+}
+
 /* Additional spacing for API documentation sections */
 .py.class,
 .py.function,

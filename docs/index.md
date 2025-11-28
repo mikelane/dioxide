@@ -8,7 +8,7 @@ Clean Architecture Made Simple
 ::::
 
 ::::{div} sd-text-center sd-fs-5 sd-text-muted sd-mb-4
-A declarative dependency injection framework for Python that makes clean architecture simple.
+Declarative dependency injection for Python with type-safe wiring and built-in profiles.
 ::::
 
 ::::{div} sd-text-center sd-mb-5
