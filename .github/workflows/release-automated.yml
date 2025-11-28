@@ -146,6 +146,34 @@ jobs:
           manylinux: auto  # Use manylinux_2_28 where available
           docker-options: -e CI  # Pass CI env to docker
 
+      - name: Strip trailing data from wheels
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def strip_trailing_data(wheel_path):
+              with open(wheel_path, 'rb') as f:
+                  data = f.read()
+
+              eocd_sig = b'PK\x05\x06'
+              pos = data.rfind(eocd_sig)
+
+              if pos == -1:
+                  return False
+
+              comment_len = int.from_bytes(data[pos+20:pos+22], 'little')
+              eocd_end = pos + 22 + comment_len
+
+              if len(data) > eocd_end:
+                  with open(wheel_path, 'wb') as f:
+                      f.write(data[:eocd_end])
+                  return True
+              return False
+
+          for wheel in Path('dist').glob('*.whl'):
+              if strip_trailing_data(wheel):
+                  print(f"Stripped trailing data from {wheel.name}")
+
       - name: Upload wheels
         uses: actions/upload-artifact@v5
         with:
