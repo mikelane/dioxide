@@ -228,3 +228,59 @@ mermaid.initialize({
     }
 });
 '''
+
+# -- Options for linkcheck builder --------------------------------------------
+# Patterns to ignore when checking links
+linkcheck_ignore = [
+    # Local development servers
+    r'http://localhost:\d+',
+    r'http://127\.0\.0\.1:\d+',
+    # GitHub line anchors (often cause false positives due to dynamic content)
+    r'https://github\.com/.*/blob/.*#L\d+',
+    # GitHub settings pages (require authentication)
+    r'https://github\.com/.*/settings/.*',
+    # GitHub security advisories (require authentication)
+    r'https://github\.com/.*/security/advisories/.*',
+    # GitHub discussions (may not be enabled on all repos)
+    r'https://github\.com/.*/discussions',
+    # ReadTheDocs dashboard URLs (require authentication or redirect)
+    r'https://readthedocs\.io/.*',
+    r'https://readthedocs\.org/support/.*',
+    # ReadTheDocs versioned URLs (version may not exist yet)
+    r'https://dioxide\.readthedocs\.io/en/v[\d\.]+/',
+    # Local file references misinterpreted as URLs (linkify extension artifact)
+    r'http://README\.md',
+    r'http://COVERAGE\.md',
+    r'http://ROADMAP\.md',
+    r'http://Criterion\.rs',
+]
+
+# Anchors to ignore (fragment identifiers that may not exist)
+linkcheck_anchors_ignore = [
+    # GitHub dynamically generates anchors
+    r'^L\d+',
+]
+
+# Timeout for each link check request (seconds)
+linkcheck_timeout = 30
+
+# Number of retries for failed links
+linkcheck_retries = 3
+
+# Number of parallel workers for link checking
+linkcheck_workers = 5
+
+# Allow common redirects (e.g., PyPI package pages often redirect)
+linkcheck_allowed_redirects = {
+    r'https://pypi\.org/.*': r'https://pypi\.org/.*',
+    r'https://packaging\.python\.org/.*': r'https://packaging\.python\.org/.*',
+    r'https://pyo3\.rs/.*': r'https://pyo3\.rs/.*',
+    r'https://python-semantic-release\.readthedocs\.io/.*': r'https://python-semantic-release\.readthedocs\.io/.*',
+    r'https://semantic-release\.gitbook\.io/.*': r'https://semantic-release\.gitbook\.io/.*',
+    r'https://www\.sphinx-doc\.org/.*': r'https://www\.sphinx-doc\.org/.*',
+    r'https://docs\.rs/.*': r'https://docs\.rs/.*',
+    r'https://docs\.readthedocs\.io/.*': r'https://docs\.readthedocs\.com/.*',
+}
+
+# Rate limit requests to avoid being blocked (seconds between requests per host)
+linkcheck_rate_limit_timeout = 5.0
