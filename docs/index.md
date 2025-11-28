@@ -1,30 +1,83 @@
-# Welcome to dioxide's documentation!
+# dioxide
+
+```{rst-class} landing-hero
+```
+
+::::{div} sd-text-center sd-fs-1 sd-font-weight-bold sd-mb-3
+Clean Architecture Made Simple
+::::
+
+::::{div} sd-text-center sd-fs-5 sd-text-muted sd-mb-4
+A fast, Rust-backed dependency injection framework for Python that makes the Dependency Inversion Principle feel inevitable.
+::::
+
+::::{div} sd-text-center sd-mb-5
+
+```{button-ref} user_guide/getting_started
+:color: primary
+:class: sd-rounded-pill sd-px-4 sd-py-2 sd-mr-2
+
+Get Started
+```
+
+```{button-link} https://pypi.org/project/dioxide/
+:color: secondary
+:outline:
+:class: sd-rounded-pill sd-px-4 sd-py-2
+
+PyPI
+```
+
+::::
+
+::::{div} sd-text-center sd-mb-5
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/github/license/mikelane/dioxide)](https://github.com/mikelane/dioxide/blob/main/LICENSE)
 [![PyPI version](https://img.shields.io/pypi/v/dioxide)](https://pypi.org/project/dioxide/)
 
-**dioxide** is a fast, Rust-backed declarative dependency injection framework for Python that makes the Dependency Inversion Principle feel inevitable.
+::::
 
-## Key Features
+---
 
-* **Hexagonal Architecture**: Explicit `@adapter.for_()` and `@service` decorators
-* **Profile-Based Configuration**: Different adapters for production, test, and development
-* **Type-Safe**: Full mypy and pyright support with type hints
-* **Rust Performance**: Fast container operations via PyO3
-* **Testing Without Mocks**: Use fast fakes instead of mocking frameworks
-* **Lifecycle Management**: Automatic initialization and cleanup with `@lifecycle`
-* **Zero Ceremony**: Auto-injection via type hints, no manual wiring
+## Why dioxide?
+
+:::{card-carousel} 3
+
+```{card} Zero Ceremony
+:class-card: sd-border-0 sd-shadow-sm
+:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
+
+Auto-injection via type hints. No manual `.bind()` or `.register()` calls. Just decorate and go.
+```
+
+```{card} Built-in Profiles
+:class-card: sd-border-0 sd-shadow-sm
+:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
+
+Swap implementations by environment. Production uses real services, tests use fast fakes.
+```
+
+```{card} Type Safety
+:class-card: sd-border-0 sd-shadow-sm
+:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
+
+Full mypy and pyright support. If the types check, the wiring is correct.
+```
+
+:::
+
+---
 
 ## Quick Start
 
-**Installation**:
+Install dioxide with pip:
 
 ```bash
 pip install dioxide
 ```
 
-**Basic Usage**:
+Define your ports (interfaces), adapters (implementations), and services:
 
 ```python
 from typing import Protocol
@@ -34,14 +87,14 @@ from dioxide import adapter, service, Profile, container
 class EmailPort(Protocol):
     async def send(self, to: str, subject: str, body: str) -> None: ...
 
-# Production adapter
+# Production adapter - real email service
 @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
 class SendGridAdapter:
     async def send(self, to: str, subject: str, body: str) -> None:
         # Real SendGrid API calls
-        pass
+        ...
 
-# Test adapter (fake)
+# Test adapter - fast fake for testing
 @adapter.for_(EmailPort, profile=Profile.TEST)
 class FakeEmailAdapter:
     def __init__(self):
@@ -50,185 +103,129 @@ class FakeEmailAdapter:
     async def send(self, to: str, subject: str, body: str) -> None:
         self.sent_emails.append({"to": to, "subject": subject, "body": body})
 
-# Service depends on port (interface), not concrete adapter
+# Service depends on port, not concrete adapter
 @service
-class UserService:
+class NotificationService:
     def __init__(self, email: EmailPort):
         self.email = email
 
-    async def register_user(self, email_addr: str, name: str):
-        await self.email.send(email_addr, "Welcome!", f"Hello {name}!")
+    async def notify_user(self, user_email: str, message: str):
+        await self.email.send(user_email, "Notification", message)
 
 # Production: activates SendGridAdapter
-container.scan("app", profile=Profile.PRODUCTION)
-user_service = UserService()  # EmailPort auto-injected with SendGridAdapter
-
-# Testing: activates FakeEmailAdapter
-container.scan("app", profile=Profile.TEST)
-test_service = UserService()  # EmailPort auto-injected with FakeEmailAdapter
+container.scan("myapp", profile=Profile.PRODUCTION)
+service = container.resolve(NotificationService)
 ```
 
-## Why dioxide?
+---
 
-dioxide makes clean architecture the path of least resistance:
+## Key Features
 
-1. **Explicit Architecture**: `@adapter` for boundaries, `@service` for domain logic
-2. **Type-Safe**: If mypy passes, the wiring is correct
-3. **Profile-Based**: Different implementations for production vs test
-4. **Testing Without Mocks**: Use fast fakes at the seams
-5. **Zero Ceremony**: No manual `.bind()` or `.register()` calls
+:::::{grid} 2
+:gutter: 3
 
-## Philosophy
+::::{grid-item-card} Hexagonal Architecture
+:class-card: sd-border-0 sd-shadow-sm
 
-**The North Star**: Make the Dependency Inversion Principle feel inevitable.
-
-dioxide encourages:
-
-* **Ports and Adapters**: Define ports (Protocols), implement adapters
-* **Profile-Based Testing**: Swap implementations by changing profile
-* **Fakes > Mocks**: Use real, fast implementations instead of mocking frameworks
-* **Type Safety**: Leverage Python's type system completely
-
-## Contents
-
-```{toctree}
-:maxdepth: 2
-:caption: User Guide
-
-user_guide/getting_started
-user_guide/hexagonal_architecture
-user_guide/profiles
-user_guide/lifecycle
-user_guide/testing_with_fakes
-user_guide/framework_integration
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Tutorial Examples
-
-examples/01-basic-dependency-injection
-examples/02-email-service-with-profiles
-examples/03-multi-tier-application
-examples/04-lifecycle-management
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: API Reference
-
-autoapi/index
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Development
-
-development/contributing
-development/changelog
-versioning
-```
-
-## Hexagonal Architecture Example
-
-dioxide makes hexagonal architecture explicit through distinct decorators:
+Explicit `@adapter.for_()` and `@service` decorators make your architecture visible. Ports define boundaries, adapters implement them.
 
 ```python
-from typing import Protocol
-from dioxide import adapter, service, Profile
-
-# Port (interface) - the seam
-class DatabasePort(Protocol):
-    async def save_user(self, user: User) -> None: ...
-
-# Production adapter - real PostgreSQL
-@adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
-class PostgresAdapter:
-    async def save_user(self, user: User) -> None:
-        # Real database operations
-        pass
-
-# Test adapter - in-memory fake
 @adapter.for_(DatabasePort, profile=Profile.TEST)
-class InMemoryAdapter:
-    def __init__(self):
-        self.users = {}
-
-    async def save_user(self, user: User) -> None:
-        self.users[user.id] = user
-
-# Service - core domain logic
-@service
-class UserService:
-    def __init__(self, db: DatabasePort):
-        self.db = db  # Depends on port, not concrete adapter
-
-    async def register(self, user: User):
-        # Business logic
-        await self.db.save_user(user)
+class InMemoryDatabase:
+    ...
 ```
+::::
 
-## Lifecycle Management
+::::{grid-item-card} Profile-Based Testing
+:class-card: sd-border-0 sd-shadow-sm
 
-Services and adapters can opt into lifecycle management:
+Different implementations for different environments. No mocking frameworks needed.
 
 ```python
-from dioxide import service, lifecycle
+# Test uses FakeEmailAdapter automatically
+container.scan("app", profile=Profile.TEST)
+```
+::::
 
+::::{grid-item-card} Lifecycle Management
+:class-card: sd-border-0 sd-shadow-sm
+
+Opt-in initialization and cleanup with `@lifecycle`. Resources are managed in dependency order.
+
+```python
 @service
 @lifecycle
 class Database:
-    def __init__(self, config: AppConfig):
-        self.config = config
-        self.engine = None
-
-    async def initialize(self) -> None:
-        """Called automatically by container.start()"""
-        self.engine = create_async_engine(self.config.database_url)
-
-    async def dispose(self) -> None:
-        """Called automatically by container.stop()"""
-        if self.engine:
-            await self.engine.dispose()
-
-# Automatic lifecycle management
-async with container:
-    db = container.resolve(Database)
-    # db.initialize() was called automatically
-# db.dispose() called automatically on exit
+    async def initialize(self) -> None: ...
+    async def dispose(self) -> None: ...
 ```
+::::
+
+::::{grid-item-card} Rust Performance
+:class-card: sd-border-0 sd-shadow-sm
+
+Fast container operations via PyO3. Sub-microsecond dependency resolution for production-grade performance.
+
+```python
+# Resolution is blazing fast
+service = container.resolve(MyService)
+```
+::::
+
+:::::
+
+---
 
 ## Testing Without Mocks
 
 dioxide encourages using fast fakes instead of mocking frameworks:
 
+:::::{grid} 2
+:gutter: 3
+
+::::{grid-item}
+**Traditional Approach**
+
 ```python
-# ❌ Traditional approach - mocking
+# Mocking - tests mock behavior, not real code
 @patch('sendgrid.send')
 def test_notification(mock_email):
     mock_email.return_value = True
-    # Testing mock behavior, not real code
-
-# ✅ dioxide approach - fakes
-async def test_notification():
-    # Arrange: Real fake implementation
-    container.scan("app", profile=Profile.TEST)
-    email = container.resolve(EmailPort)  # Gets FakeEmailAdapter
-
-    # Act: Real service code
-    service = UserService()
-    await service.register_user("alice@example.com", "Alice")
-
-    # Assert: Real observable outcomes
-    assert len(email.sent_emails) == 1
-    assert email.sent_emails[0]["to"] == "alice@example.com"
+    # Testing mock behavior...
 ```
+::::
+
+::::{grid-item}
+**dioxide Approach**
+
+```python
+# Fakes - real implementations, real behavior
+async def test_notification():
+    container.scan("app", profile=Profile.TEST)
+    email = container.resolve(EmailPort)
+
+    service = NotificationService()
+    await service.notify_user("alice@example.com", "Hi!")
+
+    assert len(email.sent_emails) == 1
+```
+::::
+
+:::::
+
+```{button-ref} user_guide/testing_with_fakes
+:color: primary
+:outline:
+:class: sd-rounded-pill
+
+Learn more about testing with fakes
+```
+
+---
 
 ## Framework Integration
 
 dioxide integrates seamlessly with popular Python frameworks:
-
-**FastAPI**:
 
 ```python
 from fastapi import FastAPI
@@ -237,7 +234,7 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    container.scan("app", profile=Profile.PRODUCTION)
+    container.scan("myapp", profile=Profile.PRODUCTION)
     async with container:
         yield
 
@@ -249,8 +246,65 @@ async def create_user(user: UserData):
     await service.register_user(user.email, user.name)
 ```
 
-## Indices and tables
+```{button-ref} user_guide/getting_started
+:color: primary
+:outline:
+:class: sd-rounded-pill
 
-* {ref}`genindex`
-* {ref}`modindex`
-* {ref}`search`
+See the Getting Started guide
+```
+
+---
+
+## Ready to Get Started?
+
+::::{div} sd-text-center sd-py-4
+
+```{button-ref} user_guide/getting_started
+:color: primary
+:class: sd-rounded-pill sd-px-5 sd-py-2 sd-fs-5
+
+Read the User Guide
+```
+
+::::
+
+---
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: User Guide
+
+user_guide/getting_started
+user_guide/hexagonal_architecture
+user_guide/testing_with_fakes
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Tutorial Examples
+
+examples/01-basic-dependency-injection
+examples/02-email-service-with-profiles
+examples/03-multi-tier-application
+examples/04-lifecycle-management
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: API Reference
+
+api/index
+```
+
+```{toctree}
+:maxdepth: 1
+:hidden:
+:caption: Development
+
+versioning
+TESTING_GUIDE
+```
