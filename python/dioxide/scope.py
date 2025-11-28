@@ -75,3 +75,21 @@ class Scope(str, Enum):
     - Stateful components that shouldn't be shared
     - Objects with per-request lifecycle
     """
+
+    REQUEST = 'request'
+    """New instance created per request scope.
+
+    Similar to FACTORY but intended for request-scoped contexts like
+    web frameworks where the same instance should be reused within a
+    single request but fresh instances created for each new request.
+
+    Use for:
+    - Request-scoped services in web frameworks
+    - Per-request database sessions
+    - Request context objects
+    - User authentication/authorization state per request
+
+    Note: Request scope behavior requires integration with a request
+    context provider (e.g., FastAPI dependencies, Flask request context).
+    Without such integration, REQUEST scope behaves like FACTORY.
+    """
