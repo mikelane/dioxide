@@ -13,9 +13,11 @@ h1:has(+ .landing-hero) {
     display: none;
 }
 
-/* Prevent hero text from wrapping awkwardly */
+/* Hero text styling - keep clear of theme icons */
 .landing-hero {
-    white-space: nowrap;
+    max-width: calc(100% - 120px);
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Additional spacing for API documentation sections */
