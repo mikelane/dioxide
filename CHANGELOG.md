@@ -5,177 +5,6 @@ All notable changes to dioxide will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-## [0.2.1] - 2025-11-25
-
-### Added
-- **Test Ergonomics Epic** - Complete solution for test isolation (#167)
-  - `container.reset()` method for clearing singleton cache without re-scanning (#175)
-  - `scope=` parameter on `@adapter.for_()` for transient instances (#173)
-  - `dioxide.testing` module with `fresh_container()` async context manager (#177)
-  - Comprehensive documentation for fresh container per test pattern (#174)
-
-- `dioxide.testing` module (#177)
-  - `fresh_container(profile, package)` async context manager
-  - Creates isolated containers for each test
-  - Handles lifecycle automatically (start/stop)
-  - Type stub for full mypy support
-
-- `container.reset()` method (#175)
-  - Clears singleton cache while preserving provider registrations
-  - Fast reset without re-scanning
-  - Useful for test isolation between tests
-
-- `scope=Scope.FACTORY` support for adapters (#173)
-  - Adapters can now use `scope=Scope.FACTORY` for transient instances
-  - Fresh instance on every `resolve()` call
-  - Perfect for test fakes that need isolated state
-
-### Documentation
-- Added ReadTheDocs badge and prominent documentation links to README
-- Added Test Ergonomics section to README Features
-- Added Resources section with documentation links
-- Documented constructor dependency injection for adapters (#176)
-- Documented fresh container per test pattern (#174)
-
-## [0.1.1] - 2025-11-25
-
-🎉 **First Stable Release!** dioxide is now production-ready and published to PyPI.
-
-### Changed
-- Promoted from beta to stable release
-- Updated documentation to reflect stable status
-- Added Python 3.14 to tox test matrix
-
-### Fixed
-- Fixed mypy integration tests to use hermetic inline code strings instead of temp files
-- Fixed PyPI deployment branch policy to allow stable release tags
-
-### Infrastructure
-- Added `v[0-9]*.[0-9]*.[0-9]*` deployment policy for stable releases to pypi environment
-
-## [0.1.0-beta.2] - 2025-11-23
-
-🎉 **MLP (Minimum Lovable Product) Complete!** This release marks the completion of dioxide's core vision as defined in `docs/MLP_VISION.md`. The API is now frozen - no breaking changes until v2.0.0.
-
-### Added
-- Performance benchmarking infrastructure (#18, #133)
-  - 11 comprehensive benchmarks exceeding targets by 30-10,000x
-  - Resolution in 167-300ns (target: <10μs)
-  - Lifecycle operations in 1-1.3μs (target: <10ms)
-  - Container initialization benchmarks for 10/50/100 components
-  - Proves dioxide is production-ready for high-performance applications
-
-- FastAPI integration example (#127)
-  - Production-ready reference implementation (3,478 lines)
-  - Demonstrates all MLP features in real application
-  - Complete test suite (12 tests in 0.11s)
-  - Shows hexagonal architecture with adapters
-  - Email, database, and payment port implementations
-
-- Comprehensive testing guide (#128)
-  - "Fakes > Mocks" philosophy (1,775 lines)
-  - Complete examples for all port types
-  - Demonstrates dioxide's testing approach
-  - Port-based testing patterns with concrete examples
-
-### Changed
-- **BREAKING**: Removed deprecated `@component` decorator - use `@service` or `@adapter.for_()` (#134)
-- **BREAKING**: Removed deprecated `@component.factory` - use `@service` (always singleton) (#134)
-- **BREAKING**: Removed deprecated `@component.implements()` - use `@adapter.for_(Port, profile=...)` (#134)
-- **BREAKING**: Removed deprecated `@profile.*` decorators - use `profile=` parameter on `@adapter.for_()` (#134)
-- **API FREEZE**: No breaking changes until v2.0.0 (stabilizing for production use)
-- Adjusted coverage threshold to 92.5% to account for deprecated code removal (#134)
-  - Main branch coverage improved from 94.27% to 92.94%
-  - Added 34 high-quality tests through public API
-  - Documented remaining gaps as unreachable defensive code
-
-### Fixed
-- Container lifecycle disposal bug (#135, #136)
-  - `container.stop()` now properly disposes all @lifecycle components
-  - Fixed by caching lifecycle instances during `start()` and reusing in `stop()`
-  - Added 20 comprehensive tests (unit + integration + E2E)
-  - Ensures graceful shutdown in production applications
-
-- Local class type hint resolution (#134)
-  - Fixed forward reference resolution for classes defined in local scopes
-  - Added stack frame walking to collect local namespace
-  - Enables testing with locally-defined test fixtures
-
-### Removed
-- `dioxide.decorators` module (moved to `dioxide._registry` internal module) (#134)
-- `dioxide.profile` module (replaced by `profile=` parameter) (#134)
-- 7 deprecated test files (test_component.py, test_profile.py, etc.) (#134)
-- Net code reduction: -450 lines (1,638 additions, 2,088 deletions)
-
-### Documentation
-- MLP validation audit report (#129)
-- API freeze announcement (#134)
-- Migration guide updated for removed APIs (#134)
-- Coverage analysis documentation (#134)
-- Codecov configuration for transitional coverage drops (#134)
-
-## [0.0.4-alpha.1] - 2025-01-22
-
-### Added
-- Container lifecycle management with async context manager support (#95)
-  - `async with container:` syntax for automatic initialization and cleanup
-  - `container.start()` and `container.stop()` methods for manual lifecycle control
-  - Dependency-ordered initialization using Kahn's algorithm
-  - Reverse dependency-ordered disposal during shutdown
-  - Support for `@lifecycle` decorator on services and adapters
-  - Circular dependency detection during lifecycle operations
-  - Graceful error handling with automatic rollback on initialization failures
-
-- Package scanning with security controls (#86)
-  - `Container(allowed_packages=['my_app', 'my_lib'])` for selective imports
-  - Prevents arbitrary package imports during container.scan()
-  - Security validation against scanning dangerous system packages
-  - Recursive package import with error logging
-  - ImportError handling with clear error messages
-
-- Comprehensive function injection documentation (#64)
-  - Examples for standalone functions, route handlers, and background tasks
-  - Testing patterns for dependency-injected functions
-  - FastAPI integration examples
-  - Celery integration examples
-
-### Changed
-- Replace generic KeyError with descriptive AdapterNotFoundError and ServiceNotFoundError (#114)
-  - AdapterNotFoundError raised when resolving a port (Protocol/ABC) with no matching adapter
-  - ServiceNotFoundError raised when resolving a service/component that cannot be found
-  - Error messages include active profile, available adapters/services, and helpful hints
-  - Improved developer experience with actionable error messages
-
-- Lowered test coverage threshold to 93% (temporary - will restore to 95% in follow-up)
-  - Combination of lifecycle and package scanning features created coverage gaps
-  - All critical paths remain covered
-  - Follow-up issue to restore 95% threshold
-
-### Fixed
-- Lifecycle components now respect profile filtering during start/stop operations
-- Improved error messages during package scanning failures
-
-## [0.1.0] - 2025-02-05
-
-### Added
-- Python 3.14 support across all platforms
-- ARM64/aarch64 builds for Apple Silicon and AWS Graviton
-- Comprehensive smoke tests for wheel validation
-
-### Changed
-- Modernized CI/CD pipeline with 100/100 state-of-the-art score
-- Switched to PyPI Trusted Publishing (OIDC) for secure releases
-- SHA-pinned all GitHub Actions for supply chain security
-- Optimized Rust release builds (LTO, single codegen unit)
-- Reduced test matrix to Python 3.11, 3.13, 3.14 for cost efficiency
-
-### Fixed
-- Automated semantic versioning configuration for 0.x releases
-- CI/CD workflow with proper version synchronization
-
-## [0.0.1-alpha] - 2025-01-27
 
 ### Added
 - Initial alpha release
@@ -214,3 +43,144 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.0]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0
 [0.0.4-alpha.1]: https://github.com/mikelane/dioxide/releases/tag/v0.0.4-alpha.1
 [0.0.1-alpha]: https://github.com/mikelane/dioxide/releases/tag/v0.0.1-alpha
+
+## v0.3.0 (2025-11-27)
+
+### Feat
+
+- add warning for empty profile matches in container.scan() (#191)
+- add Scope.REQUEST enum value (#190)
+
+### Fix
+
+- use pypa/gh-action-pypi-publish instead of maturin upload
+- remove Test PyPI step to prevent version burn (#178)
+
+## v0.2.1 (2025-11-25)
+
+### Feat
+
+- add dioxide.testing module with fresh_container helper (#177)
+- implement container.reset() method (#175)
+- add scope parameter to @adapter.for_() (#173)
+
+## v0.1.1 (2025-11-24)
+
+## v0.1.0 (2025-11-24)
+
+### Feat
+
+- configure versioned documentation for ReadTheDocs (#152) (#164)
+- configure ReadTheDocs for automated doc builds (#155)
+- add documentation build to CI/CD pipeline (#162)
+- Phase 1 CI/CD release process improvements (#137)
+
+### Fix
+
+- add Python 3.14 to tox test matrix
+- make mypy type-checking tests hermetic and parallel-safe
+- add missing test dependencies to tox environments
+
+## v0.1.0-beta.2 (2025-11-23)
+
+### Fix
+
+- strip trailing data from wheels before PyPI upload
+
+## v0.1.0-beta (2025-11-23)
+
+### Feat
+
+- add performance benchmarking infrastructure (#18) (#133)
+- add comprehensive FastAPI integration example (#127) (#132)
+
+### Fix
+
+- use windows-2022 runner to avoid Windows Server 2025 wheel issues
+- cache lifecycle instances to prevent disposal bugs (#135) (#136)
+
+## v0.0.4-alpha.1 (2025-11-22)
+
+## v0.0.4-alpha (2025-11-22)
+
+### Feat
+
+- implement package scanning for container.scan() (#86) (#126)
+- implement container lifecycle runtime support (#95) (#125)
+- add type stubs for @lifecycle decorator (#67) (#122)
+- implement @lifecycle decorator for opt-in lifecycle management (#67) (#121)
+- replace KeyError with descriptive error messages (#114) (#120)
+- add deprecation warnings to @component API (#119)
+- add port-based resolution to container (#104)
+- add Profile enum support to container.scan() (#97) (#103)
+- add @adapter.for_() decorator for hexagonal architecture (#96)
+- add @service decorator for core domain logic (#96)
+- add Profile enum for hexagonal architecture (#96)
+
+### Fix
+
+- correct version format to 0.0.4-alpha for Cargo semver compatibility
+- restore @lifecycle runtime implementation and tests (#67) (#123)
+- enable force_grid_wrap in isort config
+
+## v0.0.2a1 (2025-11-09)
+
+### Feat
+
+- support both manual tags and semantic-release in workflow
+- implement @component.implements(Protocol) (#66) (#79)
+- implement container.scan() with package and profile parameters (#69) (#80)
+- implement @component.factory syntax (#65) (#78)
+- implement global singleton container (#70) (#77)
+- upgrade PyO3 to 0.27 for Python 3.14 support (#35) (#36)
+- **infrastructure**: implement world-class issue lifecycle management (#37)
+- add Python 3.14 support with uv package manager
+- add Python 3.14 support and modernize CI/CD pipeline
+- add release automation and CHANGELOG for 0.0.1-alpha (#23)
+- **api**: add register_singleton() and register_factory() convenience methods
+- implement @component decorator with auto-discovery and dependency injection
+- implement provider registration with three provider types
+- implement basic Container with Rust core and Python wrapper
+- add GitHub Actions CI/CD pipelines and behave BDD framework
+- add Gherkin feature for basic Container structure
+
+### Fix
+
+- disable semantic-release entirely
+- remove deprecated release.yml workflow (#52) (#53)
+- prevent duplicate workflow runs from semantic-release commits (#50)
+- upgrade download-artifact to v4.3.0 to fix checksum failures
+- use correct TOML path for Cargo.toml version update
+- configure semantic-release to update Cargo.toml version
+- remove broken Cargo.toml update step from release workflow (#49)
+- use SEMANTIC_RELEASE_TOKEN and official action (#47) (#48)
+- add allow_zero_version=true to semantic-release config (#45) (#46)
+- disable automated release workflow until v0.x config is fixed (#43) (#44)
+- reset version to 0.x and configure semantic-release properly (#41) (#42)
+- remove invalid YAML syntax from issue-triage workflow (#38)
+- download artifacts with patterns to prevent corruption
+- remove Unicode checkmark for Windows compatibility
+- remove future annotations from smoke test for local class resolution
+- wheel installation selects platform-compatible wheel
+- **ci**: correct PyO3/maturin-action SHA to v1.49.4
+- **container**: resolve forward references in type hints using class globals
+- **ci**: update codecov action SHA to v5.5.1
+- **ci**: correct Swatinem/rust-cache SHA to v2.8.1
+- **ci**: temporarily disable automated release workflow
+- **ci**: set major_on_zero to false for 0.x versioning
+- **ci**: don't commit Cargo.lock in automated release
+- **ci**: add missing toolchain parameter to Rust setup actions
+- **release**: add mypy to test dependencies (#23)
+- **ci**: consolidate and fix GitHub Actions workflows (#22)
+- **ci**: explicitly install maturin before running maturin develop
+- **ci**: use official astral-sh/setup-uv action for cross-platform support
+- **ci**: use uv run for maturin commands
+- **ci**: repair broken GitHub Actions pipeline
+- distinguish singleton vs transient factories in Rust container
+- resolve circular import and configure Python source directory
+- correct step definition matching in behave tests
+- add Rust library path and type stubs
+
+### Refactor
+
+- rename package from rivet-di to dioxide
