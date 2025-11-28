@@ -66,3 +66,4 @@ strategic-roadmap.md
 # Sphinx documentation
 docs/_build/
 docs/autoapi/
+.worktrees/
