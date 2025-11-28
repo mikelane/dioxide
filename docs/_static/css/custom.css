@@ -8,6 +8,11 @@
  *   - dark orange: #8d2f0d
  */
 
+/* Hide the page title on landing page - logo already shows the name */
+h1:has(+ .landing-hero) {
+    display: none;
+}
+
 /* Additional spacing for API documentation sections */
 .py.class,
 .py.function,

@@ -176,8 +176,8 @@ html_context = {
     'release': release,
 }
 
-# Favicon - use the dark logo for browser tabs
-html_favicon = '_static/images/dioxide-logo-dark.png'
+# Favicon - use the hex logo (no text) for browser tabs
+html_favicon = '_static/images/dioxide-logo-hex.png'
 
 # -- Options for LaTeX output ------------------------------------------------
 latex_elements = {
