@@ -105,16 +105,16 @@ jobs:
             platform: macos
             python-version: '3.14'
 
-          # Windows x86_64
-          - os: windows-latest
+          # Windows x86_64 (use windows-2022, not windows-latest which is Server 2025 with wheel issues)
+          - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows
             python-version: '3.14'
-          - os: windows-latest
+          - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows
             python-version: '3.13'
-          - os: windows-latest
+          - os: windows-2022
             target: x86_64-pc-windows-msvc
             platform: windows
             python-version: '3.11'
@@ -384,7 +384,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-2022]
         python-version: ['3.13', '3.14']
 
     steps:
