@@ -3,7 +3,7 @@
 ```{rst-class} landing-hero
 ```
 
-::::{div} sd-text-center sd-fs-1 sd-font-weight-bold sd-mb-3
+::::{div} sd-text-center sd-fs-2 sd-font-weight-bold sd-mb-3
 Clean Architecture Simplified
 ::::
 
