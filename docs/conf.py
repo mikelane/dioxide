@@ -46,6 +46,8 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.todo',
     'sphinx_copybutton',
+    'sphinx_design',
+    'sphinxcontrib.mermaid',
     'autoapi.extension',
     'myst_parser',
 ]
@@ -195,3 +197,34 @@ texinfo_documents = [
 
 # -- Options for todo extension ----------------------------------------------
 todo_include_todos = True
+
+# -- Options for sphinx-copybutton extension ---------------------------------
+# Remove common prompts from copied code blocks
+copybutton_prompt_text = r'>>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: '
+copybutton_prompt_is_regexp = True
+# Skip output-only blocks (lines starting with output prefixes)
+copybutton_only_copy_prompt_lines = True
+copybutton_remove_prompts = True
+
+# -- Options for sphinx-design extension -------------------------------------
+# sphinx-design provides cards, grids, tabs, dropdowns, and badges
+# No additional configuration needed - enabled via the extension
+
+# -- Options for sphinxcontrib-mermaid extension -----------------------------
+# Use a specific mermaid.js version from CDN for consistent rendering
+mermaid_version = '11.4.1'
+# Configure mermaid to work with Furo theme (auto dark/light mode)
+mermaid_init_js = '''
+mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+        primaryColor: '#7C3AED',
+        primaryTextColor: '#fff',
+        primaryBorderColor: '#6D28D9',
+        lineColor: '#374151',
+        secondaryColor: '#E5E7EB',
+        tertiaryColor: '#F3F4F6'
+    }
+});
+'''
