@@ -138,6 +138,7 @@ ignore = [
 "tests/**/*.py" = ["S101"]  # Allow assert in tests
 "python/dioxide/container.py" = ["PLC0415"]  # Allow local imports in scan() to avoid circular dependencies
 "python/dioxide/decorators.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
+"benchmarks/**/*.py" = ["N801", "N806"]  # Allow DI_* prefixes for framework comparison clarity
 
 [tool.ruff.lint.isort]
 known-first-party = ["dioxide"]

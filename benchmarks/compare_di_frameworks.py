@@ -44,14 +44,15 @@ from typing import (
     Protocol,
 )
 
-import pytest
-from dependency_injector import containers, providers
+from dependency_injector import (
+    containers,
+    providers,
+)
 
 from dioxide import (
     Container,
     Profile,
     _clear_registry,
-    adapter,
     service,
 )
 
@@ -62,8 +63,8 @@ if TYPE_CHECKING:
 # VERSION INFO
 # ============================================================================
 
-DIOXIDE_VERSION = "0.2.1"
-DEPENDENCY_INJECTOR_VERSION = "4.48.2"
+DIOXIDE_VERSION = '0.2.1'
+DEPENDENCY_INJECTOR_VERSION = '4.48.2'
 
 
 # ============================================================================
@@ -93,12 +94,13 @@ class PortC(Protocol):
 # DEPENDENCY-INJECTOR SETUP
 # ============================================================================
 
+
 # Simple classes for dependency-injector
 class DI_SimpleService:
     """Simple service with no dependencies."""
 
     def do_work(self) -> str:
-        return "work"
+        return 'work'
 
 
 class DI_ServiceWith1Dep:
@@ -122,9 +124,7 @@ class DI_ServiceWith2Deps:
 class DI_ServiceWith3Deps:
     """Service with 3 dependencies."""
 
-    def __init__(
-        self, dep1: DI_SimpleService, dep2: DI_ServiceWith1Dep, dep3: DI_ServiceWith2Deps
-    ) -> None:
+    def __init__(self, dep1: DI_SimpleService, dep2: DI_ServiceWith1Dep, dep3: DI_ServiceWith2Deps) -> None:
         self.dep1 = dep1
         self.dep2 = dep2
         self.dep3 = dep3
@@ -444,7 +444,7 @@ def setup_dioxide_simple() -> tuple[Container, type, type, type, type]:
     @service
     class SimpleService:
         def do_work(self) -> str:
-            return "work"
+            return 'work'
 
     @service
     class ServiceWith1Dep:
@@ -459,9 +459,7 @@ def setup_dioxide_simple() -> tuple[Container, type, type, type, type]:
 
     @service
     class ServiceWith3Deps:
-        def __init__(
-            self, dep1: SimpleService, dep2: ServiceWith1Dep, dep3: ServiceWith2Deps
-        ) -> None:
+        def __init__(self, dep1: SimpleService, dep2: ServiceWith1Dep, dep3: ServiceWith2Deps) -> None:
             self.dep1 = dep1
             self.dep2 = dep2
             self.dep3 = dep3
@@ -898,10 +896,7 @@ class DescribeConcurrentResolution:
         _ = container.resolve(ServiceWith2Deps)
 
         async def resolve_many() -> list[Any]:
-            return await asyncio.gather(*[
-                asyncio.to_thread(container.resolve, ServiceWith2Deps)
-                for _ in range(100)
-            ])
+            return await asyncio.gather(*[asyncio.to_thread(container.resolve, ServiceWith2Deps) for _ in range(100)])
 
         result = benchmark(lambda: asyncio.run(resolve_many()))
         assert len(result) == 100
@@ -912,10 +907,7 @@ class DescribeConcurrentResolution:
         _ = container.resolve(ServiceWith2Deps)
 
         async def resolve_many() -> list[Any]:
-            return await asyncio.gather(*[
-                asyncio.to_thread(container.resolve, ServiceWith2Deps)
-                for _ in range(1000)
-            ])
+            return await asyncio.gather(*[asyncio.to_thread(container.resolve, ServiceWith2Deps) for _ in range(1000)])
 
         result = benchmark(lambda: asyncio.run(resolve_many()))
         assert len(result) == 1000
@@ -930,10 +922,7 @@ class DescribeConcurrentResolution:
         _ = container.with_2_deps()
 
         async def resolve_many() -> list[Any]:
-            return await asyncio.gather(*[
-                asyncio.to_thread(container.with_2_deps)
-                for _ in range(100)
-            ])
+            return await asyncio.gather(*[asyncio.to_thread(container.with_2_deps) for _ in range(100)])
 
         result = benchmark(lambda: asyncio.run(resolve_many()))
         assert len(result) == 100
@@ -944,10 +933,7 @@ class DescribeConcurrentResolution:
         _ = container.with_2_deps()
 
         async def resolve_many() -> list[Any]:
-            return await asyncio.gather(*[
-                asyncio.to_thread(container.with_2_deps)
-                for _ in range(1000)
-            ])
+            return await asyncio.gather(*[asyncio.to_thread(container.with_2_deps) for _ in range(1000)])
 
         result = benchmark(lambda: asyncio.run(resolve_many()))
         assert len(result) == 1000
@@ -1038,8 +1024,8 @@ class DescribeContainerStartupTime:
                 class DynamicService:
                     pass
 
-                DynamicService.__name__ = f"Service{i}"
-                DynamicService.__qualname__ = f"Service{i}"
+                DynamicService.__name__ = f'Service{i}'
+                DynamicService.__qualname__ = f'Service{i}'
                 services.append(DynamicService)
 
             container = Container()
@@ -1063,8 +1049,8 @@ class DescribeContainerStartupTime:
                 class DynamicService:
                     pass
 
-                DynamicService.__name__ = f"Service{i}"
-                DynamicService.__qualname__ = f"Service{i}"
+                DynamicService.__name__ = f'Service{i}'
+                DynamicService.__qualname__ = f'Service{i}'
                 services.append(DynamicService)
 
             container = Container()
@@ -1132,13 +1118,14 @@ class DescribeContainerStartupTime:
     def it_measures_di_wire_50_components(self, benchmark: BenchmarkFixture) -> None:
         """Benchmark dependency-injector: wire time for 50 components."""
 
-        def setup_and_wire() -> containers.DeclarativeContainer:
+        def setup_and_wire() -> Any:
             # Create classes dynamically
-            service_classes = [type(f"S{i}", (), {}) for i in range(50)]
+            service_classes = [type(f'S{i}', (), {}) for i in range(50)]
 
             # Create container class with providers
-            provider_dict = {f"s{i}": providers.Singleton(cls) for i, cls in enumerate(service_classes)}
-            DIContainer = type("DIContainer", (containers.DeclarativeContainer,), provider_dict)
+            provider_dict = {f's{i}': providers.Singleton(cls) for i, cls in enumerate(service_classes)}
+            # Dynamic type() returns Any, so container type is not statically known
+            DIContainer = type('DIContainer', (containers.DeclarativeContainer,), provider_dict)
 
             return DIContainer()
 
@@ -1148,13 +1135,14 @@ class DescribeContainerStartupTime:
     def it_measures_di_wire_100_components(self, benchmark: BenchmarkFixture) -> None:
         """Benchmark dependency-injector: wire time for 100 components."""
 
-        def setup_and_wire() -> containers.DeclarativeContainer:
+        def setup_and_wire() -> Any:
             # Create classes dynamically
-            service_classes = [type(f"S{i}", (), {}) for i in range(100)]
+            service_classes = [type(f'S{i}', (), {}) for i in range(100)]
 
             # Create container class with providers
-            provider_dict = {f"s{i}": providers.Singleton(cls) for i, cls in enumerate(service_classes)}
-            DIContainer = type("DIContainer", (containers.DeclarativeContainer,), provider_dict)
+            provider_dict = {f's{i}': providers.Singleton(cls) for i, cls in enumerate(service_classes)}
+            # Dynamic type() returns Any, so container type is not statically known
+            DIContainer = type('DIContainer', (containers.DeclarativeContainer,), provider_dict)
 
             return DIContainer()
 
@@ -1184,14 +1172,18 @@ class DescribeMemoryUsage:
         # Create 100 services
         services = []
         for i in range(100):
+            # Capture loop variable in closure to avoid B023
+            data_value = f'service_{i}'
 
             @service
             class DynamicService:
-                def __init__(self) -> None:
-                    self.data = f"service_{i}"
+                _data = data_value  # Capture at class definition time
 
-            DynamicService.__name__ = f"Service{i}"
-            DynamicService.__qualname__ = f"Service{i}"
+                def __init__(self) -> None:
+                    self.data = self._data
+
+            DynamicService.__name__ = f'Service{i}'
+            DynamicService.__qualname__ = f'Service{i}'
             services.append(DynamicService)
 
         container = Container()
@@ -1204,9 +1196,9 @@ class DescribeMemoryUsage:
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
-        print(f"\nDioxide memory (100 singletons):")
-        print(f"  Current: {current / 1024:.2f} KB")
-        print(f"  Peak: {peak / 1024:.2f} KB")
+        print('\nDioxide memory (100 singletons):')
+        print(f'  Current: {current / 1024:.2f} KB')
+        print(f'  Peak: {peak / 1024:.2f} KB')
 
         # Just verify it doesn't crash - memory is logged above
         assert container is not None
@@ -1219,29 +1211,33 @@ class DescribeMemoryUsage:
         # Create classes dynamically
         service_classes = []
         for i in range(100):
+            # Capture loop variable in closure to avoid B023
+            data_value = f'service_{i}'
 
             class DynamicService:
-                def __init__(self) -> None:
-                    self.data = f"service_{i}"
+                _data = data_value  # Capture at class definition time
 
-            DynamicService.__name__ = f"Service{i}"
+                def __init__(self) -> None:
+                    self.data = self._data
+
+            DynamicService.__name__ = f'Service{i}'
             service_classes.append(DynamicService)
 
         # Create container class with providers
-        provider_dict = {f"s{i}": providers.Singleton(cls) for i, cls in enumerate(service_classes)}
-        DIContainer = type("DIContainer", (containers.DeclarativeContainer,), provider_dict)
+        provider_dict = {f's{i}': providers.Singleton(cls) for i, cls in enumerate(service_classes)}
+        DIContainer = type('DIContainer', (containers.DeclarativeContainer,), provider_dict)
         container = DIContainer()
 
         # Resolve all services to populate cache
         for i in range(100):
-            getattr(container, f"s{i}")()
+            getattr(container, f's{i}')()
 
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
-        print(f"\nDependency-injector memory (100 singletons):")
-        print(f"  Current: {current / 1024:.2f} KB")
-        print(f"  Peak: {peak / 1024:.2f} KB")
+        print('\nDependency-injector memory (100 singletons):')
+        print(f'  Current: {current / 1024:.2f} KB')
+        print(f'  Peak: {peak / 1024:.2f} KB')
 
         # Just verify it doesn't crash - memory is logged above
         assert container is not None
