@@ -24,8 +24,8 @@ build:
     # Install uv via asdf before environment creation
     pre_create_environment:
       - asdf plugin add uv
-      - asdf install uv 0.5.7
-      - asdf global uv 0.5.7
+      - asdf install uv 0.9.13
+      - asdf global uv 0.9.13
 
     # Create virtual environment using uv
     create_environment:
