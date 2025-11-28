@@ -3,10 +3,6 @@ Getting Started
 
 Welcome to dioxide! This guide will help you understand dioxide and get your first dependency injection system up and running in minutes.
 
-.. contents:: On this page
-   :local:
-   :depth: 2
-
 What is dioxide?
 ----------------
 
