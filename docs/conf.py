@@ -279,7 +279,7 @@ linkcheck_allowed_redirects = {
     r'https://semantic-release\.gitbook\.io/.*': r'https://semantic-release\.gitbook\.io/.*',
     r'https://www\.sphinx-doc\.org/.*': r'https://www\.sphinx-doc\.org/.*',
     r'https://docs\.rs/.*': r'https://docs\.rs/.*',
-    r'https://docs\.readthedocs\.io/.*': r'https://docs\.readthedocs\.com/.*',
+    r'https://docs\.readthedocs\.io/.*': r'https://docs\.readthedocs\.io/.*',
 }
 
 # Rate limit requests to avoid being blocked (seconds between requests per host)
