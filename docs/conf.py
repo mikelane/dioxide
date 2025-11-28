@@ -248,6 +248,8 @@ linkcheck_ignore = [
     # Local development servers
     r'http://localhost:\d+',
     r'http://127\.0\.0\.1:\d+',
+    # GitHub blob URLs (can be rate-limited during linkcheck)
+    r'https://github\.com/mikelane/dioxide/blob/.*',
     # GitHub line anchors (often cause false positives due to dynamic content)
     r'https://github\.com/.*/blob/.*#L\d+',
     # GitHub settings pages (require authentication)
@@ -265,6 +267,10 @@ linkcheck_ignore = [
     r'http://README\.md',
     r'http://COVERAGE\.md',
     r'http://ROADMAP\.md',
+    r'http://STATUS\.md',
+    r'http://CLAUDE\.md',
+    r'http://CONTRIBUTING\.md',
+    r'http://CHANGELOG\.md',
     r'http://Criterion\.rs',
 ]
 
