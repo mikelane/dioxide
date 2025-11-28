@@ -53,6 +53,7 @@ extensions = [
 # Configure autoapi extension for automatic API documentation
 autoapi_type = 'python'
 autoapi_dirs = ['../python/dioxide']
+autoapi_root = 'api'  # Generate API docs under /api/ for cleaner URLs
 autoapi_keep_files = True
 autoapi_options = [
     'members',
@@ -122,43 +123,42 @@ myst_heading_anchors = 3
 myst_update_mathjax = False
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'furo'
 html_static_path = ['_static']
 html_css_files = ['css/custom.css']
 
-# Custom sidebar templates
-html_sidebars = {
-    '**': [
-        'relations.html',  # needs 'show_related': True theme option
-        'searchbox.html',
-    ]
-}
-
-# Theme options
+# Furo theme options
+# See: https://pradyunsg.me/furo/customisation/
 html_theme_options = {
-    'navigation_depth': 4,
-    'collapse_navigation': False,
-    'sticky_navigation': True,
-    'titles_only': False,
-    'display_version': True,
-    'logo_only': False,
+    # Light mode brand colors (purple from dioxide branding)
+    'light_css_variables': {
+        'color-brand-primary': '#7C3AED',
+        'color-brand-content': '#7C3AED',
+    },
+    # Dark mode brand colors (lighter purple for contrast)
+    'dark_css_variables': {
+        'color-brand-primary': '#A78BFA',
+        'color-brand-content': '#A78BFA',
+    },
+    # Show the project name in the sidebar
+    'sidebar_hide_name': False,
+    # Enable keyboard navigation
+    'navigation_with_keys': True,
+    # Add view/edit buttons at top of page
+    'top_of_page_buttons': ['view', 'edit'],
+    # GitHub repository for edit links
+    'source_repository': 'https://github.com/mikelane/dioxide/',
+    'source_branch': 'main',
+    'source_directory': 'docs/',
 }
 
-# HTML context
-# This configuration enables ReadTheDocs version switching
+# HTML context for version information
 html_context = {
-    'display_github': True,
-    'github_user': 'mikelane',
-    'github_repo': 'dioxide',
-    'github_version': 'main',
-    'conf_py_path': '/docs/',
     # Version information for ReadTheDocs version switcher
     # ReadTheDocs injects these automatically, but we set defaults for local builds
     'current_version': _version,
     'version': version,
     'release': release,
-    # Display version in footer
-    'display_version': True,
 }
 
 # Custom logo
@@ -195,11 +195,3 @@ texinfo_documents = [
 
 # -- Options for todo extension ----------------------------------------------
 todo_include_todos = True
-
-# Custom CSS file for minor styling adjustments
-html_static_path = ['_static']
-
-
-def setup(app: Sphinx) -> None:
-    """Add custom CSS file to Sphinx build."""
-    app.add_css_file('css/custom.css')

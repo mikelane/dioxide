@@ -52,13 +52,14 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
-   /autoapi/dioxide/adapter/index
-   /autoapi/dioxide/container/index
-   /autoapi/dioxide/exceptions/index
-   /autoapi/dioxide/lifecycle/index
-   /autoapi/dioxide/profile_enum/index
-   /autoapi/dioxide/scope/index
-   /autoapi/dioxide/services/index
+   /api/dioxide/adapter/index
+   /api/dioxide/container/index
+   /api/dioxide/exceptions/index
+   /api/dioxide/lifecycle/index
+   /api/dioxide/profile_enum/index
+   /api/dioxide/scope/index
+   /api/dioxide/services/index
+   /api/dioxide/testing/index
 
 
 Attributes
@@ -96,6 +97,7 @@ Functions
 
    dioxide.lifecycle
    dioxide.service
+   dioxide.fresh_container
 
 
 Package Contents
@@ -714,6 +716,38 @@ Package Contents
 
 
 
+   .. py:method:: reset()
+
+      Clear cached instances for test isolation.
+
+      Clears the singleton cache but preserves provider registrations.
+      Use this between tests to ensure fresh instances without re-scanning.
+
+      This method is particularly useful in pytest fixtures to ensure
+      test isolation while avoiding the overhead of re-scanning:
+
+      Example::
+
+          @pytest.fixture(autouse=True)
+          def setup_container():
+              container.scan(profile=Profile.TEST)
+              yield
+              container.reset()  # Fresh instances for next test
+
+      For complete isolation (including new provider registrations),
+      consider using fresh Container instances instead.
+
+      .. note::
+
+         - Instance registrations (via register_instance) are NOT cleared
+           because they reference external objects
+         - Provider registrations are preserved (no need to re-scan)
+         - Lifecycle instance cache is cleared
+
+      .. seealso:: Container: Create fresh instances for complete isolation
+
+
+
 .. py:data:: container
    :type:  Container
 
@@ -722,37 +756,151 @@ Package Contents
    Bases: :py:obj:`Exception`
 
 
-   Raised when no adapter is registered for a port.
+   Raised when no adapter is registered for a port in the active profile.
 
-   This error occurs when trying to resolve a Protocol/ABC (port) but no
+   This error occurs when trying to resolve a Protocol or ABC (port) but no
    concrete implementation (adapter) is registered for the current profile.
+   It indicates a profile mismatch or missing adapter registration.
+
+   In hexagonal architecture, ports are abstract interfaces (Protocols/ABCs)
+   and adapters are concrete implementations. The container injects the active
+   adapter based on the current profile. This error means:
+   1. No adapter exists for this port + profile combination, OR
+   2. An adapter exists but for a different profile, OR
+   3. The adapter wasn't imported before container.scan()
 
    The error message includes:
-   - The port type that couldn't be resolved
-   - The active profile
-   - List of available adapters (if any) for other profiles
-   - Hint for how to register an adapter
+       - **Port type**: Which Protocol/ABC couldn't be resolved
+       - **Active profile**: Current profile from container.scan(profile=...)
+       - **Available adapters**: List of adapters for this port in other profiles
+       - **Registration hint**: Code example showing how to fix
 
-   .. admonition:: Example
+   When This Occurs:
+       - ``container.resolve(PortType)`` - Port has no adapter for active profile
+       - ``container.resolve(ServiceType)`` - Service depends on port with no adapter
+       - ``container.start()`` - Lifecycle component depends on port with no adapter
 
-      >>> from dioxide import Container, Profile, adapter
-      >>> from typing import Protocol
-      >>>
-      >>> class EmailPort(Protocol):
-      ...     async def send(self, to: str, subject: str, body: str) -> None: ...
-      >>>
-      >>> @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
-      ... class SendGridAdapter:
-      ...     async def send(self, to: str, subject: str, body: str) -> None:
-      ...         pass
-      >>>
-      >>> container = Container()
-      >>> container.scan(profile=Profile.TEST)  # No TEST adapter
-      >>>
-      >>> try:
-      ...     container.resolve(EmailPort)
-      ... except AdapterNotFoundError as e:
-      ...     print(e)  # Shows available adapters and profile mismatch
+   Common Causes:
+       1. **Profile mismatch**: Adapter registered for PRODUCTION, scanning TEST
+       2. **Missing test adapter**: Production adapter exists, no TEST fake created
+       3. **Typo in profile name**: 'test' vs 'testing' (case-insensitive)
+       4. **Adapter not imported**: Decorator not executed before scan()
+       5. **Forgot @adapter.for_() decorator**: Class exists but not registered
+
+   .. admonition:: Examples
+
+      Profile mismatch (most common)::
+
+          from typing import Protocol
+          from dioxide import Container, adapter, Profile
+
+
+          class EmailPort(Protocol):
+              async def send(self, to: str, subject: str, body: str) -> None: ...
+
+
+          # Only production adapter registered
+          @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+          class SendGridAdapter:
+              async def send(self, to: str, subject: str, body: str) -> None:
+                  pass
+
+
+          container = Container()
+          container.scan(profile=Profile.TEST)  # Scanning TEST profile
+
+          try:
+              container.resolve(EmailPort)  # No TEST adapter!
+          except AdapterNotFoundError as e:
+              print(e)
+              # Output:
+              # No adapter registered for port EmailPort with profile 'test'.
+              #
+              # Available adapters for EmailPort:
+              #   SendGridAdapter (profiles: production)
+              #
+              # Hint: Add an adapter for profile 'test':
+              #   @adapter.for_(EmailPort, profile='test')
+
+
+          # Solution: Add TEST adapter
+          @adapter.for_(EmailPort, profile=Profile.TEST)
+          class FakeEmailAdapter:
+              def __init__(self):
+                  self.sent_emails = []
+
+              async def send(self, to: str, subject: str, body: str) -> None:
+                  self.sent_emails.append({'to': to, 'subject': subject, 'body': body})
+
+      Missing adapter completely::
+
+          class DatabasePort(Protocol):
+              async def query(self, sql: str) -> list[dict]: ...
+
+
+          @service
+          class UserService:
+              def __init__(self, db: DatabasePort):  # Depends on DatabasePort
+                  self.db = db
+
+
+          container = Container()
+          container.scan(profile=Profile.PRODUCTION)
+
+          try:
+              container.resolve(UserService)  # UserService needs DatabasePort
+          except AdapterNotFoundError as e:
+              print(e)
+              # Output:
+              # No adapter registered for port DatabasePort with profile 'production'.
+              #
+              # No adapters registered for DatabasePort.
+              #
+              # Hint: Register an adapter:
+              #   @adapter.for_(DatabasePort, profile='production')
+              #   class YourAdapter:
+              #       ...
+
+
+          # Solution: Register adapter
+          @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+          class PostgresAdapter:
+              async def query(self, sql: str) -> list[dict]:
+                  pass
+
+      Universal adapter (works in all profiles)::
+
+          @adapter.for_(LoggerPort, profile=Profile.ALL)  # '*' means all profiles
+          class ConsoleLogger:
+              def log(self, message: str) -> None:
+                  print(message)
+
+
+          # Works with any profile
+          container.scan(profile=Profile.TEST)
+          logger = container.resolve(LoggerPort)  # Success!
+
+   Troubleshooting:
+       1. **Check profile**: Verify ``container.scan(profile=X)`` matches adapter profile
+       2. **List available**: Look at "Available adapters" section in error message
+       3. **Check imports**: Ensure adapter module is imported before scan()
+       4. **Verify decorator**: Check ``@adapter.for_(Port, profile=...)`` is present
+       5. **Use Profile enum**: Prefer ``Profile.TEST`` over string ``'test'``
+       6. **Case-insensitive**: 'Test', 'TEST', 'test' all match (normalized to lowercase)
+
+   Best Practices:
+       - **Create fake adapters**: Every production adapter needs a test fake
+       - **Use Profile.ALL sparingly**: Only for truly universal adapters (logging, etc.)
+       - **Fail fast**: Resolve all services at startup to catch missing adapters early
+       - **Explicit profiles**: Use ``Profile`` enum instead of strings
+       - **Import all adapters**: Use ``container.scan(package="myapp")`` for auto-import
+
+   .. seealso::
+
+      - :class:`dioxide.adapter.adapter` - How to register adapters
+      - :class:`dioxide.container.Container.scan` - Profile-based scanning
+      - :class:`dioxide.container.Container.resolve` - Where this is raised
+      - :class:`dioxide.profile_enum.Profile` - Standard profile values
 
 
 .. py:exception:: ServiceNotFoundError
@@ -762,60 +910,354 @@ Package Contents
 
    Raised when a service or component cannot be resolved.
 
-   This error occurs when:
-   1. Trying to resolve an unregistered type
-   2. A service depends on an unresolvable dependency
-   3. The dependency chain is broken
+   This error occurs when trying to resolve a service/component that either:
+   1. Is not registered in the container (missing ``@service`` decorator), OR
+   2. Has dependencies that cannot be resolved (missing adapters or services), OR
+   3. Was not imported before ``container.scan()`` was called
+
+   Unlike AdapterNotFoundError (for ports), this error applies to concrete classes
+   marked with ``@service`` or ``@component``. The error message helps identify
+   whether the service itself is missing or one of its dependencies is unresolvable.
 
    The error message includes:
-   - The service/component type that failed to resolve
-   - The missing dependency (if applicable)
-   - The active profile
-   - List of available types in the container
-   - Hint for how to register the service
+       - **Service type**: Which service/component couldn't be resolved
+       - **Active profile**: Current profile (if relevant to the error)
+       - **Dependencies**: Constructor parameters and their types
+       - **Missing dependency**: Which specific dependency failed (if applicable)
+       - **Registration hint**: Code example showing how to fix
 
-   .. admonition:: Example
+   When This Occurs:
+       - ``container.resolve(ServiceType)`` - Service not registered or has missing deps
+       - ``container.resolve(OtherService)`` - OtherService depends on unregistered service
+       - ``container.start()`` - Lifecycle component can't be resolved
 
-      >>> from dioxide import Container, service
-      >>>
-      >>> @service
-      >>> class UserService:
-      ...     def __init__(self, db: DatabasePort):  # DatabasePort not registered
-      ...         self.db = db
-      >>>
-      >>> container = Container()
-      >>> container.scan(profile='test')
-      >>>
-      >>> try:
-      ...     container.resolve(UserService)
-      ... except ServiceNotFoundError as e:
-      ...     print(e)  # Shows missing DatabasePort dependency
+   Common Causes:
+       1. **Missing @service decorator**: Class not decorated, not in registry
+       2. **Unresolvable dependency**: Service depends on unregistered port or service
+       3. **Not imported**: Service module not imported before scan()
+       4. **Profile mismatch on dependency**: Dependency is an adapter with wrong profile
+       5. **Typo in type hint**: Constructor parameter references non-existent type
+
+   .. admonition:: Examples
+
+      Service not registered::
+
+          from dioxide import Container
+
+
+          # Forgot @service decorator!
+          class UserService:
+              def create_user(self, name: str):
+                  pass
+
+
+          container = Container()
+          container.scan()
+
+          try:
+              container.resolve(UserService)
+          except ServiceNotFoundError as e:
+              print(e)
+              # Output:
+              # Cannot resolve UserService.
+              #
+              # UserService is not registered in the container.
+              #
+              # Hint: Register the service:
+              #   @service
+              #   class UserService:
+              #       ...
+
+          # Solution: Add @service decorator
+          from dioxide import service
+
+
+          @service
+          class UserService:
+              def create_user(self, name: str):
+                  pass
+
+      Service with unresolvable dependency::
+
+          from dioxide import service, Container
+
+
+          @service
+          class UserService:
+              def __init__(self, db: DatabasePort):  # DatabasePort not registered!
+                  self.db = db
+
+
+          container = Container()
+          container.scan()
+
+          try:
+              container.resolve(UserService)
+          except ServiceNotFoundError as e:
+              print(e)
+              # Output:
+              # Cannot resolve UserService.
+              #
+              # UserService has dependencies: db: DatabasePort
+              #
+              # One or more dependencies could not be resolved.
+              # Check that all dependencies are registered with @service or @adapter.for_().
+
+          # Solution: Register adapter for DatabasePort
+          from dioxide import adapter, Profile
+
+
+          @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+          class PostgresAdapter:
+              async def query(self, sql: str) -> list[dict]:
+                  pass
+
+      Service with multiple dependencies::
+
+          @service
+          class NotificationService:
+              def __init__(self, email: EmailPort, sms: SMSPort, db: DatabasePort):
+                  self.email = email
+                  self.sms = sms
+                  self.db = db
+
+          # If any dependency is missing, error shows ALL dependencies
+          try:
+              container.resolve(NotificationService)
+          except ServiceNotFoundError as e:
+              # Shows: email: EmailPort, sms: SMSPort, db: DatabasePort
+              # Helps identify which specific dependency is missing
+
+      Circular dependency (non-lifecycle)::
+
+          @service
+          class ServiceA:
+              def __init__(self, b: 'ServiceB'):  # Forward reference
+                  self.b = b
+
+
+          @service
+          class ServiceB:
+              def __init__(self, a: ServiceA):
+                  self.a = a
+
+
+          # This will cause RecursionError during resolution
+          # (CircularDependencyError only applies to @lifecycle components)
+          try:
+              container.resolve(ServiceA)
+          except RecursionError:
+              # Redesign to break circular dependency
+              pass
+
+   Troubleshooting:
+       1. **Check decorator**: Verify ``@service`` or ``@component`` is present
+       2. **Verify imports**: Ensure service module is imported before scan()
+       3. **Check dependencies**: Look at "has dependencies" section in error message
+       4. **Resolve dependencies first**: Manually resolve each dependency to find which one fails
+       5. **Check type hints**: Ensure constructor parameters have correct type annotations
+       6. **Profile mismatch**: If dependency is a port, check adapter profile matches
+       7. **Forward references**: Use string quotes for forward references: ``'ServiceB'``
+
+   Best Practices:
+       - **Fail fast**: Resolve all services at startup to catch missing registrations early
+       - **Integration tests**: Test that all services can be resolved in each profile
+       - **Explicit imports**: Import all service modules before calling scan()
+       - **Use scan(package="myapp")**: Auto-import all modules in a package
+       - **Type hints required**: Constructor parameters must have type annotations
+       - **Check profiles**: Dependency adapters must match active profile
+
+   .. seealso::
+
+      - :class:`dioxide.services.service` - How to register services
+      - :class:`dioxide.adapter.adapter` - How to register adapters (for dependencies)
+      - :class:`dioxide.container.Container.scan` - Auto-discovery and registration
+      - :class:`dioxide.container.Container.resolve` - Where this is raised
+      - :class:`AdapterNotFoundError` - For port resolution errors
 
 
 .. py:function:: lifecycle(cls)
 
-   Mark a class as having lifecycle management.
+   Mark a class for lifecycle management with initialization and cleanup.
 
-   Components decorated with @lifecycle must implement:
-   - async def initialize(self) -> None: Called at container startup
-   - async def dispose(self) -> None: Called at container shutdown
+   The @lifecycle decorator marks a service or adapter as requiring lifecycle
+   management, which means it needs to be initialized before use and disposed
+   of when the application shuts down. This is essential for managing resources
+   like database connections, caches, message queues, and other infrastructure
+   components that require setup and teardown.
 
-   :param cls: The class to mark for lifecycle management
+   The decorator performs compile-time validation to ensure the decorated class
+   implements the required async methods. This provides early error detection
+   (at import time) rather than runtime failures.
 
-   :returns: The class with _dioxide_lifecycle attribute set
+   Required Methods:
+       The decorated class MUST implement both of these async methods:
 
-   :raises TypeError: If the class does not implement initialize() method
+       - ``async def initialize(self) -> None``:
+           Called once when the container starts (via ``container.start()`` or
+           ``async with container:``). Use this to establish connections, load
+           resources, warm caches, etc. This method is called in dependency order
+           (dependencies are initialized before their dependents).
 
-   .. admonition:: Example
+       - ``async def dispose(self) -> None``:
+           Called once when the container stops (via ``container.stop()`` or when
+           exiting the ``async with`` block). Use this to close connections, flush
+           buffers, release resources, etc. This method is called in reverse
+           dependency order (dependents are disposed before their dependencies).
+           Should be idempotent and not raise exceptions.
 
-      >>> @service
-      ... @lifecycle
-      ... class Database:
-      ...     async def initialize(self) -> None:
-      ...         self.engine = create_async_engine(...)
-      ...
-      ...     async def dispose(self) -> None:
-      ...         await self.engine.dispose()
+   Decorator Composition:
+       @lifecycle works with both @service and @adapter.for_() decorators.
+       Apply @lifecycle as the innermost decorator (closest to the class):
+
+       - ``@service`` + ``@lifecycle`` - For stateful core logic (rare)
+       - ``@adapter.for_()`` + ``@lifecycle`` - For infrastructure adapters (common)
+
+   :param cls: The class to mark for lifecycle management. Must implement both
+               ``initialize()`` and ``dispose()`` methods as async coroutines.
+
+   :returns: The decorated class with ``_dioxide_lifecycle = True`` attribute set.
+             The class can be used normally and will be discovered by the container.
+
+   :raises TypeError: If the class does not implement ``initialize()`` method.
+   :raises TypeError: If ``initialize()`` is not an async coroutine function.
+   :raises TypeError: If the class does not implement ``dispose()`` method.
+   :raises TypeError: If ``dispose()`` is not an async coroutine function.
+
+   .. admonition:: Examples
+
+      Service with lifecycle (stateful core logic)::
+
+          from dioxide import service, lifecycle
+
+
+          @service
+          @lifecycle
+          class CacheWarmer:
+              def __init__(self, db: DatabasePort):
+                  self.db = db
+                  self.cache = {}
+
+              async def initialize(self) -> None:
+                  # Load all users into memory cache
+                  users = await self.db.query('SELECT * FROM users')
+                  for user in users:
+                      self.cache[user.id] = user
+                  print(f'Cache warmed with {len(users)} users')
+
+              async def dispose(self) -> None:
+                  # Flush any pending writes
+                  self.cache.clear()
+                  print('Cache cleared')
+
+      Adapter with lifecycle (infrastructure connection)::
+
+          from dioxide import adapter, Profile, lifecycle
+
+
+          @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+          @lifecycle
+          class PostgresAdapter:
+              def __init__(self, config: AppConfig):
+                  self.config = config
+                  self.engine = None
+
+              async def initialize(self) -> None:
+                  # Establish database connection pool
+                  self.engine = create_async_engine(self.config.database_url, pool_size=10, max_overflow=20)
+                  # Verify connection
+                  async with self.engine.connect() as conn:
+                      await conn.execute('SELECT 1')
+                  print('Database connection established')
+
+              async def dispose(self) -> None:
+                  # Close all connections in pool
+                  if self.engine:
+                      await self.engine.dispose()
+                      self.engine = None
+                  print('Database connection closed')
+
+              async def query(self, sql: str) -> list[dict]:
+                  async with self.engine.connect() as conn:
+                      result = await conn.execute(sql)
+                      return [dict(row) for row in result]
+
+      Multiple lifecycle components with dependencies::
+
+          # Database adapter (no dependencies) - initialized first
+          @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+          @lifecycle
+          class PostgresAdapter:
+              async def initialize(self) -> None:
+                  self.engine = create_async_engine(...)
+
+              async def dispose(self) -> None:
+                  await self.engine.dispose()
+
+
+          # Service depends on database - initialized after database
+          @service
+          @lifecycle
+          class UserRepository:
+              def __init__(self, db: DatabasePort):
+                  self.db = db
+                  self.initialized = False
+
+              async def initialize(self) -> None:
+                  # Database is already initialized at this point
+                  # Run migrations or setup
+                  await self.db.query('CREATE TABLE IF NOT EXISTS users ...')
+                  self.initialized = True
+
+              async def dispose(self) -> None:
+                  self.initialized = False
+
+
+          # Container handles dependency order automatically:
+          # 1. PostgresAdapter.initialize()
+          # 2. UserRepository.initialize()
+          # ... application runs ...
+          # 1. UserRepository.dispose()
+          # 2. PostgresAdapter.dispose()
+
+      Validation errors at decoration time::
+
+          @service
+          @lifecycle
+          class BrokenService:
+              # Missing initialize() and dispose() methods
+              pass
+
+
+          # Raises TypeError: BrokenService must implement initialize() method
+
+
+          @service
+          @lifecycle
+          class SyncService:
+              def initialize(self) -> None:  # Not async!
+                  pass
+
+              async def dispose(self) -> None:
+                  pass
+
+
+          # Raises TypeError: SyncService.initialize() must be async
+
+   Best Practices:
+       - **Keep initialize() fast**: Avoid expensive operations, connection checks only
+       - **Make dispose() idempotent**: Safe to call multiple times (check if resource exists)
+       - **Don't raise in dispose()**: Log errors but continue cleanup (best-effort)
+       - **Use for adapters**: Infrastructure components at the seams (databases, queues, etc.)
+       - **Rare for services**: Core domain logic is usually stateless (no lifecycle needed)
+       - **Apply as innermost decorator**: ``@adapter.for_() @lifecycle class ...``
+
+   .. seealso::
+
+      - :class:`dioxide.container.Container.start` - Initialize all lifecycle components
+      - :class:`dioxide.container.Container.stop` - Dispose all lifecycle components
+      - :class:`dioxide.adapter.adapter` - For marking infrastructure adapters
+      - :class:`dioxide.services.service` - For marking core domain services
 
 
 .. py:class:: Profile
@@ -975,6 +1417,27 @@ Package Contents
       - Objects with per-request lifecycle
 
 
+   .. py:attribute:: REQUEST
+      :value: 'request'
+
+
+      New instance created per request scope.
+
+      Similar to FACTORY but intended for request-scoped contexts like
+      web frameworks where the same instance should be reused within a
+      single request but fresh instances created for each new request.
+
+      Use for:
+      - Request-scoped services in web frameworks
+      - Per-request database sessions
+      - Request context objects
+      - User authentication/authorization state per request
+
+      Note: Request scope behavior requires integration with a request
+      context provider (e.g., FastAPI dependencies, Flask request context).
+      Without such integration, REQUEST scope behaves like FACTORY.
+
+
 .. py:function:: service(cls)
 
    Mark a class as a core domain service.
@@ -1025,3 +1488,25 @@ Package Contents
       - Services are available in all profiles
       - Dependencies are resolved from constructor (__init__) type hints
       - For profile-specific implementations, use @component with @profile
+
+
+.. py:function:: fresh_container(profile = None, package = None)
+   :async:
+
+
+   Create a fresh, isolated container for testing.
+
+   This context manager creates a new Container instance, scans for components,
+   manages lifecycle (start/stop), and ensures complete isolation between tests.
+
+   :param profile: Profile to scan with (e.g., Profile.TEST). If None, scans all profiles.
+   :param package: Optional package to scan. If None, scans all registered components.
+
+   :Yields: A fresh Container instance with lifecycle management.
+
+   .. admonition:: Example
+
+      async with fresh_container(profile=Profile.TEST) as container:
+          service = container.resolve(UserService)
+          # ... test with isolated container
+      # Container automatically cleaned up

@@ -191,13 +191,13 @@ test = [
     "mutmut>=3.2.3",
 ]
 docs = [
+    "furo>=2024.8.6",
     "linkify-it-py>=2.0.0",
     "myst-parser>=4.0.1",
     "sphinx>=8.2.3",
     "sphinx-autoapi>=3.6.0",
     "sphinx-autodoc-typehints>=3.2.0",
     "sphinx-copybutton>=0.5.2",
-    "sphinx-rtd-theme>=3.0.2",
 ]
 
 [tool.commitizen]
