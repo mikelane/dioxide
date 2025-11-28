@@ -1131,4 +1131,4 @@ async def test_notification(test_container):
 **Next steps:**
 
 - Read [Testing with Fakes](testing_with_fakes.rst) for detailed testing patterns
-- Explore the [API Reference](../autoapi/dioxide/index.rst) for detailed API documentation
+- Explore the [API Reference](../api/dioxide/index.rst) for detailed API documentation
