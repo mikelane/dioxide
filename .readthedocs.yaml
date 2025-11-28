@@ -18,6 +18,7 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.12"
+    rust: "1.82"
 
   jobs:
     # Install uv via asdf before environment creation
