@@ -254,6 +254,46 @@ jobs:
       - name: Install validation tools
         run: pip install wheel check-wheel-contents
 
+      # Strip trailing data from all wheels before validation
+      # This handles any trailing bytes added during build or artifact transfer
+      - name: Strip trailing data from wheels
+        run: |
+          python3 << 'EOF'
+          from pathlib import Path
+
+          def strip_trailing_data(wheel_path):
+              """Remove trailing bytes after ZIP End of Central Directory."""
+              with open(wheel_path, 'rb') as f:
+                  data = f.read()
+
+              eocd_sig = b'PK\x05\x06'
+              pos = data.rfind(eocd_sig)
+
+              if pos == -1:
+                  print(f"  Warning: No EOCD found in {wheel_path.name}")
+                  return False
+
+              comment_len = int.from_bytes(data[pos+20:pos+22], 'little')
+              eocd_end = pos + 22 + comment_len
+              trailing_bytes = len(data) - eocd_end
+
+              if trailing_bytes > 0:
+                  print(f"  Stripped {trailing_bytes} trailing bytes from {wheel_path.name}")
+                  with open(wheel_path, 'wb') as f:
+                      f.write(data[:eocd_end])
+                  return True
+              return False
+
+          dist_dir = Path('dist')
+          wheels = list(dist_dir.glob('*.whl'))
+          print(f"Checking {len(wheels)} wheel(s) for trailing data...")
+          fixed = sum(1 for w in sorted(wheels) if strip_trailing_data(w))
+          if fixed:
+              print(f"\n✅ Fixed {fixed} wheel(s)")
+          else:
+              print("✅ All wheels clean")
+          EOF
+
       - name: Validate wheel ZIP structure
         run: |
           python3 << 'EOF'
