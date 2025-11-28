@@ -204,7 +204,7 @@ async def test_notification():
     container.scan("app", profile=Profile.TEST)
     email = container.resolve(EmailPort)
 
-    service = NotificationService()
+    service = container.resolve(NotificationService)
     await service.notify_user("alice@example.com", "Hi!")
 
     assert len(email.sent_emails) == 1
