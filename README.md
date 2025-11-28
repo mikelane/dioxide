@@ -11,7 +11,7 @@
 [![Architecture](https://img.shields.io/badge/arch-x86__64%20%7C%20aarch64-green)](https://github.com/mikelane/dioxide)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **[📖 Read the Documentation](https://dioxide.readthedocs.io)** | **[🚀 Quick Start](#quick-start)** | **[💡 Examples](https://dioxide.readthedocs.io/en/latest/examples/)** | **[📋 API Reference](https://dioxide.readthedocs.io/en/latest/autoapi/dioxide/)**
+> **[📖 Read the Documentation](https://dioxide.readthedocs.io)** | **[🚀 Quick Start](#quick-start)** | **[💡 Examples](https://dioxide.readthedocs.io/en/latest/examples/)** | **[📋 API Reference](https://dioxide.readthedocs.io/en/latest/api/dioxide/)**
 
 ---
 

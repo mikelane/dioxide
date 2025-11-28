@@ -195,7 +195,3 @@ texinfo_documents = [
 
 # -- Options for todo extension ----------------------------------------------
 todo_include_todos = True
-
-def setup(app: Sphinx) -> None:
-    """Add custom CSS file to Sphinx build."""
-    app.add_css_file('css/custom.css')
