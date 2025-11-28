@@ -1118,4 +1118,3 @@ We're happy to help with migration questions!
    - :doc:`user_guide/getting_started` - Complete introduction to dioxide
    - :doc:`user_guide/testing_with_fakes` - Testing philosophy and patterns
    - :doc:`user_guide/hexagonal_architecture` - Ports and adapters in depth
-   - :doc:`user_guide/lifecycle` - Resource management with @lifecycle
