@@ -6,6 +6,11 @@ on:
       - 'v*.*.*'  # Trigger on version tags (v0.2.1, v1.0.0, etc.)
   workflow_dispatch:
     inputs:
+      dry_run:
+        description: 'Dry run - build and test but do not publish'
+        required: false
+        type: boolean
+        default: false
       publish_to_testpypi:
         description: 'Publish to TestPyPI (for validation before release)'
         required: false
@@ -380,7 +385,7 @@ jobs:
     name: Publish to PyPI
     needs: [validate, build-wheels, build-sdist, validate-wheels, test-wheels]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
     environment:
       name: pypi
       url: https://pypi.org/project/dioxide/
@@ -455,7 +460,7 @@ jobs:
     name: Create GitHub Release
     needs: [validate, publish-pypi]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
     permissions:
       contents: write
       actions: read
@@ -505,7 +510,7 @@ jobs:
     name: Verify PyPI Publication
     needs: [validate, publish-pypi]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && inputs.dry_run != true
     permissions:
       contents: read
 
@@ -532,3 +537,64 @@ jobs:
           echo "**PyPI:** https://pypi.org/project/dioxide/${{ needs.validate.outputs.version }}/" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**GitHub Release:** https://github.com/${{ github.repository }}/releases/tag/v${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+  # Dry run summary - shows what would have been published
+  dry-run-summary:
+    name: Dry Run Summary
+    needs: [validate, build-wheels, build-sdist, validate-wheels, test-wheels]
+    runs-on: ubuntu-latest
+    if: inputs.dry_run == true
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v6
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download sdist
+        uses: actions/download-artifact@v6
+        with:
+          pattern: sdist
+          path: dist
+          merge-multiple: true
+
+      - name: Create dry run summary
+        run: |
+          echo "# Dry Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This was a **dry run** - no packages were published." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Version" >> $GITHUB_STEP_SUMMARY
+          echo "**Package version:** ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Built Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "The following artifacts were built and validated:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Wheels" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la dist/*.whl 2>/dev/null || echo "No wheels found" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Source Distribution" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la dist/*.tar.gz 2>/dev/null || echo "No sdist found" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Validation Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Wheel structure validation: **Passed**" >> $GITHUB_STEP_SUMMARY
+          echo "- Cross-platform tests: **Passed**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Skipped Steps (Dry Run)" >> $GITHUB_STEP_SUMMARY
+          echo "The following steps were skipped because this was a dry run:" >> $GITHUB_STEP_SUMMARY
+          echo "- Publish to PyPI" >> $GITHUB_STEP_SUMMARY
+          echo "- Create GitHub Release" >> $GITHUB_STEP_SUMMARY
+          echo "- Verify PyPI Publication" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "To perform an actual release:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Create and push a version tag: \`git tag v${{ needs.validate.outputs.version }} && git push origin v${{ needs.validate.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "2. Or run this workflow again without the dry-run option" >> $GITHUB_STEP_SUMMARY
