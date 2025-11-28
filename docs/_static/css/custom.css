@@ -1,5 +1,13 @@
 /* Custom styles for dioxide documentation (Furo theme) */
 
+/*
+ * dioxide color scheme:
+ *   - black: #000000
+ *   - white: #ffffff
+ *   - light orange: #ff8445
+ *   - dark orange: #8d2f0d
+ */
+
 /* Additional spacing for API documentation sections */
 .py.class,
 .py.function,

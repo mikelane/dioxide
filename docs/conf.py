@@ -131,19 +131,32 @@ html_css_files = ['css/custom.css']
 
 # Furo theme options
 # See: https://pradyunsg.me/furo/customisation/
+#
+# dioxide color scheme:
+#   - black: #000000
+#   - white: #ffffff
+#   - light orange: #ff8445
+#   - dark orange: #8d2f0d
 html_theme_options = {
-    # Light mode brand colors (purple from dioxide branding)
+    # Logo configuration - use dark logo on light background, light logo on dark background
+    'light_logo': 'images/dioxide-logo-dark.png',
+    'dark_logo': 'images/dioxide-logo-light.png',
+    # Light mode brand colors (dark orange for contrast on light background)
     'light_css_variables': {
-        'color-brand-primary': '#7C3AED',
-        'color-brand-content': '#7C3AED',
+        'color-brand-primary': '#8d2f0d',
+        'color-brand-content': '#8d2f0d',
+        'color-link': '#8d2f0d',
+        'color-link--hover': '#ff8445',
     },
-    # Dark mode brand colors (lighter purple for contrast)
+    # Dark mode brand colors (light orange for contrast on dark background)
     'dark_css_variables': {
-        'color-brand-primary': '#A78BFA',
-        'color-brand-content': '#A78BFA',
+        'color-brand-primary': '#ff8445',
+        'color-brand-content': '#ff8445',
+        'color-link': '#ff8445',
+        'color-link--hover': '#ffffff',
     },
-    # Show the project name in the sidebar
-    'sidebar_hide_name': False,
+    # Hide project name since logo includes it
+    'sidebar_hide_name': True,
     # Enable keyboard navigation
     'navigation_with_keys': True,
     # Add view/edit buttons at top of page
@@ -163,9 +176,8 @@ html_context = {
     'release': release,
 }
 
-# Custom logo
-# html_logo = '_static/logo.png'
-html_favicon = None
+# Favicon - use the dark logo for browser tabs
+html_favicon = '_static/images/dioxide-logo-dark.png'
 
 # -- Options for LaTeX output ------------------------------------------------
 latex_elements = {
@@ -213,18 +225,19 @@ copybutton_remove_prompts = True
 # -- Options for sphinxcontrib-mermaid extension -----------------------------
 # Use a specific mermaid.js version from CDN for consistent rendering
 mermaid_version = '11.4.1'
-# Configure mermaid to work with Furo theme (auto dark/light mode)
+# Configure mermaid to work with Furo theme (dioxide color scheme)
+# dioxide colors: light orange #ff8445, dark orange #8d2f0d
 mermaid_init_js = '''
 mermaid.initialize({
     startOnLoad: true,
     theme: 'base',
     themeVariables: {
-        primaryColor: '#7C3AED',
-        primaryTextColor: '#fff',
-        primaryBorderColor: '#6D28D9',
-        lineColor: '#374151',
-        secondaryColor: '#E5E7EB',
-        tertiaryColor: '#F3F4F6'
+        primaryColor: '#ff8445',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#8d2f0d',
+        lineColor: '#8d2f0d',
+        secondaryColor: '#ffe4d4',
+        tertiaryColor: '#fff5f0'
     }
 });
 '''

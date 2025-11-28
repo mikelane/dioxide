@@ -1,6 +1,16 @@
-# dioxide
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/_static/images/dioxide-logo-light.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/_static/images/dioxide-logo-dark.png">
+    <img alt="dioxide logo" src="docs/_static/images/dioxide-logo-dark.png" width="200">
+  </picture>
+</p>
 
-**Zero-ceremony dependency injection for Python with built-in hexagonal architecture**
+<h1 align="center">dioxide</h1>
+
+<p align="center">
+  <strong>Zero-ceremony dependency injection for Python with built-in hexagonal architecture</strong>
+</p>
 
 [![CI](https://github.com/mikelane/dioxide/workflows/CI/badge.svg)](https://github.com/mikelane/dioxide/actions)
 [![Release](https://github.com/mikelane/dioxide/actions/workflows/release-automated.yml/badge.svg)](https://github.com/mikelane/dioxide/actions/workflows/release-automated.yml)
