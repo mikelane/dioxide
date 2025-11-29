@@ -44,6 +44,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.0.4-alpha.1]: https://github.com/mikelane/dioxide/releases/tag/v0.0.4-alpha.1
 [0.0.1-alpha]: https://github.com/mikelane/dioxide/releases/tag/v0.0.1-alpha
 
+## v0.4.1 (2025-11-29)
+
+### Feat
+
+- add optional profile parameter to Container constructor (#236)
+- add hex logo for favicon and hide landing page title
+
+### Docs
+
+- add library author guide to cookbook (#237)
+- add why dioxide comparison page (#234)
+- add cookbook section with real-world recipes (#233)
+- add architecture diagrams for hexagonal patterns (#232)
+- add dioxide logo and establish brand color scheme (#231)
+- create visual landing page with hero section (#229)
+- add sphinx-autobuild for live reload development (#227)
+- add sphinx-copybutton, sphinx-design, and mermaid extensions (#226)
+- update README with honest performance positioning (#225)
+- convert index.rst to MyST Markdown (#223)
+- switch to Furo theme with autoapi_root (#224)
+- modernize ReadTheDocs configuration (#221)
+- add migration guide from dependency-injector (#186)
+- add RELEASE.md documenting release process (#203)
+
+### Fix
+
+- remove redundant TOC from getting_started
+- reduce hero font size from sd-fs-1 to sd-fs-2
+- use padding-top to clear theme icons instead of width constraints
+- prevent hero text from colliding with theme icons
+- add pyo3.rs to linkcheck ignore list
+- add GitHub blob URLs to linkcheck ignore list (#214)
+- publish to PyPI before creating GitHub Release (#199)
+- strip wheel trailing data at build time (#200)
+- sync release test dependencies with CI (#198)
+
+### CI
+
+- update GitHub Actions to latest versions (#230)
+- add linkcheck to CI workflow (#228)
+
+### Perf
+
+- add honest benchmark comparison vs dependency-injector (#188)
+
+## v0.3.1 (2025-11-27)
+
+### Fix
+
+- minor documentation fixes
+
 ## v0.3.0 (2025-11-27)
 
 ### Feat
