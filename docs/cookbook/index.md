@@ -42,6 +42,13 @@ Pydantic Settings integration and environment-specific config.
 SQLAlchemy adapters, repository pattern, and transaction handling.
 :::
 
+:::{grid-item-card} Library Authors
+:link: libraries
+:link-type: doc
+
+Make your library dioxide-compatible without depending on dioxide.
+:::
+
 ::::
 
 ## Recipe Index
@@ -83,6 +90,12 @@ SQLAlchemy adapters, repository pattern, and transaction handling.
 | [In-Memory Fake](database.md#recipe-in-memory-repository-fake) | Fast fake for testing |
 | [Transaction Handling](database.md#recipe-transaction-management) | Commit/rollback patterns |
 
+### Library Authors
+
+| Recipe | Description |
+|--------|-------------|
+| [dioxide-Compatible Libraries](libraries.md) | Optional DI with sensible defaults |
+
 ## Philosophy
 
 These recipes follow dioxide's core principles:
@@ -100,4 +113,5 @@ fastapi
 testing
 configuration
 database
+libraries
 ```
