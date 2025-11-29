@@ -335,7 +335,9 @@ sequenceDiagram
 ```python
 from dioxide import Container, Profile
 
-async with Container(profile=Profile.PRODUCTION) as container:
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+async with container:
     # All @lifecycle components are initialized here
     service = container.resolve(UserService)
     await service.do_something()
