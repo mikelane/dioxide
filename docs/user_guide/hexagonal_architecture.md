@@ -232,7 +232,6 @@ class SimpleEmailAdapter:
 dioxide makes hexagonal architecture explicit through distinct decorator roles:
 
 ```{mermaid}
-%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#d35400', 'primaryTextColor': '#fff', 'primaryBorderColor': '#e67e22', 'lineColor': '#e67e22', 'secondaryColor': '#2c3e50', 'tertiaryColor': '#1a252f'}}}%%
 flowchart TB
     subgraph services["@service (Core Domain Logic)"]
         direction LR

@@ -225,19 +225,34 @@ copybutton_remove_prompts = True
 # -- Options for sphinxcontrib-mermaid extension -----------------------------
 # Use a specific mermaid.js version from CDN for consistent rendering
 mermaid_version = '11.4.1'
-# Configure mermaid to work with Furo theme (dioxide color scheme)
-# dioxide colors: light orange #ff8445, dark orange #8d2f0d
+# Configure mermaid to work with Furo dark theme (dioxide color scheme)
+# dioxide brand colors: orange #e67e22, dark background #1a1a1a
 mermaid_init_js = '''
 mermaid.initialize({
     startOnLoad: true,
-    theme: 'base',
+    theme: 'dark',
     themeVariables: {
-        primaryColor: '#ff8445',
+        primaryColor: '#d35400',
         primaryTextColor: '#ffffff',
-        primaryBorderColor: '#8d2f0d',
-        lineColor: '#8d2f0d',
-        secondaryColor: '#ffe4d4',
-        tertiaryColor: '#fff5f0'
+        primaryBorderColor: '#e67e22',
+        lineColor: '#e67e22',
+        secondaryColor: '#2c3e50',
+        tertiaryColor: '#1a252f',
+        background: '#1a1a1a',
+        mainBkg: '#2c3e50',
+        nodeBorder: '#e67e22',
+        clusterBkg: '#2c3e50',
+        clusterBorder: '#e67e22',
+        titleColor: '#ffffff',
+        edgeLabelBackground: '#2c3e50',
+        actorBkg: '#d35400',
+        actorBorder: '#e67e22',
+        actorTextColor: '#ffffff',
+        signalColor: '#e67e22',
+        signalTextColor: '#ffffff',
+        noteBkgColor: '#2c3e50',
+        noteTextColor: '#ffffff',
+        noteBorderColor: '#e67e22'
     }
 });
 '''

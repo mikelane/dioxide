@@ -11,7 +11,6 @@ at the center, surrounded by ports that define interfaces, with adapters pluggin
 ports from the outside. This creates natural seams for testing and implementation swapping.
 
 ```{mermaid}
-%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#d35400', 'primaryTextColor': '#fff', 'primaryBorderColor': '#e67e22', 'lineColor': '#e67e22', 'secondaryColor': '#2c3e50', 'tertiaryColor': '#1a252f'}}}%%
 flowchart TB
     subgraph EXTERNAL["External Systems"]
         direction TB
@@ -98,7 +97,6 @@ dioxide uses profiles to determine which adapter implementation is active for ea
 When you scan with a specific profile, only adapters matching that profile are activated.
 
 ```{mermaid}
-%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#d35400', 'primaryTextColor': '#fff', 'primaryBorderColor': '#e67e22', 'lineColor': '#e67e22', 'secondaryColor': '#2c3e50', 'tertiaryColor': '#1a252f'}}}%%
 flowchart TB
     subgraph REGISTRATION["Adapter Registration (Decoration Time)"]
         direction LR
@@ -186,7 +184,6 @@ When you call `container.resolve(UserService)`, dioxide performs dependency reso
 by inspecting constructor type hints and recursively resolving dependencies.
 
 ```{mermaid}
-%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#d35400', 'primaryTextColor': '#fff', 'primaryBorderColor': '#e67e22', 'lineColor': '#e67e22', 'secondaryColor': '#2c3e50', 'tertiaryColor': '#1a252f', 'actorTextColor': '#fff', 'actorBkg': '#d35400', 'actorBorder': '#e67e22', 'signalColor': '#e67e22', 'signalTextColor': '#fff'}}}%%
 sequenceDiagram
     participant App as Application
     participant Container as Container
@@ -255,7 +252,6 @@ and disposes them in reverse order. This ensures dependencies are ready before d
 and cleaned up after dependents.
 
 ```{mermaid}
-%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#d35400', 'primaryTextColor': '#fff', 'primaryBorderColor': '#e67e22', 'lineColor': '#e67e22', 'secondaryColor': '#2c3e50', 'tertiaryColor': '#1a252f', 'actorTextColor': '#fff', 'actorBkg': '#d35400', 'actorBorder': '#e67e22', 'signalColor': '#e67e22', 'signalTextColor': '#fff', 'noteBkgColor': '#2c3e50', 'noteTextColor': '#fff'}}}%%
 sequenceDiagram
     participant App as Application
     participant Container as Container
@@ -357,7 +353,6 @@ dioxide's architecture enables testing with fast, deterministic fakes instead of
 The profile system makes swapping between production and test implementations trivial.
 
 ```{mermaid}
-%%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#d35400', 'primaryTextColor': '#fff', 'primaryBorderColor': '#e67e22', 'lineColor': '#e67e22', 'secondaryColor': '#2c3e50', 'tertiaryColor': '#1a252f'}}}%%
 flowchart TB
     subgraph PRODUCTION["Production Environment"]
         direction TB
