@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/_static/images/dioxide-logo-light.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/_static/images/dioxide-logo-dark.png">
-    <img alt="dioxide logo" src="docs/_static/images/dioxide-logo-dark.png" width="200">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mikelane/dioxide/main/docs/_static/images/dioxide-logo-light.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/mikelane/dioxide/main/docs/_static/images/dioxide-logo-dark.png">
+    <img alt="dioxide logo" src="https://raw.githubusercontent.com/mikelane/dioxide/main/docs/_static/images/dioxide-logo-dark.png" width="200">
   </picture>
 </p>
 
