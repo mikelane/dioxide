@@ -358,18 +358,23 @@ class FakeHttpAdapter:
 
 ```python
 # app/main.py
-from dioxide import container, Profile
+import asyncio
+from dioxide import Container, Profile
 from mylib import WeatherClient, HttpPort
 
-# Production: scan activates HttpxAdapter
-container.scan("app", profile=Profile.PRODUCTION)
+async def main():
+    # Production: Container(profile=...) auto-scans and activates HttpxAdapter
+    async with Container(profile=Profile.PRODUCTION) as container:
+        # Resolve HTTP adapter and inject into library
+        http = container.resolve(HttpPort)
+        client = WeatherClient(api_key="my-api-key", http=http)
 
-# Resolve HTTP adapter and inject into library
-http = container.resolve(HttpPort)
-client = WeatherClient(api_key="my-api-key", http=http)
+        # Now using httpx under the hood
+        weather = client.get_weather("Seattle")
+        print(f"{weather.city}: {weather.temperature}F")
 
-# Now using httpx under the hood
-weather = client.get_weather("Seattle")
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ### Testing the Integration
@@ -383,9 +388,7 @@ from mylib import WeatherClient, HttpPort, Response
 @pytest.fixture
 def container():
     """Container with test fakes."""
-    c = Container()
-    c.scan("app", profile=Profile.TEST)
-    return c
+    return Container(profile=Profile.TEST)
 
 @pytest.fixture
 def fake_http(container):
