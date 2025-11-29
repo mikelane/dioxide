@@ -449,12 +449,30 @@ class Container:
         its own singleton cache and registration state.
     """
 
-    def __init__(self, allowed_packages: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        allowed_packages: list[str] | None = None,
+        profile: Profile | str | None = None,
+    ) -> None:
         """Initialize a new dependency injection container.
 
         Creates a new container with an empty registry. The container is
         ready to accept registrations via scan() for @component classes
         or via manual registration methods.
+
+        If a profile is provided, the container automatically scans for
+        components and adapters matching that profile during initialization.
+        This enables the streamlined API pattern::
+
+            async with Container(profile=Profile.PRODUCTION) as container:
+                service = container.resolve(UserService)
+
+        Instead of the more verbose::
+
+            container = Container()
+            container.scan(profile=Profile.PRODUCTION)
+            async with container:
+                service = container.resolve(UserService)
 
         Args:
             allowed_packages: Optional list of package prefixes allowed for scanning.
@@ -463,22 +481,39 @@ class Container:
                 If None, no validation is performed (backward compatible).
                 Example: ['myapp', 'tests.fixtures'] allows 'myapp.services'
                 and 'tests.fixtures.mocks' but blocks 'os' or 'sys'.
+            profile: Optional profile for auto-scanning. Accepts either a Profile
+                enum value (Profile.PRODUCTION, Profile.TEST, etc.) or a string
+                profile name. If provided, scan(profile=...) is called automatically
+                during initialization. If None, no auto-scan is performed (default
+                behavior for backward compatibility).
 
         Example:
             >>> from dioxide import Container
             >>> container = Container()
             >>> assert container.is_empty()
 
+            Auto-scan with profile:
+            >>> from dioxide import Container, Profile
+            >>> container = Container(profile=Profile.PRODUCTION)
+            >>> # Container is ready to resolve - no explicit scan() needed
+
             Security example:
             >>> # Only allow scanning within your application package
             >>> container = Container(allowed_packages=['myapp', 'tests'])
             >>> container.scan(package='myapp.services')  # OK
             >>> container.scan(package='os')  # Raises ValueError
+
+            Combined example:
+            >>> container = Container(allowed_packages=['myapp'], profile=Profile.PRODUCTION)
         """
         self._rust_core = RustContainer()
         self._active_profile: str | None = None  # Track active profile for error messages
         self._allowed_packages = allowed_packages  # Security: restrict scannable packages
         self._lifecycle_instances: list[Any] | None = None  # Cache lifecycle instances during start()
+
+        # Auto-scan if profile is provided
+        if profile is not None:
+            self.scan(profile=profile)
 
     def register_instance(self, component_type: type[T], instance: T) -> None:
         """Register a pre-created instance for a given type.
