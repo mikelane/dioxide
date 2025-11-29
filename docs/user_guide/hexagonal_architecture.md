@@ -231,30 +231,44 @@ class SimpleEmailAdapter:
 
 dioxide makes hexagonal architecture explicit through distinct decorator roles:
 
+```{mermaid}
+flowchart TB
+    subgraph services["@service (Core Domain Logic)"]
+        direction LR
+        US[UserService]
+        OS[OrderService]
+        NS[NotificationService]
+    end
+
+    subgraph ports["Ports (Protocols/ABCs)"]
+        direction LR
+        EP[EmailPort]
+        UR[UserRepository]
+        PG[PaymentGateway]
+    end
+
+    subgraph adapters["@adapter.for_(Port, profile=...)"]
+        direction LR
+        SG["SendGridAdapter<br/>(PRODUCTION)"]
+        FE["FakeEmailAdapter<br/>(TEST)"]
+        CE["ConsoleEmailAdapter<br/>(DEVELOPMENT)"]
+    end
+
+    services -->|"depends on<br/>(constructor injection)"| ports
+    ports -->|"implemented by"| adapters
+
+    style services fill:#2d5a27,stroke:#4a9c3f,color:#fff
+    style ports fill:#1a3a5c,stroke:#3498db,color:#fff
+    style adapters fill:#5c3a1a,stroke:#e67e22,color:#fff
 ```
-┌─────────────────────────────────────────────────┐
-│   @service (Core Domain Logic)                 │  ← Business rules
-│   - UserService                                 │  ← Profile-agnostic
-│   - OrderService                                │  ← Depends on ports
-│   - NotificationService                         │
-└─────────────────────┬───────────────────────────┘
-                      │ depends on (constructor injection)
-                      ▼
-┌─────────────────────────────────────────────────┐
-│   Ports (Protocols/ABCs)                        │  ← Interfaces
-│   - EmailPort                                   │  ← No decorators!
-│   - UserRepository                              │  ← Just type definitions
-│   - PaymentGateway                              │
-└─────────────────────┬───────────────────────────┘
-                      │ implemented by
-                      ▼
-┌─────────────────────────────────────────────────┐
-│   @adapter.for_(Port, profile=...)              │  ← Boundary implementations
-│   - SendGridAdapter (PRODUCTION)                │  ← Profile-specific
-│   - FakeEmailAdapter (TEST)                     │  ← Swappable
-│   - ConsoleEmailAdapter (DEVELOPMENT)           │
-└─────────────────────────────────────────────────┘
-```
+
+**Layer descriptions:**
+
+| Layer | Description |
+|-------|-------------|
+| **@service** | Business rules, profile-agnostic, depends on ports |
+| **Ports** | Interfaces only, no decorators, just type definitions |
+| **@adapter** | Boundary implementations, profile-specific, swappable |
 
 **Data flow:**
 
