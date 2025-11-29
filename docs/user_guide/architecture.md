@@ -117,11 +117,11 @@ flowchart TB
           - DEVELOPMENT: ConsoleEmailAdapter")]
     end
 
-    subgraph SCANNING["Container Scanning"]
+    subgraph SCANNING["Container Creation (Auto-Scans)"]
         direction TB
-        SCAN_PROD["container.scan(profile=Profile.PRODUCTION)"]
-        SCAN_TEST["container.scan(profile=Profile.TEST)"]
-        SCAN_DEV["container.scan(profile=Profile.DEVELOPMENT)"]
+        SCAN_PROD["Container(profile=Profile.PRODUCTION)"]
+        SCAN_TEST["Container(profile=Profile.TEST)"]
+        SCAN_DEV["Container(profile=Profile.DEVELOPMENT)"]
     end
 
     subgraph ACTIVATION["Active Adapters"]
@@ -159,7 +159,7 @@ flowchart TB
 1. **Registration**: When Python loads your modules, `@adapter.for_()` decorators register
    each adapter class in a global registry, associated with its port and profile(s)
 
-2. **Scanning**: When you call `container.scan(profile=...)`, the container:
+2. **Scanning**: When you create a container with `Container(profile=...)`, the container automatically:
    - Discovers all registered adapters
    - Filters to only those matching the active profile
    - Registers them as providers for their respective ports
@@ -335,14 +335,15 @@ sequenceDiagram
 ```python
 from dioxide import Container, Profile
 
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
-async with container:
+async with Container(profile=Profile.PRODUCTION) as container:
     # All @lifecycle components are initialized here
     service = container.resolve(UserService)
     await service.do_something()
 # All @lifecycle components are disposed here (reverse order)
 ```
+
+The `Container(profile=...)` constructor accepts both `Profile` enum values and string profiles,
+and automatically triggers scanning when created.
 
 ---
 
@@ -445,9 +446,7 @@ from dioxide import Container, Profile
 @pytest.fixture
 def container():
     """Fresh container with test fakes for each test."""
-    c = Container()
-    c.scan(profile=Profile.TEST)
-    return c
+    return Container(profile=Profile.TEST)
 
 @pytest.fixture
 def fake_email(container):
