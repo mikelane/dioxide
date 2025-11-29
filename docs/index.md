@@ -310,6 +310,15 @@ examples/04-lifecycle-management
 ```
 
 ```{toctree}
+:maxdepth: 1
+:hidden:
+:caption: Cookbook
+
+cookbook/index
+cookbook/libraries
+```
+
+```{toctree}
 :maxdepth: 2
 :hidden:
 :caption: API Reference
