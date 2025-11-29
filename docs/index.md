@@ -285,6 +285,14 @@ user_guide/testing_with_fakes
 ```{toctree}
 :maxdepth: 2
 :hidden:
+:caption: Cookbook
+
+cookbook/index
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
 :caption: Tutorial Examples
 
 examples/01-basic-dependency-injection
