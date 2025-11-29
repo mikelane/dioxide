@@ -534,8 +534,7 @@ def test_uses_default_adapter_when_none_provided():
 ## See Also
 
 - [Hexagonal Architecture](../user_guide/hexagonal_architecture.md) - Understanding ports and adapters
-- [Testing with Fakes](../user_guide/testing_with_fakes.rst) - Writing effective test fakes
-- [Profile-Based Testing](../user_guide/testing_with_fakes.rst#profile-based-testing) - Using profiles for different environments
+- [Testing with Fakes](../user_guide/testing_with_fakes.rst) - Writing effective test fakes and using profiles
 
 ## Summary
 
