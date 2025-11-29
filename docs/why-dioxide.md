@@ -41,10 +41,10 @@ class SendGridAdapter: ...
 class FakeEmailAdapter: ...
 
 # Production
-container.scan(profile=Profile.PRODUCTION)  # Uses SendGrid
+container = Container(profile=Profile.PRODUCTION)  # Uses SendGrid
 
 # Testing
-container.scan(profile=Profile.TEST)  # Uses Fake
+container = Container(profile=Profile.TEST)  # Uses Fake
 ```
 
 ### 4. Fakes Over Mocks
@@ -54,7 +54,7 @@ Test with real implementations, not mock configurations:
 ```python
 # Test uses real fake, not mock
 async def test_notification():
-    container.scan(profile=Profile.TEST)
+    container = Container(profile=Profile.TEST)
     email = container.resolve(EmailPort)
 
     await container.resolve(NotificationService).notify("alice@example.com")
@@ -67,7 +67,7 @@ async def test_notification():
 Circular dependencies and missing providers fail at startup, not at runtime:
 
 ```python
-# At container.scan() time, not first request:
+# At Container() creation time, not first request:
 # CircularDependencyError: A -> B -> C -> A
 ```
 
@@ -100,7 +100,7 @@ How does dioxide compare to popular Python DI frameworks?
   - No
 
 * - **Auto-discovery**
-  - Yes (`scan()`)
+  - Yes (automatic)
   - No
   - No
   - No
@@ -152,7 +152,7 @@ The same use case implemented in dioxide vs dependency-injector:
 
 ```python
 from typing import Protocol
-from dioxide import adapter, service, Profile, container
+from dioxide import adapter, service, Profile, Container
 
 # Define port
 class EmailPort(Protocol):
@@ -187,7 +187,7 @@ class NotificationService:
         await self.email.send(user_email, "Hello!", "Welcome!")
 
 # Usage
-container.scan("app", profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 service = container.resolve(NotificationService)
 ```
 
@@ -259,7 +259,7 @@ container.email_adapter.override(providers.Object(FakeEmailAdapter()))
 | Aspect | dioxide | dependency-injector |
 |--------|---------|---------------------|
 | **Wiring** | Type hints only | `@inject` + `Provide[]` required |
-| **Discovery** | Automatic via `scan()` | Manual wiring required |
+| **Discovery** | Automatic via `Container(profile=...)` | Manual wiring required |
 | **Profile switching** | Change profile parameter | Override providers manually |
 | **Testing** | Use `Profile.TEST` | Use `override()` with mocks |
 | **Boilerplate** | Minimal | Significant |
@@ -276,7 +276,7 @@ container.email_adapter.override(providers.Object(FakeEmailAdapter()))
 :::{grid-item-card} You value minimal API surface
 :class-card: sd-border-0 sd-shadow-sm
 
-3 decorators (`@adapter.for_()`, `@service`, `@lifecycle`), 1 container method (`scan()`). That's it.
+3 decorators (`@adapter.for_()`, `@service`, `@lifecycle`), 1 container class (`Container(profile=...)`). That's it.
 :::
 
 :::{grid-item-card} You want built-in environment profiles
@@ -470,7 +470,7 @@ email = SendGridAdapter(config)
 service = NotificationService(email)
 
 # After (dioxide)
-container.scan("app", profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 service = container.resolve(NotificationService)  # All dependencies injected
 ```
 
@@ -481,7 +481,7 @@ If you're not using dependency injection at all, dioxide helps you adopt clean a
 1. Define a Protocol for one external dependency
 2. Create production and test adapters
 3. Add `@service` to business logic
-4. Use `container.scan()` and `resolve()`
+4. Use `Container(profile=...)` and `resolve()`
 
 Start with one port, expand as needed.
 
