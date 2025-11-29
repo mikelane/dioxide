@@ -40,3 +40,130 @@ dl.py dt {
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
 }
+
+/* ============================================
+   Mermaid diagram dark theme overrides
+   Match dioxide color scheme on dark backgrounds
+   ============================================ */
+
+/* Main diagram container - dark background */
+.mermaid {
+    background-color: #1a1a1a !important;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e67e22;
+}
+
+/* Subgraph backgrounds */
+.mermaid .cluster rect {
+    fill: #2c3e50 !important;
+    stroke: #e67e22 !important;
+}
+
+/* Subgraph labels */
+.mermaid .cluster-label .nodeLabel,
+.mermaid .cluster text {
+    fill: #ffffff !important;
+    color: #ffffff !important;
+}
+
+/* Node backgrounds */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node ellipse,
+.mermaid .node polygon,
+.mermaid .node path {
+    fill: #d35400 !important;
+    stroke: #e67e22 !important;
+}
+
+/* Node text */
+.mermaid .node .nodeLabel,
+.mermaid .nodeLabel {
+    fill: #ffffff !important;
+    color: #ffffff !important;
+}
+
+/* Database cylinder nodes */
+.mermaid .node .label-container {
+    fill: #d35400 !important;
+}
+
+/* Edge/arrow lines */
+.mermaid .edgePath path.path {
+    stroke: #e67e22 !important;
+}
+
+/* Edge labels */
+.mermaid .edgeLabel {
+    background-color: #2c3e50 !important;
+    color: #ffffff !important;
+}
+
+.mermaid .edgeLabel rect {
+    fill: #2c3e50 !important;
+}
+
+.mermaid .edgeLabel span {
+    color: #ffffff !important;
+}
+
+/* Arrow heads */
+.mermaid .marker {
+    fill: #e67e22 !important;
+    stroke: #e67e22 !important;
+}
+
+/* Sequence diagram specific */
+.mermaid .actor {
+    fill: #d35400 !important;
+    stroke: #e67e22 !important;
+}
+
+.mermaid .actor-line {
+    stroke: #e67e22 !important;
+}
+
+.mermaid text.actor {
+    fill: #ffffff !important;
+}
+
+.mermaid .messageLine0,
+.mermaid .messageLine1 {
+    stroke: #e67e22 !important;
+}
+
+.mermaid .messageText {
+    fill: #ffffff !important;
+}
+
+.mermaid .note {
+    fill: #2c3e50 !important;
+    stroke: #e67e22 !important;
+}
+
+.mermaid .noteText {
+    fill: #ffffff !important;
+}
+
+/* Activation boxes in sequence diagrams */
+.mermaid .activation0,
+.mermaid .activation1,
+.mermaid .activation2 {
+    fill: #d35400 !important;
+}
+
+/* Loop/alt boxes in sequence diagrams */
+.mermaid .loopLine {
+    stroke: #e67e22 !important;
+}
+
+.mermaid .loopText,
+.mermaid .loopText tspan {
+    fill: #ffffff !important;
+}
+
+.mermaid rect.rect {
+    fill: #2c3e50 !important;
+    stroke: #e67e22 !important;
+}
