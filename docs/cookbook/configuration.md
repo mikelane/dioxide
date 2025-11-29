@@ -400,11 +400,9 @@ from dioxide import Container, Profile
 
 def create_app():
     """Create application with validated config."""
-    container = Container()
-
     try:
-        # scan() creates services, triggering validation
-        container.scan(profile=Profile.PRODUCTION)
+        # Container creation triggers validation
+        container = Container(profile=Profile.PRODUCTION)
     except ValueError as e:
         print(f"Configuration error: {e}")
         print("Please set required environment variables")

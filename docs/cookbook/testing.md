@@ -31,10 +31,7 @@ async def container():
     - Fresh adapter instances
     - Automatic lifecycle management
     """
-    c = Container()
-    c.scan(profile=Profile.TEST)
-
-    async with c:
+    async with Container(profile=Profile.TEST) as c:
         yield c
     # Cleanup happens automatically
 
@@ -42,9 +39,7 @@ async def container():
 @pytest.fixture
 def sync_container():
     """Synchronous version for non-async tests."""
-    c = Container()
-    c.scan(profile=Profile.TEST)
-    return c
+    return Container(profile=Profile.TEST)
 
 
 # Usage in tests
@@ -92,9 +87,7 @@ if TYPE_CHECKING:
 @pytest.fixture
 async def container():
     """Fresh container per test."""
-    c = Container()
-    c.scan(profile=Profile.TEST)
-    async with c:
+    async with Container(profile=Profile.TEST) as c:
         yield c
 
 

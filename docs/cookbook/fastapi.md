@@ -25,19 +25,18 @@ from contextlib import asynccontextmanager
 from dioxide import Container, Profile
 from fastapi import FastAPI
 
-# Create container with profile from environment
+# Get profile from environment
 profile_name = os.getenv("PROFILE", "development")
 profile = Profile(profile_name)
-
-container = Container()
-container.scan(package="app", profile=profile)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize container on startup, cleanup on shutdown."""
-    async with container:
+    async with Container(profile=profile) as container:
         # All @lifecycle adapters are now initialized
+        # Store container for route access
+        app.state.container = container
         yield
     # All @lifecycle adapters are now disposed
 
@@ -91,9 +90,8 @@ class NotificationService:
     async def notify_user(self, user_email: str, message: str) -> None:
         await self.email.send(user_email, message)
 
-# Container setup
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+# Container setup (created during app lifespan, shown here for clarity)
+container: Container  # Will be set during lifespan
 
 # Dependency injection helper
 def get_notification_service() -> NotificationService:
@@ -269,9 +267,8 @@ class FakeMetricsAdapter:
     def record_request(self, path: str, duration_ms: float) -> None:
         self.recorded.append({"path": path, "duration_ms": duration_ms})
 
-# Container
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+# Container (created during app lifespan)
+container: Container  # Will be set during lifespan
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
@@ -332,9 +329,8 @@ class OrderService:
     async def get_orders(self, user_id: str) -> list[dict]:
         return [{"id": "1", "user_id": user_id, "total": 99.99}]
 
-# Container (shared)
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+# Container (shared, created during app lifespan)
+container: Container  # Will be set during lifespan
 
 # Dependency helpers
 def get_user_service() -> UserService:
@@ -413,9 +409,8 @@ class EmailService:
             body=f"Hello {name}, welcome to our service!",
         )
 
-# Container
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+# Container (created during app lifespan)
+container: Container  # Will be set during lifespan
 
 
 async def send_welcome_email_task(user_email: str, name: str) -> None:

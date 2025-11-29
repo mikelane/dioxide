@@ -95,15 +95,16 @@ class SQLAlchemyAdapter:
 
 # Usage with FastAPI
 from contextlib import asynccontextmanager
-from dioxide import Container
+from dioxide import Container, Profile
 from fastapi import FastAPI
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Container lifecycle handles database init/cleanup."""
-    async with container:
+    async with Container(profile=Profile.PRODUCTION) as container:
         # SQLAlchemyAdapter.initialize() called here
+        app.state.container = container
         yield
     # SQLAlchemyAdapter.dispose() called here
 
