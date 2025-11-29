@@ -7,10 +7,6 @@ Migrating from dependency-injector
 
 ----
 
-.. contents:: On this page
-   :local:
-   :depth: 2
-
 Why Migrate?
 ------------
 
