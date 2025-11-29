@@ -6,8 +6,6 @@
   </picture>
 </p>
 
-<h1 align="center">dioxide</h1>
-
 <p align="center">
   <strong>Zero-ceremony dependency injection for Python with built-in hexagonal architecture</strong>
 </p>
