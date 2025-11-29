@@ -274,6 +274,14 @@ Read the User Guide
 ```{toctree}
 :maxdepth: 2
 :hidden:
+:caption: Overview
+
+why-dioxide
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
 :caption: User Guide
 
 user_guide/getting_started
