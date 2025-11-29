@@ -278,6 +278,7 @@ Read the User Guide
 
 user_guide/getting_started
 user_guide/hexagonal_architecture
+user_guide/architecture
 user_guide/testing_with_fakes
 ```
 
