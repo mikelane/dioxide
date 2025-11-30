@@ -2343,3 +2343,69 @@ class ScopedContainerContextManager:
 #         ctx = scope.resolve(RequestContext)  # Fresh per scope
 #
 container: Container = Container()
+
+
+def reset_global_container() -> None:
+    """Reset the global container to an empty state.
+
+    This function replaces the global container's internal state with a fresh
+    Rust container instance, clearing all registrations and cached singletons.
+    The global container object reference remains the same, so any code holding
+    a reference to ``container`` will see the reset state.
+
+    .. warning::
+
+        **This function is intended for testing only.**
+
+        Calling this in production code will cause unpredictable behavior as
+        all registered services and adapters will be lost. Any code that has
+        already resolved dependencies will hold stale references.
+
+    Use this function in test fixtures to ensure test isolation::
+
+        import pytest
+        from dioxide import container, reset_global_container, Profile
+
+
+        @pytest.fixture(autouse=True)
+        def isolated_container():
+            container.scan(profile=Profile.TEST)
+            yield
+            reset_global_container()
+
+    For most testing scenarios, consider using :func:`dioxide.testing.fresh_container`
+    instead, which creates completely isolated Container instances::
+
+        from dioxide.testing import fresh_container
+
+
+        async def test_something():
+            async with fresh_container(profile=Profile.TEST) as c:
+                service = c.resolve(MyService)
+                # ... test with isolated container
+
+    Returns:
+        None
+
+    Example:
+        >>> from dioxide import container, reset_global_container, service
+        >>>
+        >>> @service
+        ... class MyService:
+        ...     pass
+        >>>
+        >>> container.scan()
+        >>> assert not container.is_empty()
+        >>> reset_global_container()
+        >>> assert container.is_empty()
+
+    See Also:
+        :meth:`Container.reset`: Clears singleton cache but preserves registrations
+        :func:`dioxide.testing.fresh_container`: Creates isolated container instances
+    """
+    global container
+    # Replace internal state rather than reassigning the global
+    # This ensures code that imported `container` sees the reset state
+    container._rust_core = RustContainer()
+    container._active_profile = None
+    container._lifecycle_instances = None
