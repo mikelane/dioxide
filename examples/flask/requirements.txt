@@ -1,0 +1,3 @@
+# Flask example dependencies
+dioxide[flask]>=0.4.0
+flask>=2.0.0
