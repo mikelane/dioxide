@@ -172,6 +172,17 @@ service = container.resolve(MyService)
 ```
 ::::
 
+::::{grid-item-card} Request Scoping
+:class-card: sd-border-0 sd-shadow-sm
+
+Isolate dependencies per request, task, or command. Works for web, CLI, Celery, and any bounded context.
+
+```python
+async with container.create_scope() as scope:
+    ctx = scope.resolve(RequestContext)
+```
+::::
+
 :::::
 
 ---
@@ -299,6 +310,14 @@ examples/01-basic-dependency-injection
 examples/02-email-service-with-profiles
 examples/03-multi-tier-application
 examples/04-lifecycle-management
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Guides
+
+guides/scoping
 ```
 
 ```{toctree}
