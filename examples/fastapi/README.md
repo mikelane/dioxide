@@ -195,12 +195,13 @@ The `dioxide.fastapi` module provides one-line integration:
 ```python
 # app/main.py
 from dioxide import Profile
-from dioxide.fastapi import configure_dioxide, Inject
+from dioxide.fastapi import DioxideMiddleware, Inject
 
 app = FastAPI()
 
 # One-line setup - handles lifecycle, middleware, and scanning
-configure_dioxide(app, profile=Profile(os.getenv("PROFILE", "development")), packages=["app"])
+profile = Profile(os.getenv("PROFILE", "development"))
+app.add_middleware(DioxideMiddleware, profile=profile, packages=["app"])
 
 @app.post("/users")
 async def create_user(
@@ -267,7 +268,7 @@ class PostgresAdapter:
         await self.pool.close()
 ```
 
-The `configure_dioxide()` function automatically integrates the container lifecycle with FastAPI:
+The `DioxideMiddleware` automatically integrates the container lifecycle with FastAPI:
 
 ```
 App Start → lifespan.__aenter__ → container.start() → initialize() on adapters → Ready
@@ -593,7 +594,7 @@ Check that:
 
 Ensure:
 1. Adapter has `@lifecycle` decorator
-2. `configure_dioxide()` was called on the app (sets up lifespan automatically)
+2. `DioxideMiddleware` was added to the app (sets up lifespan automatically)
 3. Methods are named `initialize()` and `dispose()`
 4. Methods are async (`async def`)
 

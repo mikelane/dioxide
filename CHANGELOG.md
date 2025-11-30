@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Feat
 
+- add FastAPI integration module with DioxideMiddleware and Inject helper (#182)
 - add optional profile parameter to Container constructor (#236)
 - add hex logo for favicon and hide landing page title
 

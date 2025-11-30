@@ -763,6 +763,33 @@ def clear_fakes():
 
 For comprehensive testing patterns, see [TESTING_GUIDE.md](docs/TESTING_GUIDE.md).
 
+## FastAPI Integration
+
+dioxide provides seamless FastAPI integration via the optional `dioxide.fastapi` module:
+
+```python
+from fastapi import FastAPI
+from dioxide import Profile
+from dioxide.fastapi import DioxideMiddleware, Inject
+
+app = FastAPI()
+app.add_middleware(DioxideMiddleware, profile=Profile.PRODUCTION, packages=["myapp"])
+
+@app.get("/users")
+async def list_users(service: UserService = Inject(UserService)):
+    return await service.list_all()
+```
+
+Install with: `pip install dioxide[fastapi]`
+
+**Features**:
+- **Single middleware setup** - No ceremony, just add the middleware
+- **Automatic container lifecycle** - Integrates with FastAPI lifespan events
+- **REQUEST-scoped components** - Fresh instances per HTTP request
+- **Works with sync and async** - Route handlers work seamlessly
+
+See the complete [FastAPI example](examples/fastapi/) for a full hexagonal architecture application.
+
 ## Features
 
 ### v0.1.1 ✅ STABLE (Nov 25, 2025) - MLP Production Ready
