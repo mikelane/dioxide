@@ -7,6 +7,8 @@ This module tests the dioxide.fastapi integration that provides:
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from fastapi import (
     FastAPI,
@@ -394,3 +396,181 @@ class DescribePackageScanning:
         with TestClient(app) as client:
             response = client.get('/health')
             assert response.status_code == 200
+
+
+class DescribeInjectWithoutFastAPI:
+    """Tests for Inject() when FastAPI is not installed."""
+
+    def it_raises_import_error_when_fastapi_not_installed(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Inject() raises ImportError when FastAPI dependencies are unavailable."""
+        import dioxide.fastapi as fastapi_module
+
+        # Simulate FastAPI not being installed by setting module-level vars to None
+        monkeypatch.setattr(fastapi_module, 'Depends', None)
+        monkeypatch.setattr(fastapi_module, 'Request', None)
+
+        with pytest.raises(ImportError, match='FastAPI is not installed'):
+            fastapi_module.Inject(object)
+
+
+class DescribeMiddlewarePassThrough:
+    """Tests for middleware pass-through behavior."""
+
+    @pytest.mark.asyncio
+    async def it_passes_through_non_http_non_lifespan_requests(self) -> None:
+        """Middleware passes through websocket and other request types unchanged."""
+        app_called: list[str] = []
+
+        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+            app_called.append(scope['type'])
+
+        container = Container()
+        middleware = DioxideMiddleware(mock_app, profile=Profile.TEST, container=container)
+
+        # Simulate a websocket request
+        websocket_scope: dict[str, Any] = {'type': 'websocket', 'state': {}}
+
+        async def mock_receive() -> dict[str, Any]:
+            return {}
+
+        async def mock_send(message: dict[str, Any]) -> None:
+            pass
+
+        await middleware(websocket_scope, mock_receive, mock_send)
+
+        assert 'websocket' in app_called
+
+
+class DescribeMiddlewareStartupFailure:
+    """Tests for middleware startup failure handling."""
+
+    @pytest.mark.asyncio
+    async def it_sends_startup_failed_when_container_start_raises(self) -> None:
+        """Middleware sends lifespan.startup.failed when container.start() raises."""
+        sent_messages: list[dict[str, Any]] = []
+
+        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+            while True:
+                message = await receive()
+                if message['type'] == 'lifespan.startup':
+                    await send({'type': 'lifespan.startup.complete'})
+                elif message['type'] == 'lifespan.shutdown':
+                    await send({'type': 'lifespan.shutdown.complete'})
+                    break
+
+        container = Container()
+
+        # Make start() raise an exception
+
+        async def failing_start() -> None:
+            raise RuntimeError('Simulated startup failure')
+
+        container.start = failing_start  # type: ignore[method-assign]
+
+        middleware = DioxideMiddleware(mock_app, profile=Profile.TEST, container=container)
+
+        lifespan_scope: dict[str, Any] = {'type': 'lifespan', 'state': {}}
+
+        async def mock_receive() -> dict[str, Any]:
+            return {'type': 'lifespan.startup'}
+
+        async def mock_send(message: dict[str, Any]) -> None:
+            sent_messages.append(message)
+
+        with pytest.raises(RuntimeError, match='Simulated startup failure'):
+            await middleware(lifespan_scope, mock_receive, mock_send)
+
+        # Verify startup.failed was sent
+        assert any(m['type'] == 'lifespan.startup.failed' for m in sent_messages)
+
+
+class DescribeMiddlewareShutdownCleanup:
+    """Tests for middleware shutdown cleanup error handling."""
+
+    @pytest.mark.asyncio
+    async def it_ignores_errors_during_shutdown_cleanup(self) -> None:
+        """Middleware ignores container.stop() errors during shutdown (best-effort cleanup)."""
+        sent_messages: list[dict[str, Any]] = []
+        receive_queue: list[dict[str, Any]] = [
+            {'type': 'lifespan.startup'},
+            {'type': 'lifespan.shutdown'},
+        ]
+
+        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+            while True:
+                message = await receive()
+                if message['type'] == 'lifespan.startup':
+                    await send({'type': 'lifespan.startup.complete'})
+                elif message['type'] == 'lifespan.shutdown':
+                    await send({'type': 'lifespan.shutdown.complete'})
+                    break
+
+        container = Container()
+
+        # Make stop() raise an exception
+
+        async def failing_stop() -> None:
+            raise RuntimeError('Simulated shutdown failure')
+
+        container.stop = failing_stop  # type: ignore[method-assign]
+
+        middleware = DioxideMiddleware(mock_app, profile=Profile.TEST, container=container)
+
+        lifespan_scope = {'type': 'lifespan', 'state': {}}
+        receive_index = 0
+
+        async def mock_receive() -> dict[str, Any]:
+            nonlocal receive_index
+            msg = receive_queue[receive_index]
+            receive_index += 1
+            return msg
+
+        async def mock_send(message: dict[str, Any]) -> None:
+            sent_messages.append(message)
+
+        # Should NOT raise despite container.stop() failing
+        await middleware(lifespan_scope, mock_receive, mock_send)
+
+        # Verify shutdown.complete was still sent
+        assert any(m['type'] == 'lifespan.shutdown.complete' for m in sent_messages)
+
+
+class DescribeMiddlewareStartupFailedCleanup:
+    """Tests for middleware cleanup when startup fails after container started."""
+
+    @pytest.mark.asyncio
+    async def it_stops_container_when_app_startup_fails(self) -> None:
+        """Middleware stops container if startup fails after container was started."""
+        stop_called: list[bool] = []
+        sent_messages: list[dict[str, Any]] = []
+
+        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+            message = await receive()
+            if message['type'] == 'lifespan.startup':
+                # App fails during startup
+                await send({'type': 'lifespan.startup.failed', 'message': 'App failed'})
+
+        container = Container()
+        original_stop = container.stop
+
+        async def tracking_stop() -> None:
+            stop_called.append(True)
+            await original_stop()
+
+        container.stop = tracking_stop  # type: ignore[method-assign]
+
+        middleware = DioxideMiddleware(mock_app, profile=Profile.TEST, container=container)
+
+        lifespan_scope = {'type': 'lifespan', 'state': {}}
+
+        async def mock_receive() -> dict[str, Any]:
+            return {'type': 'lifespan.startup'}
+
+        async def mock_send(message: dict[str, Any]) -> None:
+            sent_messages.append(message)
+
+        await middleware(lifespan_scope, mock_receive, mock_send)
+
+        # Container should have been stopped due to app startup failure
+        assert len(stop_called) == 1
+        assert any(m['type'] == 'lifespan.startup.failed' for m in sent_messages)

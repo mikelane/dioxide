@@ -280,6 +280,7 @@ linkcheck_ignore = [
     r'https://dioxide\.readthedocs\.io/en/v[\d\.]+/',
     # External sites that can be slow or unreliable
     r'https://pyo3\.rs.*',
+    r'https://www\.maturin\.rs.*',
     # Local file references misinterpreted as URLs (linkify extension artifact)
     r'http://README\.md',
     r'http://COVERAGE\.md',
