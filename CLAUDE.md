@@ -355,7 +355,7 @@ uv venv
 source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
 
 # Install dependencies (use uv sync, not uv pip!)
-uv sync --extra dev
+uv sync --group dev
 
 # Build Rust extension
 maturin develop
