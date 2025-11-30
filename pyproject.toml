@@ -113,7 +113,8 @@ module = ["dioxide.flask"]
 # - no-any-return: resolve() returns T which mypy sees as Any
 # - no-redef: we pre-declare Flask/g/has_request_context as Any, then import conditionally
 # - misc: Flask decorators (@app.before_request, @app.teardown_request) make functions untyped
-disable_error_code = ["no-any-return", "no-redef", "misc"]
+# - untyped-decorator: Flask's before_request/teardown_request decorators lack type annotations
+disable_error_code = ["no-any-return", "no-redef", "misc", "untyped-decorator"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
