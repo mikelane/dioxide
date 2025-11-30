@@ -47,6 +47,7 @@ from .container import (
     Container,
     ScopedContainer,
     container,
+    reset_global_container,
 )
 from .exceptions import (
     AdapterNotFoundError,
@@ -76,5 +77,6 @@ __all__ = [
     'container',
     'fresh_container',
     'lifecycle',
+    'reset_global_container',
     'service',
 ]

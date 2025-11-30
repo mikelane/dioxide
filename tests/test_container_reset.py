@@ -249,3 +249,113 @@ class DescribeContainerResetWithManualRegistration:
         resolved_config = container.resolve(Config)
         assert resolved_config is original_config
         assert resolved_config.value == 'original'
+
+
+class DescribeResetGlobalContainer:
+    """Tests for reset_global_container() function.
+
+    This function resets the global singleton container to an empty state,
+    primarily intended for testing isolation scenarios.
+    """
+
+    def it_resets_global_container_to_empty_state(self) -> None:
+        """reset_global_container() clears the global container."""
+        from dioxide import (
+            container,
+            reset_global_container,
+            service,
+        )
+
+        @service
+        class TestService:
+            pass
+
+        # Setup: scan and resolve to populate container
+        container.scan()
+        container.resolve(TestService)
+        assert not container.is_empty()
+
+        # Act
+        reset_global_container()
+
+        # Assert - container should be empty (no registrations)
+        assert container.is_empty()
+
+    def it_allows_rescanning_after_reset(self) -> None:
+        """After reset, container can be scanned and used again."""
+        from dioxide import (
+            container,
+            reset_global_container,
+            service,
+        )
+
+        @service
+        class RescannableService:
+            pass
+
+        container.scan()
+        first_instance = container.resolve(RescannableService)
+
+        # Act
+        reset_global_container()
+        container.scan()
+
+        # Assert - can resolve after rescanning
+        second_instance = container.resolve(RescannableService)
+        assert second_instance is not first_instance
+
+    def it_is_exported_from_main_package(self) -> None:
+        """reset_global_container is importable from dioxide."""
+        from dioxide import reset_global_container
+
+        assert callable(reset_global_container)
+
+    def it_clears_active_profile(self) -> None:
+        """After reset, active profile is cleared."""
+        from dioxide import (
+            Profile,
+            container,
+            reset_global_container,
+        )
+
+        container.scan(profile=Profile.TEST)
+        assert container._active_profile == 'test'
+
+        # Act
+        reset_global_container()
+
+        # Assert
+        assert container._active_profile is None
+
+    def it_clears_lifecycle_cache(self) -> None:
+        """After reset, lifecycle cache is cleared."""
+        from dioxide import (
+            container,
+            reset_global_container,
+        )
+
+        # Simulate cached lifecycle instances
+        container._lifecycle_instances = ['fake_instance']
+
+        # Act
+        reset_global_container()
+
+        # Assert
+        assert container._lifecycle_instances is None
+
+    def it_does_not_raise_on_empty_container(self) -> None:
+        """reset_global_container() works on an empty container."""
+        from dioxide import (
+            container,
+            reset_global_container,
+        )
+
+        # Ensure container is empty
+        reset_global_container()
+        assert container.is_empty()
+
+        # Act - should not raise even if already empty
+        reset_global_container()
+
+        # Assert
+        assert container.is_empty()
