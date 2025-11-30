@@ -39,6 +39,9 @@ fastapi = [
 flask = [
     "flask>=2.0.0",
 ]
+celery = [
+    "celery>=5.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/mikelane/dioxide"
@@ -96,7 +99,7 @@ strict_concatenate = true
 exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -113,8 +116,15 @@ module = ["dioxide.flask"]
 # - no-any-return: resolve() returns T which mypy sees as Any
 # - no-redef: we pre-declare Flask/g/has_request_context as Any, then import conditionally
 # - misc: Flask decorators (@app.before_request, @app.teardown_request) make functions untyped
-# - untyped-decorator: Flask's before_request/teardown_request decorators lack type annotations
-disable_error_code = ["no-any-return", "no-redef", "misc", "untyped-decorator"]
+disable_error_code = ["no-any-return", "no-redef", "misc"]
+
+[[tool.mypy.overrides]]
+module = ["dioxide.celery"]
+# Celery is optional dependency:
+# - no-any-return: resolve() returns T which mypy sees as Any
+# - no-redef: we pre-declare Celery as Any, then import conditionally
+# - misc: Celery task decorators can have complex types
+disable_error_code = ["no-any-return", "no-redef", "misc"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
@@ -154,6 +164,7 @@ ignore = [
 "python/dioxide/decorators.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/fastapi.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/flask.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
+"python/dioxide/celery.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "benchmarks/**/*.py" = ["N801", "N806"]  # Allow DI_* prefixes for framework comparison clarity
 
 [tool.ruff.lint.isort]
@@ -216,6 +227,8 @@ dev = [
     # Integration testing
     "fastapi>=0.100.0",
     "httpx>=0.27.0",
+    "flask>=2.0.0",
+    "celery>=5.0.0",
 ]
 test = [
     "libcst>=1.8.6",
