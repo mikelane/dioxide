@@ -4,8 +4,8 @@ This module demonstrates how to integrate dioxide's hexagonal architecture
 with FastAPI using the dioxide.fastapi integration module.
 
 Key patterns demonstrated:
-- One-line setup with configure_dioxide()
-- Automatic request scoping via DiOxideScopeMiddleware
+- Single middleware setup with DioxideMiddleware
+- Automatic request scoping per HTTP request
 - Clean injection with Inject() helper
 - Profile-based adapter selection via environment variable
 - Clean separation of domain logic from HTTP concerns
@@ -14,7 +14,7 @@ Key patterns demonstrated:
 import os
 
 from dioxide import Profile
-from dioxide.fastapi import Inject, configure_dioxide
+from dioxide.fastapi import DioxideMiddleware, Inject
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -37,12 +37,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# One-line dioxide integration!
-# This automatically:
-# - Scans for components in the 'app' package
-# - Sets up container lifecycle with FastAPI lifespan
-# - Adds middleware for request scoping (REQUEST-scoped components)
-configure_dioxide(app, profile=profile, packages=["app"])
+# Single middleware handles both lifecycle and request scoping:
+# - Scans for components in the 'app' package at startup
+# - Starts/stops container with FastAPI lifespan
+# - Creates ScopedContainer per HTTP request
+app.add_middleware(DioxideMiddleware, profile=profile, packages=["app"])
 
 
 # Request/Response models

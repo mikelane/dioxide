@@ -1541,18 +1541,21 @@ class Container:
                     pass
 
         # Check adapters - map port class to adapter instance
+        # Only include adapters that ACTUALLY have @lifecycle (check the resolved instance's class)
         adapter_instances: dict[type[Any], Any] = {}
         for adapter_class in _adapter_registry:
-            if hasattr(adapter_class, '_dioxide_lifecycle'):
-                # Get the port this adapter implements
-                port_class = getattr(adapter_class, '__dioxide_port__', None)
-                if port_class is not None:
-                    try:
-                        instance = self.resolve(port_class)
+            # Get the port this adapter implements
+            port_class = getattr(adapter_class, '__dioxide_port__', None)
+            if port_class is not None and port_class not in adapter_instances:
+                try:
+                    instance = self.resolve(port_class)
+                    # Check if the RESOLVED instance's class has @lifecycle
+                    # (not the registry class - that might be a different profile's adapter)
+                    if hasattr(instance.__class__, '_dioxide_lifecycle'):
                         adapter_instances[port_class] = instance
-                    except (AdapterNotFoundError, ServiceNotFoundError):
-                        # Adapter not registered for this profile - skip
-                        pass
+                except (AdapterNotFoundError, ServiceNotFoundError):
+                    # Adapter not registered for this profile - skip
+                    pass
 
         # Build dependency graph
         dependencies: dict[Any, set[Any]] = {}

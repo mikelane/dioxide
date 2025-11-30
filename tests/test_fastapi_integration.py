@@ -1,8 +1,7 @@
 """Tests for FastAPI integration module.
 
 This module tests the dioxide.fastapi integration that provides:
-- configure_dioxide() - One-line setup for FastAPI apps
-- DiOxideScopeMiddleware - Creates ScopedContainer per request
+- DioxideMiddleware - ASGI middleware handling lifecycle and request scoping
 - Inject() - FastAPI Depends wrapper for resolving dependencies
 """
 
@@ -25,9 +24,8 @@ from dioxide import (
 )
 from dioxide.container import ScopedContainer
 from dioxide.fastapi import (
-    DiOxideScopeMiddleware,
+    DioxideMiddleware,
     Inject,
-    configure_dioxide,
 )
 
 # Clear registry before tests to ensure isolation
@@ -40,42 +38,42 @@ def clear_registry() -> None:
     _clear_registry()
 
 
-class DescribeConfigureDioxide:
-    """Tests for configure_dioxide() function."""
+class DescribeDioxideMiddleware:
+    """Tests for DioxideMiddleware."""
 
-    def it_sets_up_startup_event_to_scan_and_start_container(self) -> None:
-        """configure_dioxide registers startup event that calls scan() and start()."""
+    def it_handles_container_lifecycle_on_startup_and_shutdown(self) -> None:
+        """Middleware scans and starts container on startup, stops on shutdown."""
+        initialized: list[str] = []
+        disposed: list[str] = []
+
+        @service
+        @lifecycle
+        class DatabaseService:
+            async def initialize(self) -> None:
+                initialized.append('db')
+
+            async def dispose(self) -> None:
+                disposed.append('db')
+
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
-        # Verify lifespan is set
-        assert app.router.lifespan_context is not None
+        @app.get('/health')
+        async def health() -> dict[str, str]:
+            return {'status': 'ok'}
 
-    def it_sets_up_shutdown_event_to_stop_container(self) -> None:
-        """configure_dioxide registers shutdown event that calls stop()."""
-        app = FastAPI()
-        container = Container()
+        # TestClient triggers lifespan events
+        with TestClient(app):
+            # At this point, startup has run
+            assert 'db' in initialized
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
-
-        # Lifespan context manager handles both startup and shutdown
-        assert app.router.lifespan_context is not None
-
-    def it_adds_middleware_for_request_scoping(self) -> None:
-        """configure_dioxide adds DiOxideScopeMiddleware to app."""
-        app = FastAPI()
-        container = Container()
-
-        configure_dioxide(app, container=container, profile=Profile.TEST)
-
-        # Check middleware was added
-        middleware_classes = [m.cls for m in app.user_middleware]
-        assert DiOxideScopeMiddleware in middleware_classes
+        # After TestClient exits, shutdown has run
+        assert 'db' in disposed
 
     def it_uses_global_container_when_not_provided(self) -> None:
-        """configure_dioxide uses dioxide.container when container not specified."""
+        """Middleware uses dioxide.container when container not specified."""
         from dioxide import container as global_container
 
         app = FastAPI()
@@ -83,14 +81,16 @@ class DescribeConfigureDioxide:
         # Reset global container
         global_container.reset()
 
-        configure_dioxide(app, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, profile=Profile.TEST)
 
-        # Verify the global container is used (by checking app state)
-        assert app.state.dioxide_container is global_container
+        @app.get('/health')
+        async def health() -> dict[str, str]:
+            return {'status': 'ok'}
 
-
-class DescribeDiOxideScopeMiddleware:
-    """Tests for DiOxideScopeMiddleware."""
+        # This should work without error - global container is used
+        with TestClient(app) as client:
+            response = client.get('/health')
+            assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def it_creates_scoped_container_per_request(self) -> None:
@@ -98,7 +98,7 @@ class DescribeDiOxideScopeMiddleware:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         scope_ids: list[str] = []
 
@@ -126,7 +126,7 @@ class DescribeDiOxideScopeMiddleware:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         @app.get('/test')
         async def test_endpoint(request: Request) -> dict[str, bool]:
@@ -144,23 +144,18 @@ class DescribeDiOxideScopeMiddleware:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
-
-        scope_exited = []
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         @app.get('/test')
         async def test_endpoint(request: Request) -> dict[str, str]:
             scope = request.state.dioxide_scope
-            # Add a callback to track when scope context exits
-            scope_exited.append(False)  # Will be updated after response
             return {'scope_id': scope.scope_id}
 
         with TestClient(app) as client:
             response = client.get('/test')
             assert response.status_code == 200
 
-        # Request completed - scope should have exited
-        # The middleware manages the scope lifecycle via async context manager
+        # The middleware manages scope lifecycle via async context manager
         assert response.json()['scope_id'] is not None
 
 
@@ -178,7 +173,7 @@ class DescribeInjectHelper:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         @app.get('/test')
         async def test_endpoint(svc: SingletonService = Inject(SingletonService)) -> dict[str, str]:
@@ -202,7 +197,7 @@ class DescribeInjectHelper:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         @app.get('/test')
         async def test_endpoint(ctx: RequestContext = Inject(RequestContext)) -> dict[str, str]:
@@ -230,7 +225,7 @@ class DescribeInjectHelper:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         @app.get('/test')
         async def test_endpoint(
@@ -246,11 +241,11 @@ class DescribeInjectHelper:
             assert data['same_instance'] is True
             assert data['same_id'] is True
 
-    def it_errors_without_configure_dioxide(self) -> None:
-        """Inject() raises RuntimeError if used without configure_dioxide()."""
+    def it_errors_without_dioxide_middleware(self) -> None:
+        """Inject() raises RuntimeError if used without DioxideMiddleware."""
         app = FastAPI()
 
-        # Note: NOT calling configure_dioxide()
+        # Note: NOT adding DioxideMiddleware
 
         @service
         class SomeService:
@@ -260,9 +255,9 @@ class DescribeInjectHelper:
         async def test_endpoint(svc: SomeService = Inject(SomeService)) -> dict[str, str]:
             return {'value': 'ok'}
 
-        # Without configure_dioxide, request.app.state won't have dioxide_container
+        # Without DioxideMiddleware, request.state won't have dioxide_scope
         # The Inject dependency will raise RuntimeError
-        with pytest.raises(RuntimeError, match='dioxide is not configured'):
+        with pytest.raises(RuntimeError, match='DioxideMiddleware'):
             with TestClient(app) as client:
                 client.get('/test')
 
@@ -282,7 +277,7 @@ class DescribeIntegrationWithAsyncRoutes:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         @app.post('/work')
         async def work_endpoint(svc: AsyncService = Inject(AsyncService)) -> dict[str, str]:
@@ -309,7 +304,7 @@ class DescribeIntegrationWithSyncRoutes:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         @app.get('/config/{key}')
         def config_endpoint(key: str, svc: ConfigService = Inject(ConfigService)) -> dict[str, str]:
@@ -341,7 +336,7 @@ class DescribeLifecycleManagement:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         # TestClient triggers lifespan events
         with TestClient(app):
@@ -365,7 +360,7 @@ class DescribeLifecycleManagement:
         app = FastAPI()
         container = Container()
 
-        configure_dioxide(app, container=container, profile=Profile.TEST)
+        app.add_middleware(DioxideMiddleware, container=container, profile=Profile.TEST)
 
         # TestClient triggers lifespan events
         with TestClient(app):
@@ -373,3 +368,29 @@ class DescribeLifecycleManagement:
 
         # After TestClient exits, shutdown has run
         assert 'db' in disposed
+
+
+class DescribePackageScanning:
+    """Tests for package scanning via middleware."""
+
+    def it_scans_specified_packages(self) -> None:
+        """Middleware can scan specific packages."""
+        app = FastAPI()
+        container = Container()
+
+        # This should not raise even with non-existent packages
+        # (package scanning gracefully handles missing packages)
+        app.add_middleware(
+            DioxideMiddleware,
+            container=container,
+            profile=Profile.TEST,
+            packages=['dioxide'],
+        )
+
+        @app.get('/health')
+        async def health() -> dict[str, str]:
+            return {'status': 'ok'}
+
+        with TestClient(app) as client:
+            response = client.get('/health')
+            assert response.status_code == 200

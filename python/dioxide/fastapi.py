@@ -3,7 +3,7 @@
 This module provides seamless integration between dioxide's dependency injection
 container and FastAPI applications. It enables:
 
-- **One-line setup**: ``configure_dioxide(app, profile=Profile.PRODUCTION)``
+- **Single middleware setup**: ``app.add_middleware(DioxideMiddleware, profile=...)``
 - **Request scoping**: Automatic ``ScopedContainer`` per HTTP request
 - **Clean injection**: ``Inject(Type)`` wrapper for FastAPI's ``Depends()``
 - **Lifecycle management**: Container start/stop with FastAPI lifespan
@@ -13,10 +13,10 @@ Quick Start:
 
         from fastapi import FastAPI
         from dioxide import Profile
-        from dioxide.fastapi import configure_dioxide, Inject
+        from dioxide.fastapi import DioxideMiddleware, Inject
 
         app = FastAPI()
-        configure_dioxide(app, profile=Profile.PRODUCTION)
+        app.add_middleware(DioxideMiddleware, profile=Profile.PRODUCTION)
 
 
         @app.get('/users/me')
@@ -52,7 +52,7 @@ Request Scoping:
             return {'request_id': ctx.request_id}
 
 Lifecycle Management:
-    The integration handles container lifecycle automatically::
+    The middleware handles container lifecycle automatically::
 
         from dioxide import adapter, lifecycle, Profile
 
@@ -73,8 +73,7 @@ Lifecycle Management:
         # When FastAPI stops: container.stop() disposes adapters
 
 See Also:
-    - :func:`configure_dioxide` - One-line setup for FastAPI apps
-    - :class:`DiOxideScopeMiddleware` - Request scoping middleware
+    - :class:`DioxideMiddleware` - The main integration middleware
     - :func:`Inject` - Dependency injection helper for route handlers
     - :class:`dioxide.container.Container` - The DI container
     - :class:`dioxide.container.ScopedContainer` - Request-scoped container
@@ -82,8 +81,6 @@ See Also:
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -103,192 +100,211 @@ except ImportError:
     pass
 
 if TYPE_CHECKING:
-    from fastapi import FastAPI
-
     from dioxide.container import Container
     from dioxide.profile_enum import Profile
 
 T = TypeVar('T')
 
+# Key for storing scope in ASGI state
+_SCOPE_KEY = 'dioxide_scope'
+_CONTAINER_KEY = 'dioxide_container'
 
-class DiOxideScopeMiddleware:
-    """ASGI middleware that creates a ScopedContainer per request.
 
-    This middleware wraps each HTTP request in a scope context, providing:
+class DioxideMiddleware:
+    """ASGI middleware that integrates dioxide with FastAPI.
 
-    - Fresh ``ScopedContainer`` for each request
-    - REQUEST-scoped component caching within the request
-    - Automatic disposal of REQUEST-scoped lifecycle components
+    This middleware handles both:
 
-    The scope is stored in ``request.state.dioxide_scope`` for access
-    in route handlers and dependencies.
+    1. **Lifecycle management**: Container ``start()``/``stop()`` via ASGI lifespan
+    2. **Request scoping**: Creates ``ScopedContainer`` per HTTP request
+
+    The middleware intercepts ASGI events:
+
+    - ``lifespan``: Scans components and starts/stops the container
+    - ``http``: Creates a scoped container for each request
 
     Usage:
-        This middleware is automatically added by ``configure_dioxide()``.
-        You typically don't need to add it manually::
+        Basic setup with profile::
 
             from fastapi import FastAPI
-            from dioxide.fastapi import configure_dioxide
+            from dioxide import Profile
+            from dioxide.fastapi import DioxideMiddleware
 
             app = FastAPI()
-            configure_dioxide(app, profile=Profile.PRODUCTION)
-            # Middleware is added automatically
+            app.add_middleware(DioxideMiddleware, profile=Profile.PRODUCTION)
 
-    Manual usage (if needed)::
+        With custom container::
 
-            from fastapi import FastAPI
-            from dioxide.fastapi import DiOxideScopeMiddleware
-            from dioxide import container
+            from dioxide import Container, Profile
+            from dioxide.fastapi import DioxideMiddleware
 
+            my_container = Container()
             app = FastAPI()
-            app.add_middleware(DiOxideScopeMiddleware, container=container)
+            app.add_middleware(
+                DioxideMiddleware,
+                container=my_container,
+                profile=Profile.TEST,
+            )
 
-    Attributes:
-        app: The ASGI application
-        container: The dioxide Container to create scopes from
+        With package scanning::
+
+            app.add_middleware(
+                DioxideMiddleware,
+                profile=Profile.PRODUCTION,
+                packages=['myapp.services', 'myapp.adapters'],
+            )
+
+    Args:
+        app: The ASGI application to wrap
+        profile: Profile to scan with (e.g., ``Profile.PRODUCTION``)
+        container: Optional Container instance. If not provided, uses
+            the global ``dioxide.container`` singleton.
+        packages: Optional list of packages to scan for components.
 
     See Also:
-        - :func:`configure_dioxide` - Recommended setup function
+        - :func:`Inject` - How to inject dependencies in routes
         - :class:`dioxide.container.ScopedContainer` - The scoped container
     """
 
-    def __init__(self, app: Any, container: Container) -> None:
+    def __init__(
+        self,
+        app: Any,
+        profile: Profile | str | None = None,
+        container: Container | None = None,
+        packages: list[str] | None = None,
+    ) -> None:
         """Initialize the middleware.
 
         Args:
             app: The ASGI application to wrap
-            container: The dioxide Container to create scopes from
+            profile: Profile to scan with (e.g., ``Profile.PRODUCTION``)
+            container: Optional Container instance. If not provided, uses
+                the global ``dioxide.container`` singleton.
+            packages: Optional list of packages to scan for components.
         """
+        from dioxide.container import container as global_container
+
         self.app = app
-        self.container = container
+        self.profile = profile
+        self.container = container if container is not None else global_container
+        self.packages = packages
+        self._started = False
 
     async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
         """Process an ASGI request.
 
-        For HTTP requests, creates a ScopedContainer and stores it in
-        the request state. For other request types (websocket, lifespan),
-        passes through without modification.
+        Handles three ASGI scope types:
+
+        - ``lifespan``: Manages container startup/shutdown
+        - ``http``: Creates ScopedContainer per request
+        - Other types: Passes through unchanged
 
         Args:
             scope: ASGI scope dictionary
             receive: ASGI receive callable
             send: ASGI send callable
         """
-        if scope['type'] != 'http':
-            # Pass through non-HTTP requests (websocket, lifespan, etc.)
+        if scope['type'] == 'lifespan':
+            await self._handle_lifespan(scope, receive, send)
+        elif scope['type'] == 'http':
+            await self._handle_http(scope, receive, send)
+        else:
+            # Pass through other request types (websocket, etc.)
             await self.app(scope, receive, send)
-            return
 
+    async def _handle_lifespan(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
+        """Handle ASGI lifespan events for container startup/shutdown.
+
+        This wraps the lifespan handling to:
+        1. Initialize dioxide container BEFORE the wrapped app starts
+        2. Stop dioxide container AFTER the wrapped app stops
+        3. Properly forward lifespan events to the wrapped app
+        """
+        startup_complete = False
+        shutdown_complete = False
+
+        async def wrapped_receive() -> dict[str, Any]:
+            """Intercept lifespan messages to hook in container lifecycle."""
+            nonlocal startup_complete
+            message = await receive()
+
+            if message['type'] == 'lifespan.startup':
+                # Scan and start container BEFORE forwarding to wrapped app
+                try:
+                    if self.packages:
+                        for package in self.packages:
+                            self.container.scan(package=package, profile=self.profile)
+                    else:
+                        self.container.scan(profile=self.profile)
+
+                    await self.container.start()
+                    self._started = True
+
+                    # Store container in app state
+                    if 'state' not in scope:
+                        scope['state'] = {}
+                    scope['state'][_CONTAINER_KEY] = self.container
+
+                except Exception:
+                    # Re-raise to let the error propagate through send wrapper
+                    raise
+
+            return message
+
+        async def wrapped_send(message: dict[str, Any]) -> None:
+            """Intercept lifespan responses to hook in container cleanup."""
+            nonlocal startup_complete, shutdown_complete
+
+            if message['type'] == 'lifespan.startup.complete':
+                startup_complete = True
+                await send(message)
+
+            elif message['type'] == 'lifespan.startup.failed':
+                # If startup failed, stop container if it was started
+                if self._started:
+                    try:
+                        await self.container.stop()
+                    except Exception:
+                        pass
+                await send(message)
+
+            elif message['type'] == 'lifespan.shutdown.complete':
+                # Stop container AFTER wrapped app has shut down
+                shutdown_complete = True
+                if self._started:
+                    try:
+                        await self.container.stop()
+                    except Exception:
+                        pass  # Best effort cleanup
+                await send(message)
+
+            else:
+                await send(message)
+
+        # Forward to wrapped app with our intercepting receive/send
+        try:
+            await self.app(scope, wrapped_receive, wrapped_send)
+        except Exception as exc:
+            # If startup scanning/initialization failed, send failure
+            if not startup_complete:
+                await send({'type': 'lifespan.startup.failed', 'message': str(exc)})
+            raise
+
+    async def _handle_http(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
+        """Handle HTTP requests with per-request scoping."""
         # Ensure 'state' dict exists in ASGI scope
         if 'state' not in scope:
             scope['state'] = {}
 
+        # Store container reference for Inject() to find
+        scope['state'][_CONTAINER_KEY] = self.container
+
         # Create a scoped container for this request
         async with self.container.create_scope() as scoped_container:
             # Store scope in ASGI scope for access by dependencies
-            scope['state']['dioxide_scope'] = scoped_container
+            scope['state'][_SCOPE_KEY] = scoped_container
 
             await self.app(scope, receive, send)
-
-
-def configure_dioxide(
-    app: FastAPI,
-    profile: Profile | str | None = None,
-    container: Container | None = None,
-    packages: list[str] | None = None,
-) -> None:
-    """Configure dioxide integration for a FastAPI application.
-
-    This is the main entry point for integrating dioxide with FastAPI.
-    It sets up:
-
-    1. **Lifespan management**: Container ``start()``/``stop()`` with FastAPI
-    2. **Request middleware**: Creates ``ScopedContainer`` per HTTP request
-    3. **Container scanning**: Discovers and registers components
-
-    Args:
-        app: The FastAPI application to configure
-        profile: Profile to scan with (e.g., ``Profile.PRODUCTION``).
-            Determines which adapters are activated.
-        container: Optional Container instance. If not provided, uses
-            the global ``dioxide.container`` singleton.
-        packages: Optional list of packages to scan for components.
-            If not provided, scans all registered components.
-
-    Example:
-        Basic setup::
-
-            from fastapi import FastAPI
-            from dioxide import Profile
-            from dioxide.fastapi import configure_dioxide
-
-            app = FastAPI()
-            configure_dioxide(app, profile=Profile.PRODUCTION)
-
-        With custom container::
-
-            from dioxide import Container, Profile
-            from dioxide.fastapi import configure_dioxide
-
-            container = Container()
-            app = FastAPI()
-            configure_dioxide(app, container=container, profile=Profile.TEST)
-
-        With package scanning::
-
-            configure_dioxide(
-                app,
-                profile=Profile.PRODUCTION,
-                packages=['myapp.services', 'myapp.adapters'],
-            )
-
-    Note:
-        This function must be called before any routes that use ``Inject()``.
-        It modifies the app's lifespan and adds middleware.
-
-    See Also:
-        - :func:`Inject` - How to inject dependencies in routes
-        - :class:`DiOxideScopeMiddleware` - The middleware that's added
-    """
-    from dioxide.container import container as global_container
-
-    # Use global container if not provided
-    target_container = container if container is not None else global_container
-
-    # Store container in app state for access by Inject()
-    app.state.dioxide_container = target_container
-
-    # Store profile for later scanning
-    app.state.dioxide_profile = profile
-    app.state.dioxide_packages = packages
-
-    # Create lifespan context manager that wraps any existing lifespan
-    original_lifespan = app.router.lifespan_context
-
-    @asynccontextmanager
-    async def dioxide_lifespan(app: FastAPI) -> AsyncIterator[dict[str, Any]]:
-        """Lifespan that manages dioxide container lifecycle."""
-        # Scan for components with the specified profile
-        if packages:
-            for package in packages:
-                target_container.scan(package=package, profile=profile)
-        else:
-            target_container.scan(profile=profile)
-
-        # Start container (initializes @lifecycle components)
-        async with target_container:
-            # If there was an original lifespan, run it too
-            if original_lifespan is not None:
-                async with original_lifespan(app) as state:
-                    yield dict(state) if state else {}
-            else:
-                yield {}
-
-    # Set the new lifespan
-    app.router.lifespan_context = dioxide_lifespan
-
-    # Add middleware for request scoping
-    app.add_middleware(DiOxideScopeMiddleware, container=target_container)
 
 
 def Inject(component_type: type[T]) -> Any:  # noqa: N802
@@ -346,42 +362,37 @@ def Inject(component_type: type[T]) -> Any:  # noqa: N802
                 return {'request_id': ctx.request_id}
 
     Raises:
-        RuntimeError: If called without ``configure_dioxide()`` being called first
+        RuntimeError: If called without ``DioxideMiddleware`` being configured
 
     Note:
         The function name is capitalized (``Inject``) to match the convention
         of FastAPI's ``Depends``, ``Query``, ``Body``, etc.
 
     See Also:
-        - :func:`configure_dioxide` - Must be called first
+        - :class:`DioxideMiddleware` - Must be added first
         - :class:`dioxide.container.ScopedContainer` - How scoping works
     """
     if Request is None or Depends is None:
         raise ImportError('FastAPI is not installed. Install it with: pip install dioxide[fastapi]')
 
-    def _resolver(request: Any) -> T:
+    # Use Request type directly (verified not None above) for FastAPI DI to work
+    def _resolver(request: Request) -> T:
         """Resolve component from the dioxide scope."""
-        # Check if dioxide is configured
-        if not hasattr(request.app.state, 'dioxide_container'):
-            raise RuntimeError(
-                'dioxide is not configured for this FastAPI app. '
-                'Call configure_dioxide(app, profile=...) before using Inject().'
-            )
-
         # Get the scoped container from request state
-        if not hasattr(request.state, 'dioxide_scope'):
+        if not hasattr(request.state, _SCOPE_KEY):
             raise RuntimeError(
-                'No dioxide scope found for this request. Ensure DiOxideScopeMiddleware is properly configured.'
+                'No dioxide scope found for this request. '
+                'Did you add DioxideMiddleware to your FastAPI app? '
+                'Example: app.add_middleware(DioxideMiddleware, profile=Profile.PRODUCTION)'
             )
 
-        scope = request.state.dioxide_scope
+        scope = getattr(request.state, _SCOPE_KEY)
         return scope.resolve(component_type)
 
     return Depends(_resolver)
 
 
 __all__ = [
-    'DiOxideScopeMiddleware',
+    'DioxideMiddleware',
     'Inject',
-    'configure_dioxide',
 ]
