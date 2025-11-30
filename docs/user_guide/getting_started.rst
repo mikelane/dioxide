@@ -33,6 +33,7 @@ Key Benefits
 - **Fast Fakes**: Test with real implementations, not mocks
 - **Rust Performance**: Fast container operations via PyO3
 - **Zero Ceremony**: No manual `.bind()` or `.register()` calls
+- **Request Scoping**: Isolate dependencies per request, task, or any bounded context
 
 Installation
 ------------
@@ -607,14 +608,16 @@ Now that you understand the basics, explore:
 1. **Hexagonal Architecture** - Deep dive into ports-and-adapters pattern
 2. **Profiles** - Advanced profile configuration and custom profiles
 3. **Lifecycle Management** - Initialize and cleanup resources with ``@lifecycle``
-4. **Testing with Fakes** - Best practices for testing without mocks
-5. **Framework Integration** - Use dioxide with FastAPI, Flask, Django
+4. **Scoping** - Isolate dependencies per request, background task, or CLI command
+5. **Testing with Fakes** - Best practices for testing without mocks
+6. **Framework Integration** - Use dioxide with FastAPI, Flask, Django
 
 .. seealso::
 
    - :doc:`hexagonal_architecture` - Complete guide to ports-and-adapters
    - :doc:`profiles` - Profile system in depth
    - :doc:`lifecycle` - Resource management and cleanup
+   - :doc:`/guides/scoping` - Request scoping and bounded contexts
    - :doc:`testing_with_fakes` - Testing philosophy and patterns
    - :doc:`framework_integration` - FastAPI, Flask, Django integration
 
