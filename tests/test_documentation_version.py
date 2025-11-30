@@ -37,7 +37,7 @@ class DescribeDocumentationVersioning:
 
         try:
             # Import the conf module
-            import docs.conf as conf  # noqa: PLC0415
+            import docs.conf as conf
 
             # Verify version variables are set
             assert hasattr(conf, 'version')
@@ -64,7 +64,7 @@ class DescribeDocumentationVersioning:
         sys.path.insert(0, str(docs_path.parent))
 
         try:
-            import docs.conf as conf  # noqa: PLC0415
+            import docs.conf as conf
 
             package_version = dioxide.__version__
             expected_short = '.'.join(package_version.split('.')[:2])

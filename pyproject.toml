@@ -31,6 +31,10 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+fastapi = [
+    "fastapi>=0.100.0",
+    "starlette>=0.27.0",
+]
 dev = [
     "maturin>=1.0,<2.0",
     "pytest>=8.0",
@@ -101,14 +105,24 @@ strict_concatenate = true
 exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["dioxide.fastapi"]
+# FastAPI is optional dependency:
+# - no-any-return: resolve() returns T which mypy sees as Any
+# - unreachable: false positive from asynccontextmanager with conditional yield
+# - no-redef: we pre-declare Depends/Request as Any, then import conditionally
+disable_error_code = ["no-any-return", "unreachable", "no-redef"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 # Allow dynamic attributes in tests (e.g., component.implements)
 # Allow type-var errors for intentionally invalid test cases
-disable_error_code = ["attr-defined", "type-abstract", "type-var"]
+# Ignore mypy issues with FastAPI decorators and container checks (optional dependency)
+# unused-ignore: some type ignores are only needed in certain mypy versions
+disable_error_code = ["attr-defined", "type-abstract", "type-var", "misc", "comparison-overlap", "unused-ignore"]
 
 [tool.ruff]
 target-version = "py311"
@@ -135,9 +149,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101"]  # Allow assert in tests
+"tests/**/*.py" = ["S101", "B008", "PLC0415"]  # Allow assert, Inject() in defaults, local imports in tests
 "python/dioxide/container.py" = ["PLC0415"]  # Allow local imports in scan() to avoid circular dependencies
 "python/dioxide/decorators.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
+"python/dioxide/fastapi.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "benchmarks/**/*.py" = ["N801", "N806"]  # Allow DI_* prefixes for framework comparison clarity
 
 [tool.ruff.lint.isort]
@@ -185,6 +200,8 @@ dev = [
     "pytest-cov>=7.0.0",
     "pytest-benchmark>=5.2.3",
     "dependency-injector>=4.48.2",
+    "fastapi>=0.100.0",
+    "httpx>=0.27.0",
 ]
 test = [
     "libcst>=1.8.6",

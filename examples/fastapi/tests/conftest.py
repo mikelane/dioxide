@@ -73,7 +73,10 @@ from fastapi.testclient import TestClient
 os.environ["PROFILE"] = "test"
 
 from app.domain.ports import DatabasePort, EmailPort  # noqa: E402
-from app.main import app, container  # noqa: E402
+from app.main import app  # noqa: E402
+
+# With dioxide.fastapi integration, the container is stored in app.state
+container = app.state.dioxide_container
 
 if TYPE_CHECKING:
     from app.adapters.fakes import FakeDatabaseAdapter, FakeEmailAdapter
