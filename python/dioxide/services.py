@@ -121,7 +121,11 @@ See Also:
     - :class:`dioxide.lifecycle.lifecycle` - For initialization/cleanup
 """
 
-from typing import TypeVar
+from collections.abc import Callable
+from typing import (
+    TypeVar,
+    overload,
+)
 
 from dioxide._registry import _component_registry
 from dioxide.scope import Scope
@@ -129,20 +133,36 @@ from dioxide.scope import Scope
 T = TypeVar('T')
 
 
-def service(cls: type[T]) -> type[T]:
+@overload
+def service(cls: type[T]) -> type[T]: ...
+
+
+@overload
+def service(
+    *,
+    scope: Scope = Scope.SINGLETON,
+) -> Callable[[type[T]], type[T]]: ...
+
+
+def service(
+    cls: type[T] | None = None,
+    *,
+    scope: Scope = Scope.SINGLETON,
+) -> type[T] | Callable[[type[T]], type[T]]:
     """Mark a class as a core domain service.
 
-    Services are singleton components that represent core business logic.
+    Services are components that represent core business logic.
     They are available in all profiles (production, test, development) and
     support automatic dependency injection.
 
     This is a specialized form of @component that:
-    - Always uses SINGLETON scope (one shared instance)
+    - Uses SINGLETON scope by default (one shared instance)
+    - Can use REQUEST scope for per-request instances
     - Does not require profile specification (available everywhere)
     - Represents core domain logic in hexagonal architecture
 
     Usage:
-        Basic service:
+        Basic service (SINGLETON by default):
             >>> from dioxide import service
             >>>
             >>> @service
@@ -160,6 +180,14 @@ def service(cls: type[T]) -> type[T]:
             ...     def __init__(self, email: EmailService):
             ...         self.email = email
 
+        Request-scoped service:
+            >>> from dioxide import service, Scope
+            >>>
+            >>> @service(scope=Scope.REQUEST)
+            ... class RequestContext:
+            ...     def __init__(self):
+            ...         self.request_id = str(uuid.uuid4())
+
         Auto-discovery and resolution:
             >>> from dioxide import container
             >>>
@@ -168,21 +196,35 @@ def service(cls: type[T]) -> type[T]:
             >>> assert isinstance(notifications.email, EmailService)
 
     Args:
-        cls: The class being decorated.
+        cls: The class being decorated (when used without parentheses).
+        scope: The lifecycle scope for this service. Defaults to SINGLETON.
+            - SINGLETON: One shared instance for the lifetime of the container
+            - REQUEST: One instance per scope (via container.create_scope())
+            - FACTORY: New instance on every resolve()
 
     Returns:
-        The decorated class with dioxide metadata attached. The class can be
-        used normally and will be discovered by Container.scan().
+        The decorated class with dioxide metadata attached, or a decorator
+        function if called with keyword arguments.
 
     Note:
-        - Services are always SINGLETON scope
+        - Services default to SINGLETON scope
         - Services are available in all profiles
         - Dependencies are resolved from constructor (__init__) type hints
-        - For profile-specific implementations, use @component with @profile
+        - For profile-specific implementations, use @adapter.for_()
     """
-    # Store DI metadata on the class
-    cls.__dioxide_scope__ = Scope.SINGLETON  # type: ignore[attr-defined]
-    cls.__dioxide_profiles__ = frozenset(['*'])  # type: ignore[attr-defined]  # Available in all profiles
-    # Add to global registry for auto-discovery
-    _component_registry.add(cls)
-    return cls
+
+    def decorator(cls_to_decorate: type[T]) -> type[T]:
+        # Store DI metadata on the class
+        cls_to_decorate.__dioxide_scope__ = scope  # type: ignore[attr-defined]
+        cls_to_decorate.__dioxide_profiles__ = frozenset(['*'])  # type: ignore[attr-defined]  # Available in all profiles
+        # Add to global registry for auto-discovery
+        _component_registry.add(cls_to_decorate)
+        return cls_to_decorate
+
+    # Handle both @service and @service(scope=...) syntaxes
+    if cls is not None:
+        # Called as @service without parentheses
+        return decorator(cls)
+    else:
+        # Called as @service(scope=...) with parentheses
+        return decorator

@@ -490,6 +490,220 @@ class ServiceNotFoundError(Exception):
     pass
 
 
+class ScopeError(Exception):
+    """Raised when scope-related operations fail.
+
+    This error occurs when:
+    1. Attempting to resolve a REQUEST-scoped component outside of a scope context
+    2. Attempting to create nested scopes (not supported in v0.3.0)
+    3. Other scope lifecycle violations
+
+    REQUEST-scoped components require an active scope created via
+    ``container.create_scope()``. Attempting to resolve them from the parent
+    container or outside any scope context will raise this error.
+
+    The error message includes:
+        - **Component type**: Which component couldn't be resolved
+        - **Scope requirement**: Why a scope is needed
+        - **Fix hint**: How to create a scope context
+
+    When This Occurs:
+        - ``container.resolve(RequestScopedType)`` - REQUEST component outside scope
+        - ``scope.create_scope()`` - Nested scope attempt (not supported)
+        - Other scope lifecycle violations
+
+    Common Causes:
+        1. **No scope context**: Resolving REQUEST component from parent container
+        2. **Scope not started**: Scope context manager not entered
+        3. **Nested scope**: Trying to create scope within another scope
+
+    Examples:
+        REQUEST component outside scope::
+
+            from dioxide import service, Scope, Container
+
+
+            @service(scope=Scope.REQUEST)
+            class RequestContext:
+                pass
+
+
+            container = Container()
+            container.scan()
+
+            try:
+                container.resolve(RequestContext)  # No scope!
+            except ScopeError as e:
+                print(e)
+                # Output:
+                # Cannot resolve RequestContext: REQUEST-scoped components require an active scope.
+                #
+                # Hint: Use container.create_scope() to create a scope context:
+                #   async with container.create_scope() as scope:
+                #       ctx = scope.resolve(RequestContext)
+
+
+            # Solution: Create a scope
+            async with container.create_scope() as scope:
+                ctx = scope.resolve(RequestContext)  # Works!
+
+        Nested scope attempt::
+
+            async with container.create_scope() as outer:
+                try:
+                    async with outer.create_scope() as inner:  # Nested!
+                        pass
+                except ScopeError as e:
+                    print(e)
+                    # Output:
+                    # Nested scopes are not supported in v0.3.0
+
+    Best Practices:
+        - **Create scope at entry points**: Web request handlers, CLI commands, background tasks
+        - **Pass scope to dependencies**: Or let container inject scoped dependencies
+        - **One scope per request**: Don't nest scopes; use one scope per logical request
+        - **Use async context manager**: ``async with container.create_scope() as scope:``
+
+    See Also:
+        - :class:`dioxide.container.Container.create_scope` - How to create scopes
+        - :class:`dioxide.container.ScopedContainer` - The scoped container type
+        - :class:`dioxide.scope.Scope` - Scope enum including REQUEST
+    """
+
+    pass
+
+
+class CaptiveDependencyError(Exception):
+    """Raised when a longer-lived scope depends on a shorter-lived scope.
+
+    This error occurs during ``container.scan()`` when a SINGLETON component
+    depends on a REQUEST-scoped component. This is called a "captive dependency"
+    because the REQUEST component would be "captured" by the SINGLETON and never
+    refreshed, defeating the purpose of request scoping.
+
+    The problem with captive dependencies:
+        - SINGLETON lives for the container's lifetime
+        - REQUEST should be fresh for each scope
+        - If SINGLETON holds REQUEST, the same REQUEST instance is reused forever
+        - This violates the REQUEST scope contract and causes subtle bugs
+
+    The error message includes:
+        - **Parent component**: The SINGLETON that incorrectly depends on REQUEST
+        - **Child component**: The REQUEST-scoped dependency
+        - **Explanation**: Why this combination is invalid
+        - **Fix suggestions**: How to restructure the dependencies
+
+    When This Occurs:
+        - ``container.scan()`` - During dependency graph validation
+        - Early detection prevents runtime issues
+
+    Common Causes:
+        1. **SINGLETON depends on REQUEST**: Most common case
+        2. **Scope mismatch**: Accidentally used wrong scope on decorator
+        3. **Transitive dependency**: SINGLETON -> SERVICE -> REQUEST
+
+    Valid Scope Dependencies:
+        - SINGLETON -> SINGLETON (OK: same lifetime)
+        - SINGLETON -> FACTORY (OK: creates new instance)
+        - REQUEST -> SINGLETON (OK: shorter uses longer)
+        - REQUEST -> REQUEST (OK: same scope)
+        - REQUEST -> FACTORY (OK: creates new instance)
+        - FACTORY -> any (OK: always creates new)
+
+    Invalid Scope Dependencies:
+        - SINGLETON -> REQUEST (INVALID: captive dependency)
+
+    Examples:
+        Captive dependency detected at scan time::
+
+            from dioxide import service, Scope, Container
+
+
+            @service(scope=Scope.REQUEST)
+            class RequestContext:
+                def __init__(self):
+                    self.request_id = '...'
+
+
+            @service  # SINGLETON (default)
+            class GlobalService:
+                def __init__(self, ctx: RequestContext):  # BAD: SINGLETON -> REQUEST
+                    self.ctx = ctx
+
+
+            container = Container()
+
+            try:
+                container.scan()
+            except CaptiveDependencyError as e:
+                print(e)
+                # Output:
+                # Captive dependency detected: GlobalService (SINGLETON) depends on
+                # RequestContext (REQUEST).
+                #
+                # SINGLETON components cannot depend on REQUEST-scoped components because
+                # the REQUEST instance would be captured and never refreshed.
+                #
+                # Solutions:
+                # 1. Change GlobalService to REQUEST scope:
+                #    @service(scope=Scope.REQUEST)
+                # 2. Change RequestContext to SINGLETON scope (if appropriate)
+                # 3. Use a factory/provider pattern to get fresh instances
+
+        Valid dependency structure::
+
+            @service(scope=Scope.SINGLETON)
+            class AppConfig:
+                pass
+
+
+            @service(scope=Scope.REQUEST)
+            class RequestHandler:
+                def __init__(self, config: AppConfig):  # OK: REQUEST -> SINGLETON
+                    self.config = config
+
+    Solutions:
+        1. **Change parent scope**::
+
+            # Make the parent REQUEST-scoped too
+            @service(scope=Scope.REQUEST)
+            class RequestService:
+                def __init__(self, ctx: RequestContext):
+                    self.ctx = ctx
+
+        2. **Change child scope** (if appropriate)::
+
+            # If the child doesn't truly need request scope
+            @service  # SINGLETON
+            class SharedContext:
+                pass
+
+        3. **Use factory/provider pattern**::
+
+            @service  # SINGLETON
+            class GlobalService:
+                def __init__(self, container: Container):
+                    self.container = container
+
+                def get_context(self) -> RequestContext:
+                    # Get fresh instance from current scope
+                    return current_scope.resolve(RequestContext)
+
+    Best Practices:
+        - **Review scope assignments**: Ensure scopes match component lifetimes
+        - **Fail fast**: Error at scan() time prevents runtime surprises
+        - **Draw dependency graph**: Visualize scope relationships
+        - **Default to REQUEST**: For components that vary per-request
+
+    See Also:
+        - :class:`dioxide.scope.Scope` - Scope enum (SINGLETON, REQUEST, FACTORY)
+        - :class:`dioxide.container.Container.scan` - Where this error is raised
+        - :class:`ScopeError` - For runtime scope errors
+    """
+
+    pass
+
+
 class CircularDependencyError(Exception):
     """Raised when circular dependencies are detected among @lifecycle components.
 

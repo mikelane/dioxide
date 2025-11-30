@@ -369,8 +369,11 @@ from typing import (
 from dioxide._dioxide_core import Container as RustContainer
 from dioxide.exceptions import (
     AdapterNotFoundError,
+    CaptiveDependencyError,
+    ScopeError,
     ServiceNotFoundError,
 )
+from dioxide.scope import Scope
 
 logger = logging.getLogger(__name__)
 
@@ -753,6 +756,9 @@ class Container:
                 adapter is registered for the current profile.
             ServiceNotFoundError: If the type is a service/component that cannot
                 be resolved (not registered or has unresolvable dependencies).
+            ScopeError: If trying to resolve a REQUEST-scoped component outside
+                of a scope context. Use ``container.create_scope()`` to create
+                a scope.
 
         Example:
             >>> from dioxide import Container, component
@@ -776,6 +782,20 @@ class Container:
             Type annotations in constructors enable automatic dependency
             injection. The container recursively resolves all dependencies.
         """
+        # Check if this is a REQUEST-scoped component being resolved outside a scope
+        scope = self._get_component_scope(component_type)
+        if scope is not None:
+            from dioxide.scope import Scope
+
+            if scope == Scope.REQUEST:
+                component_name = component_type.__name__
+                raise ScopeError(
+                    f'Cannot resolve {component_name}: REQUEST-scoped components require an active scope.\n\n'
+                    f'Hint: Use container.create_scope() to create a scope context:\n'
+                    f'  async with container.create_scope() as scope:\n'
+                    f'      ctx = scope.resolve({component_name})'
+                )
+
         try:
             return self._rust_core.resolve(component_type)
         except KeyError as e:
@@ -820,6 +840,137 @@ class Container:
             pass
 
         return False
+
+    def _get_component_scope(self, component_type: type[Any]) -> Scope | None:
+        """Get the scope for a component type.
+
+        Args:
+            component_type: The type to check.
+
+        Returns:
+            The Scope enum value for this component, or None if not found.
+        """
+        from dioxide._registry import _get_registered_components
+        from dioxide.adapter import _adapter_registry
+
+        # Check if it's a registered component (service)
+        for component_class in _get_registered_components():
+            if component_class is component_type:
+                return getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
+
+        # Check if it's a port - look up the adapter for the port
+        for adapter_class in _adapter_registry:
+            port_class = getattr(adapter_class, '__dioxide_port__', None)
+            if port_class is component_type:
+                # Check if adapter matches active profile
+                adapter_profiles: frozenset[str] = getattr(adapter_class, '__dioxide_profiles__', frozenset())
+                if self._active_profile in adapter_profiles or '*' in adapter_profiles:
+                    return getattr(adapter_class, '__dioxide_scope__', Scope.SINGLETON)
+
+        return None
+
+    def _check_captive_dependencies(self, port_to_adapters: dict[type[Any], list[type[Any]]]) -> None:
+        """Check for captive dependencies (SINGLETON depends on REQUEST).
+
+        A captive dependency occurs when a SINGLETON-scoped component depends
+        on a REQUEST-scoped component. This is invalid because the REQUEST
+        instance would be "captured" by the SINGLETON and never refreshed.
+
+        Args:
+            port_to_adapters: Map of port types to adapter classes for the current profile.
+
+        Raises:
+            CaptiveDependencyError: If a SINGLETON depends on a REQUEST-scoped component.
+        """
+        from dioxide._registry import _get_registered_components
+        from dioxide.scope import Scope
+
+        # Build a map of type -> scope for quick lookup
+        type_to_scope: dict[type[Any], Scope] = {}
+
+        # Add adapters (use port type as key since that's what services depend on)
+        for port_class, adapters in port_to_adapters.items():
+            if adapters:
+                adapter_class = adapters[0]
+                scope = getattr(adapter_class, '__dioxide_scope__', Scope.SINGLETON)
+                type_to_scope[port_class] = scope
+
+        # Add services/components
+        for component_class in _get_registered_components():
+            # Check profile filtering
+            component_profiles: frozenset[str] = getattr(component_class, '__dioxide_profiles__', frozenset())
+            if self._active_profile is not None:
+                if self._active_profile not in component_profiles and '*' not in component_profiles:
+                    continue
+            scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
+            type_to_scope[component_class] = scope
+
+        # Check each component's dependencies for captive dependency violations
+        all_components = list(_get_registered_components())
+
+        for component_class in all_components:
+            # Check profile filtering
+            component_profiles = getattr(component_class, '__dioxide_profiles__', frozenset())
+            if self._active_profile is not None:
+                if self._active_profile not in component_profiles and '*' not in component_profiles:
+                    continue
+
+            component_scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
+
+            # Only check SINGLETON components (they can't depend on REQUEST)
+            if component_scope != Scope.SINGLETON:
+                continue
+
+            # Get constructor dependencies
+            try:
+                init_signature = inspect.signature(component_class.__init__)
+                globalns = getattr(component_class.__init__, '__globals__', {})
+                localns = dict(vars(component_class))
+                localns[component_class.__name__] = component_class
+
+                # Handle local classes in tests
+                if '<locals>' in component_class.__qualname__:
+                    try:
+                        import sys
+                        from types import FrameType
+
+                        frame: FrameType | None = sys._getframe()
+                        while frame is not None:
+                            frame_locals = frame.f_locals
+                            for name, obj in frame_locals.items():
+                                if inspect.isclass(obj):
+                                    localns[name] = obj
+                            frame = frame.f_back
+                    except (AttributeError, ValueError):
+                        pass
+
+                type_hints = get_type_hints(component_class.__init__, globalns=globalns, localns=localns)
+            except (ValueError, AttributeError, NameError):
+                continue
+
+            # Check each dependency
+            for param_name in init_signature.parameters:
+                if param_name == 'self':
+                    continue
+                if param_name not in type_hints:
+                    continue
+
+                dep_type = type_hints[param_name]
+                dep_scope = type_to_scope.get(dep_type)
+
+                # If dependency is REQUEST-scoped, we have a captive dependency
+                if dep_scope == Scope.REQUEST:
+                    raise CaptiveDependencyError(
+                        f'Captive dependency detected: {component_class.__name__} (SINGLETON) depends on '
+                        f'{dep_type.__name__} (REQUEST).\n\n'
+                        f'SINGLETON components cannot depend on REQUEST-scoped components because '
+                        f'the REQUEST instance would be captured and never refreshed.\n\n'
+                        f'Solutions:\n'
+                        f'1. Change {component_class.__name__} to REQUEST scope:\n'
+                        f'   @service(scope=Scope.REQUEST)\n'
+                        f'2. Change {dep_type.__name__} to SINGLETON scope (if appropriate)\n'
+                        f'3. Use a factory/provider pattern to get fresh instances'
+                    )
 
     def _build_adapter_not_found_message(self, port_type: type[Any]) -> str:
         """Build helpful error message for missing adapter.
@@ -1193,6 +1344,9 @@ class Container:
                     f'multiple adapters found ({adapter_names}). '
                     f'Only one adapter per port+profile combination is allowed.'
                 )
+
+        # Check for captive dependencies (SINGLETON depends on REQUEST)
+        self._check_captive_dependencies(port_to_adapters)
 
         # Register adapters under their port type
         for port_class, adapters in port_to_adapters.items():
@@ -1663,6 +1817,429 @@ class Container:
         """
         self._rust_core.reset()
         self._lifecycle_instances = None
+
+    def create_scope(self) -> ScopedContainerContextManager:
+        """Create a new scope for REQUEST-scoped dependency resolution.
+
+        Returns an async context manager that provides a ScopedContainer for
+        resolving REQUEST-scoped dependencies. Each scope maintains its own
+        cache of REQUEST-scoped instances.
+
+        Usage::
+
+            async with container.create_scope() as scope:
+                # REQUEST-scoped components are cached within this scope
+                handler = scope.resolve(RequestHandler)
+                # Same scope = same instance
+                handler2 = scope.resolve(RequestHandler)
+                assert handler is handler2
+
+            # Scope exits - REQUEST components are disposed
+
+        Scope behavior:
+            - **SINGLETON**: Resolved from parent container (shared)
+            - **REQUEST**: Cached within scope (fresh per scope)
+            - **FACTORY**: New instance each resolution
+
+        Lifecycle management:
+            REQUEST-scoped components decorated with @lifecycle have their
+            dispose() method called when the scope exits.
+
+        Returns:
+            An async context manager that yields a ScopedContainer.
+
+        Example:
+            >>> from dioxide import Container, service, Scope
+            >>>
+            >>> @service(scope=Scope.REQUEST)
+            ... class RequestContext:
+            ...     def __init__(self):
+            ...         self.request_id = str(uuid.uuid4())
+            >>>
+            >>> container = Container()
+            >>> container.scan()
+            >>>
+            >>> async with container.create_scope() as scope:
+            ...     ctx1 = scope.resolve(RequestContext)
+            ...     ctx2 = scope.resolve(RequestContext)
+            ...     assert ctx1 is ctx2  # Same within scope
+            >>>
+            >>> async with container.create_scope() as scope2:
+            ...     ctx3 = scope2.resolve(RequestContext)
+            ...     assert ctx3 is not ctx1  # Different scope = different instance
+
+        See Also:
+            - :class:`ScopedContainer` - The scoped container type
+            - :class:`dioxide.scope.Scope` - Scope enum
+            - :class:`dioxide.exceptions.ScopeError` - Scope errors
+        """
+        return ScopedContainerContextManager(self)
+
+
+class ScopedContainer:
+    """A scoped container for REQUEST-scoped dependency resolution.
+
+    ScopedContainer provides a context for resolving REQUEST-scoped dependencies.
+    It wraps a parent Container and maintains its own cache of REQUEST-scoped
+    instances that are unique to this scope.
+
+    Key behaviors:
+        - **SINGLETON**: Resolved from parent container (shared across all scopes)
+        - **REQUEST**: Cached within this scope (fresh per scope, shared within scope)
+        - **FACTORY**: New instance each time (same as parent container)
+
+    Creating a ScopedContainer:
+        Use the async context manager pattern via ``container.create_scope()``::
+
+            async with container.create_scope() as scope:
+                # REQUEST-scoped components are cached within this scope
+                handler = scope.resolve(RequestHandler)
+                # Same scope = same instance
+                handler2 = scope.resolve(RequestHandler)
+                assert handler is handler2
+
+            # Scope exits - REQUEST components are disposed
+
+        Each scope has a unique ID for tracking and debugging::
+
+            async with container.create_scope() as scope:
+                print(f'Scope ID: {scope.scope_id}')  # e.g., "abc123..."
+
+    REQUEST-scoped dependencies:
+        Components decorated with ``@service(scope=Scope.REQUEST)`` require
+        a scope context for resolution::
+
+            @service(scope=Scope.REQUEST)
+            class RequestContext:
+                def __init__(self):
+                    self.request_id = str(uuid.uuid4())
+
+
+            # Outside scope - raises ScopeError
+            container.resolve(RequestContext)  # Error!
+
+            # Inside scope - works
+            async with container.create_scope() as scope:
+                ctx = scope.resolve(RequestContext)  # OK
+
+    Lifecycle management:
+        REQUEST-scoped components with ``@lifecycle`` are disposed when
+        the scope exits::
+
+            @service(scope=Scope.REQUEST)
+            @lifecycle
+            class DbConnection:
+                async def initialize(self) -> None:
+                    self.conn = await create_connection()
+
+                async def dispose(self) -> None:
+                    await self.conn.close()
+
+
+            async with container.create_scope() as scope:
+                db = scope.resolve(DbConnection)
+                # db.initialize() called automatically
+            # db.dispose() called automatically on scope exit
+
+    Attributes:
+        scope_id: Unique identifier for this scope
+        parent: The parent Container
+
+    See Also:
+        - :meth:`Container.create_scope` - How to create scopes
+        - :class:`dioxide.scope.Scope` - Scope enum (SINGLETON, REQUEST, FACTORY)
+        - :class:`dioxide.exceptions.ScopeError` - Raised for scope violations
+    """
+
+    def __init__(self, parent: Container, scope_id: str) -> None:
+        """Initialize a scoped container.
+
+        Args:
+            parent: The parent Container to delegate SINGLETON resolution to.
+            scope_id: A unique identifier for this scope.
+
+        Note:
+            This constructor is internal. Use ``container.create_scope()`` instead.
+        """
+        self._parent = parent
+        self._scope_id = scope_id
+        self._request_cache: dict[type[Any], Any] = {}
+        self._lifecycle_instances: list[Any] = []  # Track for disposal
+
+    @property
+    def scope_id(self) -> str:
+        """Get the unique identifier for this scope."""
+        return self._scope_id
+
+    @property
+    def parent(self) -> Container:
+        """Get the parent container."""
+        return self._parent
+
+    def resolve(self, component_type: type[T]) -> T:
+        """Resolve a component instance within this scope.
+
+        Resolution behavior depends on the component's scope:
+            - **SINGLETON**: Delegates to parent container (shared instance)
+            - **REQUEST**: Caches in this scope (fresh per scope)
+            - **FACTORY**: New instance each resolution (no caching)
+
+        Args:
+            component_type: The type to resolve.
+
+        Returns:
+            An instance of the requested type.
+
+        Raises:
+            AdapterNotFoundError: If the type is a port with no adapter.
+            ServiceNotFoundError: If the type is an unregistered service.
+
+        Example:
+            >>> async with container.create_scope() as scope:
+            ...     # REQUEST-scoped: cached within scope
+            ...     ctx1 = scope.resolve(RequestContext)
+            ...     ctx2 = scope.resolve(RequestContext)
+            ...     assert ctx1 is ctx2  # Same instance
+            ...
+            ...     # SINGLETON: shared with parent
+            ...     config = scope.resolve(AppConfig)
+        """
+        from dioxide.scope import Scope
+
+        # Get the scope for this component type
+        scope = self._get_component_scope(component_type)
+
+        if scope == Scope.SINGLETON:
+            # Delegate to parent container for SINGLETON
+            return self._parent.resolve(component_type)
+
+        elif scope == Scope.REQUEST:
+            # Check cache first
+            if component_type in self._request_cache:
+                return self._request_cache[component_type]  # type: ignore[no-any-return]
+
+            # Create new instance using parent's factory logic
+            instance = self._create_instance(component_type)
+
+            # Cache in scope
+            self._request_cache[component_type] = instance
+
+            # Track lifecycle components for disposal
+            if hasattr(component_type, '_dioxide_lifecycle'):
+                self._lifecycle_instances.append(instance)
+
+            return instance
+
+        else:  # FACTORY
+            # Always create new instance, no caching
+            return self._create_instance(component_type)
+
+    def _get_component_scope(self, component_type: type[Any]) -> Scope:
+        """Get the scope for a component type.
+
+        Args:
+            component_type: The type to check.
+
+        Returns:
+            The Scope enum value for this component.
+        """
+        from dioxide._registry import _get_registered_components
+        from dioxide.adapter import _adapter_registry
+
+        # Check if it's a registered component (service)
+        for component_class in _get_registered_components():
+            if component_class is component_type:
+                return getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
+
+        # Check if it's a port - look up the adapter for the port
+        for adapter_class in _adapter_registry:
+            port_class = getattr(adapter_class, '__dioxide_port__', None)
+            if port_class is component_type:
+                return getattr(adapter_class, '__dioxide_scope__', Scope.SINGLETON)
+
+        # Default to SINGLETON for unknown types
+        return Scope.SINGLETON
+
+    def _create_instance(self, component_type: type[T]) -> T:
+        """Create an instance of a component, resolving dependencies.
+
+        This method handles dependency injection for REQUEST-scoped components,
+        ensuring that dependencies are resolved from the appropriate scope.
+
+        Args:
+            component_type: The type to instantiate.
+
+        Returns:
+            A new instance with dependencies injected.
+        """
+        from dioxide._registry import _get_registered_components
+        from dioxide.adapter import _adapter_registry
+        from dioxide.scope import Scope
+
+        # Find the actual implementation class
+        impl_class: type[Any] | None = None
+
+        # Check if it's a port - find the adapter
+        for adapter_class in _adapter_registry:
+            port_class = getattr(adapter_class, '__dioxide_port__', None)
+            if port_class is component_type:
+                # Check if adapter matches active profile
+                adapter_profiles: frozenset[str] = getattr(adapter_class, '__dioxide_profiles__', frozenset())
+                active_profile = self._parent._active_profile
+                if active_profile in adapter_profiles or '*' in adapter_profiles:
+                    impl_class = adapter_class
+                    break
+
+        # Check if it's a registered component
+        if impl_class is None:
+            for component_class in _get_registered_components():
+                if component_class is component_type:
+                    impl_class = component_class
+                    break
+
+        if impl_class is None:
+            # Fall back to resolving from parent (might be manually registered)
+            # This will raise appropriate errors if not found
+            return self._parent.resolve(component_type)
+
+        # Inspect constructor for dependencies
+        try:
+            init_signature = inspect.signature(impl_class.__init__)
+            globalns = getattr(impl_class.__init__, '__globals__', {})
+            localns = dict(vars(impl_class))
+            localns[impl_class.__name__] = impl_class
+
+            # Handle local classes in tests
+            if '<locals>' in impl_class.__qualname__:
+                try:
+                    import sys
+                    from types import FrameType
+
+                    frame: FrameType | None = sys._getframe()
+                    while frame is not None:
+                        frame_locals = frame.f_locals
+                        for name, obj in frame_locals.items():
+                            if inspect.isclass(obj):
+                                localns[name] = obj
+                        frame = frame.f_back
+                except (AttributeError, ValueError):
+                    pass
+
+            type_hints = get_type_hints(impl_class.__init__, globalns=globalns, localns=localns)
+        except (ValueError, AttributeError, NameError):
+            # No type hints - instantiate directly
+            return impl_class()  # type: ignore[no-any-return]
+
+        # Resolve dependencies
+        kwargs: dict[str, Any] = {}
+        for param_name in init_signature.parameters:
+            if param_name == 'self':
+                continue
+            if param_name in type_hints:
+                dependency_type = type_hints[param_name]
+                dep_scope = self._get_component_scope(dependency_type)
+
+                if dep_scope == Scope.SINGLETON:
+                    # SINGLETON deps come from parent
+                    kwargs[param_name] = self._parent.resolve(dependency_type)
+                else:
+                    # REQUEST and FACTORY deps come from this scope
+                    kwargs[param_name] = self.resolve(dependency_type)
+
+        return impl_class(**kwargs)  # type: ignore[no-any-return]
+
+    def __getitem__(self, component_type: type[T]) -> T:
+        """Resolve a component using bracket syntax.
+
+        Equivalent to calling ``scope.resolve(component_type)``.
+
+        Args:
+            component_type: The type to resolve.
+
+        Returns:
+            An instance of the requested type.
+
+        Example:
+            >>> async with container.create_scope() as scope:
+            ...     ctx = scope[RequestContext]  # Same as scope.resolve(RequestContext)
+        """
+        return self.resolve(component_type)
+
+    def create_scope(self) -> ScopedContainerContextManager:
+        """Nested scopes are not supported in v0.3.0.
+
+        Raises:
+            ScopeError: Always raises, as nested scopes are not supported.
+        """
+        raise ScopeError('Nested scopes are not supported in v0.3.0')
+
+    async def _dispose_lifecycle_components(self) -> None:
+        """Dispose all REQUEST-scoped lifecycle components in reverse order.
+
+        Called when the scope exits to clean up resources.
+        """
+        # Dispose in reverse order (dependents before dependencies)
+        for component in reversed(self._lifecycle_instances):
+            try:
+                await component.dispose()
+            except Exception as e:
+                logger.error(f'Error disposing scoped component {component.__class__.__name__}: {e}')
+
+        self._lifecycle_instances.clear()
+
+
+class ScopedContainerContextManager:
+    """Async context manager for ScopedContainer.
+
+    This class manages the lifecycle of a ScopedContainer, handling
+    setup on entry and disposal on exit.
+
+    Usage:
+        >>> async with container.create_scope() as scope:
+        ...     handler = scope.resolve(RequestHandler)
+    """
+
+    def __init__(self, parent: Container) -> None:
+        """Initialize the context manager.
+
+        Args:
+            parent: The parent container.
+        """
+        self._parent = parent
+        self._scope: ScopedContainer | None = None
+
+    async def __aenter__(self) -> ScopedContainer:
+        """Enter the scope context.
+
+        Creates a new ScopedContainer with a unique ID.
+
+        Returns:
+            The newly created ScopedContainer.
+        """
+        import uuid
+
+        scope_id = str(uuid.uuid4())
+        self._scope = ScopedContainer(self._parent, scope_id)
+        return self._scope
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
+    ) -> None:
+        """Exit the scope context.
+
+        Disposes all REQUEST-scoped lifecycle components.
+
+        Args:
+            exc_type: Exception type if an exception was raised.
+            exc_val: Exception value if an exception was raised.
+            exc_tb: Exception traceback if an exception was raised.
+        """
+        if self._scope is not None:
+            await self._scope._dispose_lifecycle_components()
+            self._scope = None
 
 
 # Global singleton container instance for simplified API

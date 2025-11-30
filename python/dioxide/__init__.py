@@ -45,10 +45,13 @@ from ._registry import (
 from .adapter import adapter
 from .container import (
     Container,
+    ScopedContainer,
     container,
 )
 from .exceptions import (
     AdapterNotFoundError,
+    CaptiveDependencyError,
+    ScopeError,
     ServiceNotFoundError,
 )
 from .lifecycle import lifecycle
@@ -60,9 +63,12 @@ from .testing import fresh_container
 __version__ = '0.1.0'
 __all__ = [
     'AdapterNotFoundError',
+    'CaptiveDependencyError',
     'Container',
     'Profile',
     'Scope',
+    'ScopeError',
+    'ScopedContainer',
     'ServiceNotFoundError',
     '_clear_registry',
     '_get_registered_components',
