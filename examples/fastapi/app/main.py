@@ -1,33 +1,28 @@
 """FastAPI application with dioxide dependency injection.
 
 This module demonstrates how to integrate dioxide's hexagonal architecture
-with FastAPI's dependency injection and lifecycle management.
+with FastAPI using the dioxide.fastapi integration module.
 
 Key patterns demonstrated:
+- Single middleware setup with DioxideMiddleware
+- Automatic request scoping per HTTP request
+- Clean injection with Inject() helper
 - Profile-based adapter selection via environment variable
-- Container lifecycle integration with FastAPI lifespan
-- FastAPI Depends() integration with dioxide container
 - Clean separation of domain logic from HTTP concerns
 """
 
 import os
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 
-from dioxide import Container, Profile
-from fastapi import Depends, FastAPI, HTTPException
+from dioxide import Profile
+from dioxide.fastapi import DioxideMiddleware, Inject
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from .domain.services import UserService
 
-# Create container with profile from environment
-# Default to 'development' for local testing
+# Get profile from environment, default to 'development'
 profile_name = os.getenv("PROFILE", "development")
 profile = Profile(profile_name)
-
-# Create and scan container
-container = Container()
-container.scan(package="app", profile=profile)
 
 print(f"\n{'=' * 60}")
 print("dioxide FastAPI Example")
@@ -35,61 +30,18 @@ print(f"{'=' * 60}")
 print(f"Profile: {profile.value}")
 print(f"{'=' * 60}\n")
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Manage container lifecycle with FastAPI.
-
-    This lifespan context manager ensures that:
-    1. All @lifecycle adapters are initialized before accepting requests
-    2. All @lifecycle adapters are cleaned up on shutdown
-
-    Example lifecycle flow:
-        Startup:  FastAPI starts -> lifespan.__aenter__ -> container.__aenter__
-                  -> initialize() called on all @lifecycle adapters
-                  -> App ready to accept requests
-
-        Shutdown: SIGTERM received -> container.__aexit__
-                  -> dispose() called on all @lifecycle adapters (reverse order)
-                  -> FastAPI shuts down
-
-    This pattern ensures clean startup/shutdown of database connections,
-    message queues, cache connections, etc.
-    """
-    print("[Lifespan] Starting application")
-
-    # Enter container context - initializes all @lifecycle adapters
-    async with container:
-        print("[Lifespan] Container started - all adapters initialized")
-        yield
-        print("[Lifespan] Shutting down")
-
-    print("[Lifespan] Container stopped - all adapters disposed")
-
-
-# Create FastAPI app with lifespan
+# Create FastAPI app
 app = FastAPI(
     title="dioxide FastAPI Example",
     description="Hexagonal architecture with profile-based dependency injection",
     version="1.0.0",
-    lifespan=lifespan,
 )
 
-
-# Dependency injection helpers
-def get_user_service() -> UserService:
-    """Resolve UserService from dioxide container.
-
-    This function is used with FastAPI's Depends() to inject the UserService
-    into route handlers. The service is resolved from the container, which
-    automatically injects the correct adapters based on the active profile.
-
-    Example:
-        @app.post("/users")
-        async def create_user(service: UserService = Depends(get_user_service)):
-            ...
-    """
-    return container.resolve(UserService)
+# Single middleware handles both lifecycle and request scoping:
+# - Scans for components in the 'app' package at startup
+# - Starts/stops container with FastAPI lifespan
+# - Creates ScopedContainer per HTTP request
+app.add_middleware(DioxideMiddleware, profile=profile, packages=["app"])
 
 
 # Request/Response models
@@ -112,12 +64,12 @@ class UserResponse(BaseModel):
 @app.post("/users", response_model=UserResponse, status_code=201)
 async def create_user(
     request: CreateUserRequest,
-    service: UserService = Depends(get_user_service),
+    service: UserService = Inject(UserService),
 ) -> UserResponse:
     """Create a new user.
 
     This endpoint demonstrates:
-    - Dependency injection via Depends(get_user_service)
+    - Dependency injection via Inject(UserService)
     - Service orchestrates domain logic (create + email)
     - Adapters used are determined by active profile
 
@@ -161,7 +113,7 @@ async def create_user(
 @app.get("/users/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: str,
-    service: UserService = Depends(get_user_service),
+    service: UserService = Inject(UserService),
 ) -> UserResponse:
     """Get a user by ID.
 
@@ -193,7 +145,7 @@ async def get_user(
 
 @app.get("/users", response_model=list[UserResponse])
 async def list_users(
-    service: UserService = Depends(get_user_service),
+    service: UserService = Inject(UserService),
 ) -> list[UserResponse]:
     """List all users.
 

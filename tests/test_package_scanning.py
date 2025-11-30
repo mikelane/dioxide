@@ -1,6 +1,6 @@
 """Tests for package scanning functionality in Container.scan()."""
 
-# ruff: noqa: PLC0415  # Imports inside functions are intentional for test isolation
+# Imports inside functions are intentional for test isolation
 
 from dioxide import (
     Container,

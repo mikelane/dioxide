@@ -73,7 +73,11 @@ from fastapi.testclient import TestClient
 os.environ["PROFILE"] = "test"
 
 from app.domain.ports import DatabasePort, EmailPort  # noqa: E402
-from app.main import app, container  # noqa: E402
+from app.main import app  # noqa: E402
+
+# Import the global container - DioxideMiddleware uses this when no explicit
+# container is provided. The middleware scans and manages this container.
+from dioxide import container  # noqa: E402
 
 if TYPE_CHECKING:
     from app.adapters.fakes import FakeDatabaseAdapter, FakeEmailAdapter
@@ -85,16 +89,21 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture
-def client() -> TestClient:
-    """Create FastAPI test client.
+def client():
+    """Create FastAPI test client with lifespan management.
 
-    The test client automatically handles the lifespan context manager,
-    which initializes and disposes the dioxide container.
+    The test client uses context manager to handle the lifespan events,
+    which initializes and disposes the dioxide container via DioxideMiddleware.
 
-    Returns:
+    IMPORTANT: This fixture must start BEFORE any fixtures that try to
+    resolve from the container, because DioxideMiddleware only scans/starts
+    the container on lifespan.startup (triggered by context manager entry).
+
+    Yields:
         TestClient for making HTTP requests to the app
     """
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client
 
 
 # =============================================================================
@@ -170,11 +179,15 @@ def email(clear_fakes: None) -> FakeEmailAdapter:
 
 
 @pytest.fixture(autouse=True)
-def clear_fakes() -> None:
+def clear_fakes(client) -> None:
     """Clear fake adapter state before each test for isolation.
 
     This fixture runs automatically before each test (autouse=True) and
     resets all fake adapters to their initial state.
+
+    IMPORTANT: Depends on `client` to ensure the TestClient is started
+    (triggering lifespan.startup which scans/starts the container) before
+    we try to resolve adapters from the container.
 
     IMPORTANT: This approach requires knowing all fakes' internal state.
     For simpler test isolation, consider the fresh container pattern::
@@ -196,7 +209,7 @@ def clear_fakes() -> None:
         This fixture uses hasattr checks to handle cases where the
         container might have different adapter implementations.
     """
-    # Get adapters from container
+    # Get adapters from container (safe now - client fixture ensures lifespan ran)
     db_adapter = container.resolve(DatabasePort)
     email_adapter = container.resolve(EmailPort)
 

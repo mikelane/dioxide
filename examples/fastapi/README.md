@@ -188,36 +188,35 @@ class FakeDatabaseAdapter:
         return user
 ```
 
-### 4. Set Up FastAPI with Container Lifecycle
+### 4. Set Up FastAPI with dioxide.fastapi Integration
 
-The container integrates with FastAPI's lifespan:
+The `dioxide.fastapi` module provides one-line integration:
 
 ```python
 # app/main.py
-from dioxide import Container, Profile
-from contextlib import asynccontextmanager
+from dioxide import Profile
+from dioxide.fastapi import DioxideMiddleware, Inject
 
-container = Container()
-container.scan(package="app", profile=Profile(os.getenv("PROFILE", "development")))
+app = FastAPI()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    async with container:  # Initializes @lifecycle adapters
-        yield
-    # Disposes @lifecycle adapters on shutdown
-
-app = FastAPI(lifespan=lifespan)
-
-def get_user_service() -> UserService:
-    return container.resolve(UserService)
+# One-line setup - handles lifecycle, middleware, and scanning
+profile = Profile(os.getenv("PROFILE", "development"))
+app.add_middleware(DioxideMiddleware, profile=profile, packages=["app"])
 
 @app.post("/users")
 async def create_user(
     request: CreateUserRequest,
-    service: UserService = Depends(get_user_service)
+    service: UserService = Inject(UserService)  # Clean injection!
 ):
     return await service.register_user(request.name, request.email)
 ```
+
+This automatically:
+- Scans for components in the specified packages
+- Sets up container lifecycle with FastAPI lifespan
+- Adds middleware for REQUEST-scoped components
+- Initializes `@lifecycle` adapters on startup
+- Disposes `@lifecycle` adapters on shutdown
 
 ### 5. Write Fast Tests Using Fakes
 
@@ -269,11 +268,11 @@ class PostgresAdapter:
         await self.pool.close()
 ```
 
-The container lifecycle integrates with FastAPI:
+The `DioxideMiddleware` automatically integrates the container lifecycle with FastAPI:
 
 ```
-App Start → lifespan.__aenter__ → container.__aenter__ → initialize() on adapters → Ready
-App Stop  → lifespan.__aexit__  → container.__aexit__  → dispose() on adapters → Shutdown
+App Start → lifespan.__aenter__ → container.start() → initialize() on adapters → Ready
+App Stop  → lifespan.__aexit__  → container.stop()  → dispose() on adapters → Shutdown
 ```
 
 ### Constructor Dependency Injection
@@ -535,11 +534,13 @@ class UserService:
 2. Add route to FastAPI:
 
 ```python
+from dioxide.fastapi import Inject
+
 @app.put("/users/{user_id}")
 async def update_user(
     user_id: str,
     request: UpdateUserRequest,
-    service: UserService = Depends(get_user_service)
+    service: UserService = Inject(UserService)
 ):
     return await service.update_user(user_id, request.name)
 ```
@@ -576,7 +577,10 @@ Ensure `PROFILE=test` is set before importing the app. This is handled in `conft
 ```python
 import os
 os.environ["PROFILE"] = "test"
-from app.main import app, container
+from app.main import app
+
+# With dioxide.fastapi, container is stored in app.state
+container = app.state.dioxide_container
 ```
 
 ### "No adapter found for port"
@@ -590,7 +594,7 @@ Check that:
 
 Ensure:
 1. Adapter has `@lifecycle` decorator
-2. Container is used with `async with container:` in FastAPI lifespan
+2. `DioxideMiddleware` was added to the app (sets up lifespan automatically)
 3. Methods are named `initialize()` and `dispose()`
 4. Methods are async (`async def`)
 
