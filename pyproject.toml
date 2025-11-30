@@ -39,8 +39,8 @@ fastapi = [
 flask = [
     "flask>=2.0.0",
 ]
-celery = [
-    "celery>=5.0.0",
+click = [
+    "click>=8.0.0",
 ]
 
 [project.urls]
@@ -99,7 +99,7 @@ strict_concatenate = true
 exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "click", "click.*", "typer", "typer.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -125,6 +125,13 @@ module = ["dioxide.celery"]
 # - no-redef: we pre-declare Celery as Any, then import conditionally
 # - misc: Celery task decorators can have complex types
 disable_error_code = ["no-any-return", "no-redef", "misc"]
+
+[[tool.mypy.overrides]]
+module = ["dioxide.click"]
+# Click is optional dependency:
+# - no-any-return: resolve() returns T which mypy sees as Any
+# - no-redef: we pre-declare click as Any, then import conditionally
+disable_error_code = ["no-any-return", "no-redef"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
@@ -164,7 +171,7 @@ ignore = [
 "python/dioxide/decorators.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/fastapi.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/flask.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
-"python/dioxide/celery.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
+"python/dioxide/click.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "benchmarks/**/*.py" = ["N801", "N806"]  # Allow DI_* prefixes for framework comparison clarity
 
 [tool.ruff.lint.isort]
@@ -227,8 +234,9 @@ dev = [
     # Integration testing
     "fastapi>=0.100.0",
     "httpx>=0.27.0",
-    "flask>=2.0.0",
-    "celery>=5.0.0",
+    "click>=8.3.1",
+    "typer>=0.20.0",
+    "flask>=3.1.2",
 ]
 test = [
     "libcst>=1.8.6",
