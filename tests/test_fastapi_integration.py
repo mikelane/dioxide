@@ -574,3 +574,168 @@ class DescribeMiddlewareStartupFailedCleanup:
         # Container should have been stopped due to app startup failure
         assert len(stop_called) == 1
         assert any(m['type'] == 'lifespan.startup.failed' for m in sent_messages)
+
+
+class DescribeLifespanScopeStateHandling:
+    """Tests for lifespan scope state dict initialization."""
+
+    @pytest.mark.asyncio
+    async def it_creates_state_dict_when_not_present_in_lifespan_scope(self) -> None:
+        """Middleware creates state dict if not present in lifespan scope."""
+        sent_messages: list[dict[str, Any]] = []
+        receive_queue: list[dict[str, Any]] = [
+            {'type': 'lifespan.startup'},
+            {'type': 'lifespan.shutdown'},
+        ]
+
+        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+            while True:
+                message = await receive()
+                if message['type'] == 'lifespan.startup':
+                    # Verify state was created
+                    assert 'state' in scope
+                    await send({'type': 'lifespan.startup.complete'})
+                elif message['type'] == 'lifespan.shutdown':
+                    await send({'type': 'lifespan.shutdown.complete'})
+                    break
+
+        container = Container()
+        middleware = DioxideMiddleware(mock_app, profile=Profile.TEST, container=container)
+
+        # Lifespan scope WITHOUT state dict
+        lifespan_scope: dict[str, Any] = {'type': 'lifespan'}
+        receive_index = 0
+
+        async def mock_receive() -> dict[str, Any]:
+            nonlocal receive_index
+            msg = receive_queue[receive_index]
+            receive_index += 1
+            return msg
+
+        async def mock_send(message: dict[str, Any]) -> None:
+            sent_messages.append(message)
+
+        await middleware(lifespan_scope, mock_receive, mock_send)
+
+        # Verify startup completed and state was created
+        assert any(m['type'] == 'lifespan.startup.complete' for m in sent_messages)
+        assert 'state' in lifespan_scope
+
+
+class DescribeHttpScopeStateHandling:
+    """Tests for HTTP scope state dict initialization."""
+
+    @pytest.mark.asyncio
+    async def it_creates_state_dict_when_not_present_in_http_scope(self) -> None:
+        """Middleware creates state dict if not present in HTTP scope."""
+        app_called: list[bool] = []
+
+        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+            app_called.append(True)
+            # Verify state was created
+            assert 'state' in scope
+            assert 'dioxide_scope' in scope['state']
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+        await container.start()
+
+        middleware = DioxideMiddleware(mock_app, profile=Profile.TEST, container=container)
+
+        # HTTP scope WITHOUT state dict
+        http_scope: dict[str, Any] = {'type': 'http'}
+
+        async def mock_receive() -> dict[str, Any]:
+            return {}
+
+        async def mock_send(message: dict[str, Any]) -> None:
+            pass
+
+        await middleware(http_scope, mock_receive, mock_send)
+
+        assert app_called
+        assert 'state' in http_scope
+
+        await container.stop()
+
+
+class DescribeWrappedSendOtherMessages:
+    """Tests for wrapped_send handling of other message types."""
+
+    @pytest.mark.asyncio
+    async def it_passes_through_other_lifespan_message_types(self) -> None:
+        """Middleware passes through unrecognized lifespan message types."""
+        sent_messages: list[dict[str, Any]] = []
+
+        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+            # Send a non-standard lifespan message type
+            await send({'type': 'lifespan.custom.event', 'data': 'test'})
+            message = await receive()
+            if message['type'] == 'lifespan.startup':
+                await send({'type': 'lifespan.startup.complete'})
+            message = await receive()
+            if message['type'] == 'lifespan.shutdown':
+                await send({'type': 'lifespan.shutdown.complete'})
+
+        container = Container()
+        middleware = DioxideMiddleware(mock_app, profile=Profile.TEST, container=container)
+
+        lifespan_scope = {'type': 'lifespan', 'state': {}}
+        receive_queue = [
+            {'type': 'lifespan.startup'},
+            {'type': 'lifespan.shutdown'},
+        ]
+        receive_index = 0
+
+        async def mock_receive() -> dict[str, Any]:
+            nonlocal receive_index
+            msg = receive_queue[receive_index]
+            receive_index += 1
+            return msg
+
+        async def mock_send(message: dict[str, Any]) -> None:
+            sent_messages.append(message)
+
+        await middleware(lifespan_scope, mock_receive, mock_send)
+
+        # Verify the custom event was passed through
+        assert any(m['type'] == 'lifespan.custom.event' for m in sent_messages)
+
+
+class DescribeStartupFailedWithStopError:
+    """Tests for startup failed handling when container.stop() also raises."""
+
+    @pytest.mark.asyncio
+    async def it_ignores_stop_error_when_startup_failed(self) -> None:
+        """Middleware ignores container.stop() errors during startup failure cleanup."""
+        sent_messages: list[dict[str, Any]] = []
+
+        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+            message = await receive()
+            if message['type'] == 'lifespan.startup':
+                # App signals startup failed
+                await send({'type': 'lifespan.startup.failed', 'message': 'App startup failed'})
+
+        container = Container()
+
+        # Make stop() also raise an exception
+        async def failing_stop() -> None:
+            raise RuntimeError('Simulated stop failure')
+
+        container.stop = failing_stop  # type: ignore[method-assign]
+
+        middleware = DioxideMiddleware(mock_app, profile=Profile.TEST, container=container)
+
+        lifespan_scope = {'type': 'lifespan', 'state': {}}
+
+        async def mock_receive() -> dict[str, Any]:
+            return {'type': 'lifespan.startup'}
+
+        async def mock_send(message: dict[str, Any]) -> None:
+            sent_messages.append(message)
+
+        # Should NOT raise despite container.stop() failing
+        await middleware(lifespan_scope, mock_receive, mock_send)
+
+        # Verify startup.failed was still sent
+        assert any(m['type'] == 'lifespan.startup.failed' for m in sent_messages)
