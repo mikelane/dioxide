@@ -48,6 +48,7 @@ extensions = [
     'sphinx_copybutton',
     'sphinx_design',
     'sphinx_tippy',
+    'sphinx_togglebutton',
     'sphinxcontrib.mermaid',
     'autoapi.extension',
     'myst_parser',
@@ -236,6 +237,12 @@ tippy_props = {
 # -- Options for sphinx-design extension -------------------------------------
 # sphinx-design provides cards, grids, tabs, dropdowns, and badges
 # No additional configuration needed - enabled via the extension
+
+# -- Options for sphinx-togglebutton extension --------------------------------
+# sphinx-togglebutton provides collapsible content sections
+# Reduces cognitive load by hiding advanced content until needed
+togglebutton_hint = 'Click to show'
+togglebutton_hint_hide = 'Click to hide'
 
 # -- Options for sphinxcontrib-mermaid extension -----------------------------
 # Use a specific mermaid.js version from CDN for consistent rendering
