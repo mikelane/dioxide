@@ -1,0 +1,4 @@
+# Core dependencies
+celery>=5.0.0
+redis>=4.0.0
+dioxide[celery]
