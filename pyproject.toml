@@ -36,6 +36,9 @@ fastapi = [
     "fastapi>=0.100.0",
     "starlette>=0.27.0",
 ]
+flask = [
+    "flask>=2.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/mikelane/dioxide"
@@ -93,7 +96,7 @@ strict_concatenate = true
 exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -103,6 +106,14 @@ module = ["dioxide.fastapi"]
 # - unreachable: false positive from asynccontextmanager with conditional yield
 # - no-redef: we pre-declare Depends/Request as Any, then import conditionally
 disable_error_code = ["no-any-return", "unreachable", "no-redef"]
+
+[[tool.mypy.overrides]]
+module = ["dioxide.flask"]
+# Flask is optional dependency:
+# - no-any-return: resolve() returns T which mypy sees as Any
+# - no-redef: we pre-declare Flask/g/has_request_context as Any, then import conditionally
+# - misc: Flask decorators (@app.before_request, @app.teardown_request) make functions untyped
+disable_error_code = ["no-any-return", "no-redef", "misc"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
@@ -141,6 +152,7 @@ ignore = [
 "python/dioxide/container.py" = ["PLC0415"]  # Allow local imports in scan() to avoid circular dependencies
 "python/dioxide/decorators.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/fastapi.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
+"python/dioxide/flask.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "benchmarks/**/*.py" = ["N801", "N806"]  # Allow DI_* prefixes for framework comparison clarity
 
 [tool.ruff.lint.isort]
