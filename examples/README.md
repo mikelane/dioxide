@@ -11,8 +11,8 @@ This directory contains working examples demonstrating dioxide's hexagonal archi
 ```bash
 # From the dioxide repository root:
 
-# Install dioxide with development dependencies
-pip install -e ".[dev]"
+# Install dioxide with development dependencies (uses PEP 735 dependency groups)
+uv sync --group dev
 
 # Build the Rust extension
 maturin develop

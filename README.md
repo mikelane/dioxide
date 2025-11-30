@@ -862,10 +862,10 @@ See [ROADMAP.md](ROADMAP.md) for post-MLP features:
 git clone https://github.com/mikelane/dioxide.git
 cd dioxide
 
-# Install dependencies with uv
+# Install dependencies with uv (uses PEP 735 dependency groups)
 uv venv
 source .venv/bin/activate  # or `.venv\Scripts\activate` on Windows
-uv pip install -e ".[dev]"
+uv sync --group dev
 
 # Build the Rust extension
 maturin develop
