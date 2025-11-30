@@ -1106,7 +1106,7 @@ async def get_users(service: UserService = Resolve()):
 
 ### Phase 1: Core Infrastructure (Issue #179, #180)
 
-1. Add `Scope.REQUEST` enum value (already done per scope.py)
+1. Add `Scope.REQUEST` enum value (already done per `scope.py`)
 2. Implement scoped instance caching in Rust container
 3. Add scope validation in dependency graph analysis
 
