@@ -343,6 +343,62 @@ Best Practices:
     - **Services rarely need lifecycle**: Core logic is usually stateless
     - **Async context manager**: ``async with container:`` handles lifecycle automatically
 
+Thread Safety:
+    The global ``container`` singleton (``from dioxide import container``) is thread-safe
+    for most common usage patterns:
+
+    **Why it's safe:**
+
+    - **Module import guarantee**: Python's import system ensures modules are initialized
+      exactly once, even when multiple threads import simultaneously. The GIL (Global
+      Interpreter Lock) serializes module initialization, so ``container: Container = Container()``
+      executes atomically.
+
+    - **Singleton access**: Once initialized, accessing the global ``container`` variable
+      is a simple attribute lookup, which is atomic under the GIL.
+
+    - **Rust-backed resolution**: The underlying Rust container uses thread-safe data
+      structures for provider registration and singleton caching.
+
+    **Safe operations (no external synchronization needed):**
+
+    - Importing: ``from dioxide import container``
+    - Resolving singletons: ``container.resolve(MyService)``
+    - Scanning at startup: ``container.scan(profile=Profile.PRODUCTION)``
+
+    **Best practices for multi-threaded applications:**
+
+    - Call ``container.scan()`` once during application startup, before spawning threads
+    - Resolve services after scanning is complete
+    - For per-thread isolation (e.g., request-scoped state), create separate Container
+      instances or use ``container.create_scope()``
+
+    **When to use separate containers:**
+
+    - Multi-tenant applications requiring isolated dependency graphs
+    - Testing scenarios requiring complete isolation
+    - Per-request scoping in web frameworks (consider ``create_scope()`` first)
+
+    Example (multi-threaded web application)::
+
+        import threading
+        from dioxide import container, Profile
+
+        # Startup: scan once before threads start
+        container.scan(profile=Profile.PRODUCTION)
+
+
+        def handle_request():
+            # Safe: resolving from already-scanned container
+            service = container.resolve(UserService)
+            return service.process()
+
+
+        # Multiple threads can safely resolve from the same container
+        threads = [threading.Thread(target=handle_request) for _ in range(10)]
+        for t in threads:
+            t.start()
+
 See Also:
     - :class:`dioxide.adapter.adapter` - For marking infrastructure adapters
     - :class:`dioxide.services.service` - For marking core domain services
@@ -2245,7 +2301,45 @@ class ScopedContainerContextManager:
             self._scope = None
 
 
-# Global singleton container instance for simplified API
-# This provides the MLP-style ergonomic API while keeping Container class
-# available for advanced use cases (testing isolation, multi-tenant apps)
+# Global singleton container instance for simplified API.
+#
+# This provides the MLP-style ergonomic API while keeping the Container class
+# available for advanced use cases (testing isolation, multi-tenant apps).
+#
+# THREAD SAFETY GUARANTEES:
+#
+# This global container is thread-safe due to Python's module import system:
+#
+# 1. INITIALIZATION: Python's import machinery holds a lock during module
+#    initialization, ensuring this Container() instantiation happens exactly
+#    once, even if multiple threads import dioxide simultaneously.
+#
+# 2. ACCESS: Once the module is initialized, reading the `container` variable
+#    is a simple atomic attribute lookup, protected by the GIL.
+#
+# 3. RESOLUTION: The underlying Rust container uses thread-safe data structures
+#    for singleton caching and provider storage.
+#
+# RECOMMENDED USAGE PATTERN:
+#
+#     # At application startup (single-threaded context):
+#     from dioxide import container, Profile
+#     container.scan(profile=Profile.PRODUCTION)
+#
+#     # From any thread after startup:
+#     service = container.resolve(MyService)  # Thread-safe
+#
+# FOR PER-THREAD ISOLATION:
+#
+# If you need completely isolated dependency graphs per thread (e.g., for
+# multi-tenant applications or testing), create separate Container instances:
+#
+#     thread_local_container = Container()
+#     thread_local_container.scan(profile=Profile.TEST)
+#
+# Alternatively, use scoped containers for request-level isolation:
+#
+#     async with container.create_scope() as scope:
+#         ctx = scope.resolve(RequestContext)  # Fresh per scope
+#
 container: Container = Container()
