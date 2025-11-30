@@ -47,10 +47,11 @@ jobs:
         run: uv run maturin develop
 
       - name: Run tests
-        # Coverage threshold: 90% (temporarily reduced from 92.5% after FastAPI integration)
-        # FastAPI module has lower coverage due to optional dependency patterns.
-        # TODO: Add FastAPI integration tests to restore 92.5% threshold (issue #246)
-        run: uv run pytest tests/ --cov=dioxide --cov-report=xml --cov-report=term-missing --cov-branch --cov-fail-under=90 -v
+        # Coverage threshold: 92.5% (adjusted from 93% after exhaustive testing)
+        # Remaining 0.5% consists of defensive exception handlers and edge cases
+        # that are unreachable through public API without mocking internals.
+        # See COVERAGE_ANALYSIS.md for detailed justification.
+        run: uv run pytest tests/ --cov=dioxide --cov-report=xml --cov-report=term-missing --cov-branch --cov-fail-under=92.5 -v
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
