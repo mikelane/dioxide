@@ -47,6 +47,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx_copybutton',
     'sphinx_design',
+    'sphinx_tippy',
     'sphinxcontrib.mermaid',
     'autoapi.extension',
     'myst_parser',
@@ -217,6 +218,20 @@ copybutton_prompt_is_regexp = True
 # Skip output-only blocks (lines starting with output prefixes)
 copybutton_only_copy_prompt_lines = True
 copybutton_remove_prompts = True
+
+# -- Options for sphinx-tippy extension --------------------------------------
+# Enable rich hover previews for cross-references
+# Documentation: https://sphinx-tippy.readthedocs.io/
+tippy_rtd_urls = [
+    'https://dioxide.readthedocs.io/en/latest/',
+]
+tippy_enable_mathjax = False
+tippy_props = {
+    'placement': 'auto',
+    'maxWidth': 500,
+    'interactive': True,
+    'delay': [100, 0],
+}
 
 # -- Options for sphinx-design extension -------------------------------------
 # sphinx-design provides cards, grids, tabs, dropdowns, and badges
