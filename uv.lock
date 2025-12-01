@@ -632,6 +632,9 @@ name = "dioxide"
 source = { editable = "." }
 
 [package.optional-dependencies]
+celery = [
+    { name = "celery" },
+]
 click = [
     { name = "click" },
 ]
@@ -646,6 +649,7 @@ flask = [
 [package.dev-dependencies]
 dev = [
     { name = "behave" },
+    { name = "celery" },
     { name = "click" },
     { name = "commitizen" },
     { name = "dependency-injector" },
@@ -686,16 +690,18 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "celery", marker = "extra == 'celery'", specifier = ">=5.0.0" },
     { name = "click", marker = "extra == 'click'", specifier = ">=8.0.0" },
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.100.0" },
     { name = "flask", marker = "extra == 'flask'", specifier = ">=2.0.0" },
     { name = "starlette", marker = "extra == 'fastapi'", specifier = ">=0.27.0" },
 ]
-provides-extras = ["fastapi", "flask", "click"]
+provides-extras = ["fastapi", "flask", "celery", "click"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "behave", specifier = ">=1.2.6" },
+    { name = "celery", specifier = ">=5.0.0" },
     { name = "click", specifier = ">=8.3.1" },
     { name = "commitizen", specifier = ">=4.1.0" },
     { name = "dependency-injector", specifier = ">=4.48.2" },
