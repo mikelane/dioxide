@@ -1,0 +1,1 @@
+"""Celery + dioxide example application."""

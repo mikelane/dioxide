@@ -1,0 +1,19 @@
+[project]
+name = "celery-dioxide-example"
+version = "0.1.0"
+description = "Example Celery application with dioxide dependency injection"
+requires-python = ">=3.11"
+dependencies = [
+    "celery>=5.0.0",
+    "redis>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_classes = ["Describe*", "Test*"]
+python_functions = ["it_*", "test_*"]
