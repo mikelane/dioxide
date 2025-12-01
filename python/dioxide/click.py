@@ -138,6 +138,8 @@ from typing import (
     TypeVar,
 )
 
+from dioxide.container import Container as DioxideContainer
+
 # Import Click dependencies at runtime
 # These are optional - if not installed, configure_dioxide() raises ImportError
 click: Any = None
@@ -213,8 +215,6 @@ def configure_dioxide(
     """
     if click is None:
         raise ImportError('Click is not installed. Install it with: pip install dioxide[click]')
-
-    from dioxide.container import Container as DioxideContainer
 
     # Use provided container or create new one
     di_container = container if container is not None else DioxideContainer()
