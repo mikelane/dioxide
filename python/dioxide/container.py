@@ -1587,8 +1587,15 @@ class Container:
         lifecycle_classes: dict[type[Any], Any] = {}
 
         # Check registered components (services)
+        # Skip REQUEST-scoped components - they are initialized in scope, not at container start
+        from dioxide.scope import Scope
+
         for component_class in _get_registered_components():
             if hasattr(component_class, '_dioxide_lifecycle'):
+                # Skip REQUEST-scoped components - they're initialized within scopes
+                component_scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
+                if component_scope == Scope.REQUEST:
+                    continue
                 try:
                     instance = self.resolve(component_class)
                     lifecycle_classes[component_class] = instance

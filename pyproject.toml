@@ -42,6 +42,9 @@ flask = [
 celery = [
     "celery>=5.0.0",
 ]
+click = [
+    "click>=8.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/mikelane/dioxide"
@@ -99,7 +102,7 @@ strict_concatenate = true
 exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*", "click", "click.*", "typer", "typer.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -124,7 +127,15 @@ module = ["dioxide.celery"]
 # - no-any-return: resolve() returns T which mypy sees as Any
 # - no-redef: we pre-declare Celery as Any, then import conditionally
 # - misc: Celery task decorators can have complex types
-disable_error_code = ["no-any-return", "no-redef", "misc"]
+# - import-not-found: celery doesn't have type stubs
+disable_error_code = ["no-any-return", "no-redef", "misc", "import-not-found"]
+
+[[tool.mypy.overrides]]
+module = ["dioxide.click"]
+# Click is optional dependency:
+# - no-any-return: resolve() returns T which mypy sees as Any
+# - no-redef: we pre-declare click as Any, then import conditionally
+disable_error_code = ["no-any-return", "no-redef"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
@@ -132,7 +143,8 @@ module = ["tests.*"]
 # Allow type-var errors for intentionally invalid test cases
 # Ignore mypy issues with FastAPI decorators and container checks (optional dependency)
 # unused-ignore: some type ignores are only needed in certain mypy versions
-disable_error_code = ["attr-defined", "type-abstract", "type-var", "misc", "comparison-overlap", "unused-ignore"]
+# import-not-found: celery doesn't have type stubs
+disable_error_code = ["attr-defined", "type-abstract", "type-var", "misc", "comparison-overlap", "unused-ignore", "import-not-found"]
 
 [tool.ruff]
 target-version = "py311"
@@ -227,7 +239,9 @@ dev = [
     # Integration testing
     "fastapi>=0.100.0",
     "httpx>=0.27.0",
-    "flask>=2.0.0",
+    "click>=8.3.1",
+    "typer>=0.20.0",
+    "flask>=3.1.2",
     "celery>=5.0.0",
 ]
 test = [
