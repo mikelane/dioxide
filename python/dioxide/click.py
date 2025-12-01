@@ -226,6 +226,10 @@ def configure_dioxide(
     else:
         di_container.scan(profile=profile)
 
+    # Start container (initializes @lifecycle components)
+    # Use asyncio.run() since Click is synchronous
+    asyncio.run(di_container.start())
+
     return di_container
 
 
@@ -305,12 +309,9 @@ def with_scope(container: Container) -> Callable[[F], F]:
             # Run the command within a scope context
             async def run_with_scope() -> Any:
                 async with container.create_scope() as scope:
-                    try:
-                        # Pass scope as first argument
-                        return func(scope, *args, **kwargs)
-                    except Exception:
-                        # Re-raise after scope cleanup
-                        raise
+                    # Pass scope as first argument
+                    # Scope cleanup handled by async context manager
+                    return func(scope, *args, **kwargs)
 
             # Use asyncio.run to handle the async context manager
             return asyncio.run(run_with_scope())
