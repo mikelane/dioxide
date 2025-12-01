@@ -208,7 +208,7 @@ def configure_dioxide(
     app.config[_CONTAINER_KEY] = di_container
 
     # Register request hooks
-    @app.before_request
+    @app.before_request  # type: ignore[untyped-decorator,unused-ignore]
     def _create_request_scope() -> None:
         """Create a ScopedContainer for the current request."""
         # Get container from app config
@@ -222,7 +222,7 @@ def configure_dioxide(
         g.dioxide_scope = scope
         g._dioxide_scope_ctx = scope_ctx
 
-    @app.teardown_request
+    @app.teardown_request  # type: ignore[untyped-decorator,unused-ignore]
     def _dispose_request_scope(exception: BaseException | None = None) -> None:
         """Dispose the ScopedContainer after the request completes."""
         # Exit the scope context manager
