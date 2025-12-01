@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.0
 
       - name: Get package version from Cargo.toml
         id: get-version
@@ -148,7 +148,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.0
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -210,7 +210,7 @@ jobs:
                   print(f"Stripped trailing data from {wheel.name}")
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: wheels-${{ matrix.platform }}-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist/*.whl
@@ -224,7 +224,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.0
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -241,7 +241,7 @@ jobs:
           args: --out dist
 
       - name: Upload sdist
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: sdist
           path: dist/*.tar.gz
@@ -362,7 +362,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.0
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -497,7 +497,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.0
 
       - name: Download build artifacts
         uses: actions/download-artifact@v6
