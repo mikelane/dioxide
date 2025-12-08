@@ -20,7 +20,7 @@ jobs:
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - name: Run issue-metrics tool
-        uses: github/issue-metrics@78b1d469a1b1c94945b15bd71dedcb1928667f49 # v3.25.3
+        uses: github/issue-metrics@55bb0b704982057a101ab7515fb72b2293927c8a # v3.25.4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SEARCH_QUERY: 'repo:mikelane/dioxide is:issue created:${{ steps.date.outputs.date }} -reason:"not planned"'
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Calculate SLA compliance
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
