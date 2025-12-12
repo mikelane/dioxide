@@ -5,6 +5,42 @@ All notable changes to dioxide will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.0.0 (2025-12-12)
+
+### Highlights
+
+- **MLP Complete**: All 6 phases of the Minimum Lovable Product are complete
+- **Production Ready**: Stable API with no breaking changes until v2.0
+- **Framework Integrations**: FastAPI, Flask, Celery, Click, Django, DRF, Django Ninja
+
+### Added
+
+- **Django Integration** (`dioxide.django`)
+  - `configure_dioxide()` for app configuration
+  - `DioxideMiddleware` for request-scoped containers
+  - `inject()` helper for dependency resolution in views
+  - Thread-local storage for WSGI request safety
+
+- **Django REST Framework Support**
+  - Works with `APIView`, `ViewSet`, and `@api_view` decorators
+  - Full compatibility with DRF's request lifecycle
+
+- **Django Ninja Integration** (`dioxide.ninja`)
+  - `configure_dioxide(api, profile=...)` for NinjaAPI setup
+  - Same middleware + inject() pattern as Django integration
+  - Sync and async endpoint support
+
+### Documentation
+
+- Comprehensive Django integration guide at `docs/integrations/django.md`
+- Updated README with Framework Integrations section
+- MLP Vision document marked all phases COMPLETE
+
+### Infrastructure
+
+- 44 new tests for Django/DRF/Ninja integrations
+- 93.94% overall test coverage
+
 
 ### Added
 - Initial alpha release
