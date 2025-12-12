@@ -39,6 +39,13 @@ fastapi = [
 flask = [
     "flask>=2.0.0",
 ]
+django = [
+    "django>=4.0.0",
+]
+drf = [
+    "django>=4.0.0",
+    "djangorestframework>=3.14.0",
+]
 celery = [
     "celery>=5.0.0",
 ]
@@ -102,7 +109,7 @@ strict_concatenate = true
 exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*", "click", "click.*", "typer", "typer.*"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*", "click", "click.*", "typer", "typer.*", "django", "django.*", "rest_framework", "rest_framework.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -135,6 +142,20 @@ module = ["dioxide.click"]
 # Click is optional dependency:
 # - no-any-return: resolve() returns T which mypy sees as Any
 # - no-redef: we pre-declare click as Any, then import conditionally
+disable_error_code = ["no-any-return", "no-redef"]
+
+[[tool.mypy.overrides]]
+module = ["dioxide.django"]
+# Django is optional dependency:
+# - no-any-return: resolve() returns T which mypy sees as Any
+# - no-redef: we pre-declare Django as Any, then import conditionally
+disable_error_code = ["no-any-return", "no-redef"]
+
+[[tool.mypy.overrides]]
+module = ["dioxide.drf"]
+# DRF is optional dependency:
+# - no-any-return: resolve() returns T which mypy sees as Any
+# - no-redef: we pre-declare DRF types as Any, then import conditionally
 disable_error_code = ["no-any-return", "no-redef"]
 
 [[tool.mypy.overrides]]
@@ -177,6 +198,8 @@ ignore = [
 "python/dioxide/fastapi.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/flask.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/celery.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
+"python/dioxide/django.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
+"python/dioxide/drf.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "benchmarks/**/*.py" = ["N801", "N806"]  # Allow DI_* prefixes for framework comparison clarity
 
 [tool.ruff.lint.isort]
@@ -243,6 +266,8 @@ dev = [
     "typer>=0.20.0",
     "flask>=3.1.2",
     "celery>=5.0.0",
+    "django>=4.0.0",
+    "djangorestframework>=3.14.0",
 ]
 test = [
     "libcst>=1.8.6",
