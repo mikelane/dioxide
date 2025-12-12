@@ -10,6 +10,10 @@ from __future__ import annotations
 from typing import Protocol
 
 import pytest
+
+# Skip this entire module if Celery is not installed
+pytest.importorskip('celery')
+
 from celery import Celery
 
 from dioxide import (

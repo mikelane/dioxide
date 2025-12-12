@@ -10,6 +10,10 @@ from __future__ import annotations
 from typing import Protocol
 
 import pytest
+
+# Skip this entire module if Click is not installed
+pytest.importorskip('click')
+
 from click.testing import CliRunner
 
 from dioxide import (

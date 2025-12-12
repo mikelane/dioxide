@@ -10,6 +10,10 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+
+# Skip this entire module if FastAPI is not installed
+pytest.importorskip('fastapi')
+
 from fastapi import (
     FastAPI,
     Request,

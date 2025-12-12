@@ -14,6 +14,12 @@ from __future__ import annotations
 
 from typing import Protocol
 
+import pytest
+
+# Skip this entire module if Django or DRF is not installed
+pytest.importorskip('django')
+pytest.importorskip('rest_framework')
+
 import django
 from django.conf import settings
 

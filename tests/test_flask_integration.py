@@ -10,6 +10,10 @@ from __future__ import annotations
 from typing import Protocol
 
 import pytest
+
+# Skip this entire module if Flask is not installed
+pytest.importorskip('flask')
+
 from flask import Flask
 
 from dioxide import (

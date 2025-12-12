@@ -10,6 +10,11 @@ from __future__ import annotations
 
 from typing import Protocol
 
+import pytest
+
+# Skip this entire module if Django is not installed
+pytest.importorskip('django')
+
 import django
 from django.conf import settings
 
