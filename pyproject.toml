@@ -52,6 +52,10 @@ celery = [
 click = [
     "click>=8.0.0",
 ]
+ninja = [
+    "django>=4.0.0",
+    "django-ninja>=1.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/mikelane/dioxide"
@@ -109,7 +113,7 @@ strict_concatenate = true
 exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*", "click", "click.*", "typer", "typer.*", "django", "django.*", "rest_framework", "rest_framework.*"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*", "click", "click.*", "typer", "typer.*", "django", "django.*", "rest_framework", "rest_framework.*", "ninja", "ninja.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -159,6 +163,13 @@ module = ["dioxide.drf"]
 disable_error_code = ["no-any-return", "no-redef"]
 
 [[tool.mypy.overrides]]
+module = ["dioxide.ninja"]
+# Django Ninja is optional dependency:
+# - no-any-return: resolve() returns T which mypy sees as Any
+# - no-redef: we pre-declare NinjaAPI as Any, then import conditionally
+disable_error_code = ["no-any-return", "no-redef"]
+
+[[tool.mypy.overrides]]
 module = ["tests.*"]
 # Allow dynamic attributes in tests (e.g., component.implements)
 # Allow type-var errors for intentionally invalid test cases
@@ -199,6 +210,7 @@ ignore = [
 "python/dioxide/flask.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/celery.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/django.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
+"python/dioxide/ninja.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "python/dioxide/drf.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
 "benchmarks/**/*.py" = ["N801", "N806"]  # Allow DI_* prefixes for framework comparison clarity
 
@@ -268,6 +280,7 @@ dev = [
     "celery>=5.0.0",
     "django>=4.0.0",
     "djangorestframework>=3.14.0",
+    "django-ninja>=1.0.0",
 ]
 test = [
     "libcst>=1.8.6",

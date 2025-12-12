@@ -663,6 +663,11 @@ fastapi = [
 flask = [
     { name = "flask" },
 ]
+ninja = [
+    { name = "django", version = "5.2.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-ninja" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -673,6 +678,7 @@ dev = [
     { name = "dependency-injector" },
     { name = "django", version = "5.2.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "django", version = "6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-ninja" },
     { name = "djangorestframework" },
     { name = "fastapi" },
     { name = "flask" },
@@ -715,12 +721,14 @@ requires-dist = [
     { name = "click", marker = "extra == 'click'", specifier = ">=8.0.0" },
     { name = "django", marker = "extra == 'django'", specifier = ">=4.0.0" },
     { name = "django", marker = "extra == 'drf'", specifier = ">=4.0.0" },
+    { name = "django", marker = "extra == 'ninja'", specifier = ">=4.0.0" },
+    { name = "django-ninja", marker = "extra == 'ninja'", specifier = ">=1.0.0" },
     { name = "djangorestframework", marker = "extra == 'drf'", specifier = ">=3.14.0" },
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.100.0" },
     { name = "flask", marker = "extra == 'flask'", specifier = ">=2.0.0" },
     { name = "starlette", marker = "extra == 'fastapi'", specifier = ">=0.27.0" },
 ]
-provides-extras = ["fastapi", "flask", "django", "drf", "celery", "click"]
+provides-extras = ["fastapi", "flask", "django", "drf", "celery", "click", "ninja"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -730,6 +738,7 @@ dev = [
     { name = "commitizen", specifier = ">=4.1.0" },
     { name = "dependency-injector", specifier = ">=4.48.2" },
     { name = "django", specifier = ">=4.0.0" },
+    { name = "django-ninja", specifier = ">=1.0.0" },
     { name = "djangorestframework", specifier = ">=3.14.0" },
     { name = "fastapi", specifier = ">=0.100.0" },
     { name = "flask", specifier = ">=3.1.2" },
@@ -809,6 +818,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/15/75/19762bfc4ea556c303d9af8e36f0cd910ab17dff6c8774644314427a2120/django-6.0.tar.gz", hash = "sha256:7b0c1f50c0759bbe6331c6a39c89ae022a84672674aeda908784617ef47d8e26", size = 10932418, upload-time = "2025-12-03T16:26:21.878Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/ae/f19e24789a5ad852670d6885f5480f5e5895576945fcc01817dfd9bc002a/django-6.0-py3-none-any.whl", hash = "sha256:1cc2c7344303bbfb7ba5070487c17f7fc0b7174bbb0a38cebf03c675f5f19b6d", size = 8339181, upload-time = "2025-12-03T16:26:16.231Z" },
+]
+
+[[package]]
+name = "django-ninja"
+version = "1.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django", version = "5.2.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/8e/10b4299aa37017bb026ae091b2192d05b3d4b78a9dc57d59c4f362551907/django_ninja-1.5.1.tar.gz", hash = "sha256:6acda68a64d60934c6fdccb4d97c3ac7f02cfefd78a5d87ae053effe081b17c7", size = 3719868, upload-time = "2025-12-04T11:35:46.615Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/fc/124c3f999fbc77680777ff331ac9552227d7a6753639ef66dbba780fc6b4/django_ninja-1.5.1-py3-none-any.whl", hash = "sha256:135aaa1117dce8dfd7a1e80b4487a8cccee3a4182c3c8b562d08ea94e4d2cbdf", size = 2426577, upload-time = "2025-12-04T11:35:44.656Z" },
 ]
 
 [[package]]
