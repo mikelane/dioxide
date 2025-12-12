@@ -51,8 +51,12 @@ pytestmark = pytest.mark.usefixtures('clear_registry')
 
 @pytest.fixture(autouse=True)
 def clear_registry() -> None:
-    """Clear the global registry before each test."""
+    """Clear the global registry and reset django module state before each test."""
+    import dioxide.django as django_module
+
     _clear_registry()
+    # Reset module-level container to ensure test isolation
+    django_module._container = None
 
 
 class DescribeConfigureDioxide:
