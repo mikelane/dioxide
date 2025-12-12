@@ -129,13 +129,13 @@ jobs:
             python-version: '3.11'
 
           # macOS x86_64 (Intel)
-          - os: macos-13  # Intel runner
+          - os: macos-13-large  # Intel runner (macos-13 standard is retired)
             target: x86_64-apple-darwin
             platform: macos
             python-version: '3.14'
 
           # macOS aarch64 (Apple Silicon)
-          - os: macos-14  # M1 runner
+          - os: macos-latest  # Apple Silicon runner
             target: aarch64-apple-darwin
             platform: macos
             python-version: '3.14'
