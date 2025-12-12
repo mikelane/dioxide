@@ -323,6 +323,14 @@ guides/scoping
 ```{toctree}
 :maxdepth: 2
 :hidden:
+:caption: Framework Integrations
+
+integrations/django
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
 :caption: Cookbook
 
 cookbook/index

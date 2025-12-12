@@ -763,9 +763,11 @@ def clear_fakes():
 
 For comprehensive testing patterns, see [TESTING_GUIDE.md](docs/TESTING_GUIDE.md).
 
-## FastAPI Integration
+## Framework Integrations
 
-dioxide provides seamless FastAPI integration via the optional `dioxide.fastapi` module:
+dioxide provides seamless integration with popular Python web frameworks.
+
+### FastAPI Integration
 
 ```python
 from fastapi import FastAPI
@@ -782,13 +784,62 @@ async def list_users(service: UserService = Inject(UserService)):
 
 Install with: `pip install dioxide[fastapi]`
 
-**Features**:
-- **Single middleware setup** - No ceremony, just add the middleware
-- **Automatic container lifecycle** - Integrates with FastAPI lifespan events
-- **REQUEST-scoped components** - Fresh instances per HTTP request
-- **Works with sync and async** - Route handlers work seamlessly
+**Features**: Single middleware setup, automatic container lifecycle, REQUEST-scoped components, sync/async support.
 
 See the complete [FastAPI example](examples/fastapi/) for a full hexagonal architecture application.
+
+### Django Integration
+
+```python
+# settings.py or apps.py
+from dioxide import Profile
+from dioxide.django import configure_dioxide
+
+configure_dioxide(profile=Profile.PRODUCTION, packages=["myapp"])
+
+# settings.py - add middleware
+MIDDLEWARE = [
+    ...
+    'dioxide.django.DioxideMiddleware',
+    ...
+]
+
+# views.py
+from dioxide.django import inject
+
+def user_list(request):
+    service = inject(UserService)
+    return JsonResponse({"users": service.list_all()})
+```
+
+Install with: `pip install dioxide[django]`
+
+**Features**: Single function setup, request scoping via middleware, thread-safe injection, works with class-based and function-based views.
+
+### Django REST Framework Integration
+
+dioxide works seamlessly with Django REST Framework - just use the same `inject()` function in your APIViews, ViewSets, or `@api_view` decorated functions:
+
+```python
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from dioxide.django import inject
+
+@api_view(['GET'])
+def user_list(request):
+    service = inject(UserService)
+    return Response(service.list_all())
+
+class UserViewSet(APIView):
+    def get(self, request):
+        service = inject(UserService)
+        return Response(service.list_all())
+```
+
+**Features**: Full DRF compatibility, works with all DRF view types (APIView, ViewSet, @api_view), request scoping through Django middleware.
+
+See [Django Integration Guide](docs/integrations/django.md) for complete documentation including request scoping and lifecycle management.
 
 ## Features
 
