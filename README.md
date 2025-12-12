@@ -51,15 +51,15 @@ pip install dioxide
 
 ## Status
 
-**✨ STABLE**: dioxide v0.1.1 is production-ready with a stable, frozen API.
+**STABLE**: dioxide v1.0.0 is production-ready with a stable, frozen API.
 
-- **Latest Release**: [v0.1.1](https://github.com/mikelane/dioxide/releases/tag/v0.1.1) (Nov 25, 2025) - Published to PyPI
+- **Latest Release**: [v1.0.0](https://github.com/mikelane/dioxide/releases/tag/v1.0.0) - Published to PyPI
 - **API Status**: Frozen - No breaking changes until v2.0
 - **Production Ready**: All MLP features complete, comprehensive test coverage, battle-tested
 
 **Migrating from alpha/beta versions?** See [MIGRATION.md](MIGRATION.md) for the complete migration guide.
 
-See [ROADMAP.md](ROADMAP.md) for post-MLP features and [Issues](https://github.com/mikelane/dioxide/issues) for current work.
+See [Issues](https://github.com/mikelane/dioxide/issues) for current work and planned enhancements.
 
 ## Why dioxide?
 
@@ -474,7 +474,7 @@ finally:
 - **Graceful rollback**: If initialization fails, already-initialized components are disposed
 - **Error resilience**: Disposal continues even if individual components fail
 
-**Status**: Fully implemented (v0.0.4-alpha).
+**Status**: Fully implemented.
 
 ## Function Injection
 
@@ -843,7 +843,7 @@ See [Django Integration Guide](docs/integrations/django.md) for complete documen
 
 ## Features
 
-### v0.1.1 ✅ STABLE (Nov 25, 2025) - MLP Production Ready
+### v1.0.0 STABLE - MLP Production Ready
 
 **Core Dependency Injection**:
 - [x] `@adapter.for_(Port, profile=...)` decorator for hexagonal architecture
@@ -890,11 +890,12 @@ See [Django Integration Guide](docs/integrations/django.md) for complete documen
 - [x] Battle-tested in real applications
 - [x] Ready for production deployment
 
-### Post-MLP Features (v0.2.0+)
-See [ROADMAP.md](ROADMAP.md) for post-MLP features:
-- Request scoping
+### Post-MLP Features (v1.1.0+)
+
+Future enhancements under consideration:
+- Request scoping for web frameworks
 - Property injection
-- Framework integrations (FastAPI, Flask, Django)
+- Django integration
 - Developer tooling (CLI, IDE plugins)
 
 ## Development
@@ -1033,13 +1034,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**✨ Production Ready**: dioxide v0.1.1 is production-ready with a stable, frozen API. All MLP (Minimum Loveable Product) features are complete, thoroughly tested, and battle-proven.
+**Production Ready**: dioxide v1.0.0 is production-ready with a stable, frozen API. All MLP (Minimum Loveable Product) features are complete, thoroughly tested, and battle-proven.
 
-**API Guarantee**: No breaking changes until v2.0. Your code written against v0.1.x will continue to work through all v0.x and v1.x releases.
+**API Guarantee**: No breaking changes until v2.0. Your code written against v1.x will continue to work through all v1.x releases.
 
 **What's Next**:
-- **v0.2.0+**: Post-MLP enhancements (request scoping, property injection, framework integrations)
-- **v1.0.0**: Stable release after ecosystem adoption and feedback
+- **v1.1.0+**: Post-MLP enhancements (request scoping, property injection, additional framework integrations)
 - **v2.0.0+**: Major enhancements based on community needs
 
-**Get Started**: **[📖 Read the Documentation](https://dioxide.readthedocs.io)** | **[📦 Install from PyPI](https://pypi.org/project/dioxide/)** | **[💻 View on GitHub](https://github.com/mikelane/dioxide)**
+**Get Started**: **[Read the Documentation](https://dioxide.readthedocs.io)** | **[Install from PyPI](https://pypi.org/project/dioxide/)** | **[View on GitHub](https://github.com/mikelane/dioxide)**

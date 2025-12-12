@@ -12,7 +12,7 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 
 **Note**: The package was recently renamed from `rivet_di` to `dioxide`. All references in code, tests, and documentation have been updated to use `dioxide`.
 
-**✅ v0.1.0-beta.2 RELEASED** (Nov 23, 2025): MLP Complete! Hexagonal architecture API, lifecycle management, circular dependency detection, performance benchmarking, FastAPI integration, and comprehensive testing guide all implemented.
+**v1.0.0 STABLE**: MLP Complete! Hexagonal architecture API, lifecycle management, circular dependency detection, performance benchmarking, framework integrations (FastAPI, Flask, Celery, Click), and comprehensive testing guide all implemented.
 
 ## MLP Vision: The North Star
 
@@ -451,6 +451,11 @@ dioxide/
 │   ├── profile_enum.py      # Profile enum (PRODUCTION, TEST, etc.)
 │   ├── scope.py             # Scope enum (SINGLETON, FACTORY)
 │   ├── exceptions.py        # Custom exceptions
+│   ├── testing.py           # Test utilities (fresh_container)
+│   ├── fastapi.py           # FastAPI integration
+│   ├── flask.py             # Flask integration
+│   ├── celery.py            # Celery integration
+│   ├── click.py             # Click CLI integration
 │   └── _registry.py         # Internal registration system
 ├── rust/src/                # Private Rust implementation
 │   └── lib.rs               # PyO3 bindings and container logic
