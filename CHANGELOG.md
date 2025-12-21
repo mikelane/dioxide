@@ -5,6 +5,26 @@ All notable changes to dioxide will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v1.0.1 (2025-12-21)
+
+### Fixed
+
+- Resolved CI failures for Lint Python and Check Documentation Links (#277)
+  - Added `djangorestframework-stubs` for proper DRF type checking
+  - Set `myst_linkify_fuzzy_links=False` to prevent linkify from matching bare filenames as URLs
+
+### Changed
+
+- Slimmed down CLAUDE.md from ~7,500 to ~1,400 tokens (#275)
+  - Removed content duplicated in `.claude/rules/` files
+  - Added modular guidelines table pointing to rules files
+
+### Infrastructure
+
+- Bumped GitHub Actions dependencies (#274)
+  - actions/checkout 5.0.0 → 6.0.1
+  - codecov/codecov-action, actions/cache, actions/upload-artifact, and others
+
 ## v1.0.0 (2025-12-12)
 
 ### Highlights
