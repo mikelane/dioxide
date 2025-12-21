@@ -281,6 +281,7 @@ dev = [
     "django>=4.0.0",
     "djangorestframework>=3.14.0",
     "django-ninja>=1.0.0",
+    "djangorestframework-stubs>=3.16.6",
 ]
 test = [
     "libcst>=1.8.6",

@@ -125,6 +125,7 @@ myst_enable_extensions = [
 ]
 myst_heading_anchors = 3
 myst_update_mathjax = False
+myst_linkify_fuzzy_links = False  # Only match URLs with schema (http://, https://)
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = 'furo'
@@ -303,15 +304,6 @@ linkcheck_ignore = [
     # External sites that can be slow or unreliable
     r'https://pyo3\.rs.*',
     r'https://www\.maturin\.rs.*',
-    # Local file references misinterpreted as URLs (linkify extension artifact)
-    r'http://README\.md',
-    r'http://COVERAGE\.md',
-    r'http://ROADMAP\.md',
-    r'http://STATUS\.md',
-    r'http://CLAUDE\.md',
-    r'http://CONTRIBUTING\.md',
-    r'http://CHANGELOG\.md',
-    r'http://Criterion\.rs',
 ]
 
 # Anchors to ignore (fragment identifiers that may not exist)
