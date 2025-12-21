@@ -127,7 +127,7 @@ When you push a tag matching `v*.*.*`, GitHub Actions runs the release workflow:
 - Compares with git tag version
 - **Fails immediately** if they don't match (prevents wasting build time)
 
-### 2. Build Wheels (30-45 minutes)
+### 2. Build Wheels (~2 minutes)
 
 Builds wheels for all supported platforms in parallel:
 
@@ -141,11 +141,11 @@ Builds wheels for all supported platforms in parallel:
 
 Note: Windows uses `abi3` wheels that work for all Python versions >= 3.11.
 
-### 3. Build Source Distribution (5 minutes)
+### 3. Build Source Distribution (~15 seconds)
 
 Creates `dioxide-X.Y.Z.tar.gz` for pip installation from source.
 
-### 4. Validate Wheels (5 minutes)
+### 4. Validate Wheels (~10 seconds)
 
 - Validates ZIP structure of each wheel
 - Checks for trailing data after EOCD (End of Central Directory)
@@ -153,30 +153,30 @@ Creates `dioxide-X.Y.Z.tar.gz` for pip installation from source.
 - **Warnings** for trailing data (will be stripped before upload)
 - **Errors** for corrupt ZIP structure (fails the release)
 
-### 5. Test Wheels (10-15 minutes)
+### 5. Test Wheels (~1 minute)
 
 - Installs built wheels on each platform
 - Runs smoke tests (`tests/smoke_test.py`)
 - Runs full test suite (`pytest tests/`)
 
-### 6. Create GitHub Release (2 minutes)
+### 6. Create GitHub Release (~15 seconds)
 
 - Extracts release notes from `CHANGELOG.md`
 - Creates GitHub Release with all artifacts attached
 
-### 7. Publish to PyPI (5 minutes)
+### 7. Publish to PyPI (~30 seconds)
 
 - Strips trailing data from wheels (PyPI validation fix)
 - Publishes using PyPI Trusted Publishing (OIDC, no tokens)
 - Creates deployment summary
 
-### 8. Verify Publication (2 minutes)
+### 8. Verify Publication (~1 minute)
 
 - Waits 60 seconds for PyPI propagation
 - Installs from PyPI: `pip install dioxide==X.Y.Z`
 - Verifies import works
 
-**Total time**: ~90-120 minutes
+**Total time**: ~5-7 minutes (parallel builds + caching)
 
 ## Handling Failures
 

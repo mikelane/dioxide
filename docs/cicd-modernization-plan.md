@@ -962,14 +962,14 @@ Dioxide uses automated semantic versioning via GitHub Actions:
 
 ### Build Times
 
-Approximate build times per wheel:
-- **Linux x86_64**: 8-10 minutes
-- **Linux ARM64** (via QEMU): 12-15 minutes
-- **macOS x86_64**: 10-12 minutes
-- **macOS ARM64**: 8-10 minutes
-- **Windows x86_64**: 10-12 minutes
+Approximate build times per wheel (running in parallel):
+- **Linux x86_64**: ~1 minute
+- **Linux ARM64** (via QEMU): ~2 minutes
+- **macOS x86_64**: ~1.5 minutes
+- **macOS ARM64**: ~1 minute
+- **Windows x86_64**: ~1.5 minutes
 
-Total release time: ~90-120 minutes (all platforms + tests)
+Total release time: ~5-7 minutes (parallel builds + caching)
 
 ### Security Features
 
