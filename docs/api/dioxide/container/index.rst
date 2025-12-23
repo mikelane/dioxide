@@ -350,6 +350,62 @@ dioxide.container
        - **Services rarely need lifecycle**: Core logic is usually stateless
        - **Async context manager**: ``async with container:`` handles lifecycle automatically
 
+   Thread Safety:
+       The global ``container`` singleton (``from dioxide import container``) is thread-safe
+       for most common usage patterns:
+
+       **Why it's safe:**
+
+       - **Module import guarantee**: Python's import system ensures modules are initialized
+         exactly once, even when multiple threads import simultaneously. The GIL (Global
+         Interpreter Lock) serializes module initialization, so ``container: Container = Container()``
+         executes atomically.
+
+       - **Singleton access**: Once initialized, accessing the global ``container`` variable
+         is a simple attribute lookup, which is atomic under the GIL.
+
+       - **Rust-backed resolution**: The underlying Rust container uses thread-safe data
+         structures for provider registration and singleton caching.
+
+       **Safe operations (no external synchronization needed):**
+
+       - Importing: ``from dioxide import container``
+       - Resolving singletons: ``container.resolve(MyService)``
+       - Scanning at startup: ``container.scan(profile=Profile.PRODUCTION)``
+
+       **Best practices for multi-threaded applications:**
+
+       - Call ``container.scan()`` once during application startup, before spawning threads
+       - Resolve services after scanning is complete
+       - For per-thread isolation (e.g., request-scoped state), create separate Container
+         instances or use ``container.create_scope()``
+
+       **When to use separate containers:**
+
+       - Multi-tenant applications requiring isolated dependency graphs
+       - Testing scenarios requiring complete isolation
+       - Per-request scoping in web frameworks (consider ``create_scope()`` first)
+
+       Example (multi-threaded web application)::
+
+           import threading
+           from dioxide import container, Profile
+
+           # Startup: scan once before threads start
+           container.scan(profile=Profile.PRODUCTION)
+
+
+           def handle_request():
+               # Safe: resolving from already-scanned container
+               service = container.resolve(UserService)
+               return service.process()
+
+
+           # Multiple threads can safely resolve from the same container
+           threads = [threading.Thread(target=handle_request) for _ in range(10)]
+           for t in threads:
+               t.start()
+
    .. seealso::
 
       - :class:`dioxide.adapter.adapter` - For marking infrastructure adapters
@@ -377,6 +433,16 @@ Classes
 .. autoapisummary::
 
    dioxide.container.Container
+   dioxide.container.ScopedContainer
+   dioxide.container.ScopedContainerContextManager
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   dioxide.container.reset_global_container
 
 
 Module Contents
@@ -386,7 +452,7 @@ Module Contents
 
 .. py:data:: T
 
-.. py:class:: Container(allowed_packages = None)
+.. py:class:: Container(allowed_packages = None, profile = None)
 
    Dependency injection container.
 
@@ -699,6 +765,9 @@ Module Contents
           adapter is registered for the current profile.
       :raises ServiceNotFoundError: If the type is a service/component that cannot
           be resolved (not registered or has unresolvable dependencies).
+      :raises ScopeError: If trying to resolve a REQUEST-scoped component outside
+          of a scope context. Use ``container.create_scope()`` to create
+          a scope.
 
       .. admonition:: Example
 
@@ -1029,5 +1098,311 @@ Module Contents
 
 
 
+   .. py:method:: create_scope()
+
+      Create a new scope for REQUEST-scoped dependency resolution.
+
+      Returns an async context manager that provides a ScopedContainer for
+      resolving REQUEST-scoped dependencies. Each scope maintains its own
+      cache of REQUEST-scoped instances.
+
+      Usage::
+
+          async with container.create_scope() as scope:
+              # REQUEST-scoped components are cached within this scope
+              handler = scope.resolve(RequestHandler)
+              # Same scope = same instance
+              handler2 = scope.resolve(RequestHandler)
+              assert handler is handler2
+
+          # Scope exits - REQUEST components are disposed
+
+      Scope behavior:
+          - **SINGLETON**: Resolved from parent container (shared)
+          - **REQUEST**: Cached within scope (fresh per scope)
+          - **FACTORY**: New instance each resolution
+
+      Lifecycle management:
+          REQUEST-scoped components decorated with @lifecycle have their
+          dispose() method called when the scope exits.
+
+      :returns: An async context manager that yields a ScopedContainer.
+
+      .. admonition:: Example
+
+         >>> from dioxide import Container, service, Scope
+         >>>
+         >>> @service(scope=Scope.REQUEST)
+         ... class RequestContext:
+         ...     def __init__(self):
+         ...         self.request_id = str(uuid.uuid4())
+         >>>
+         >>> container = Container()
+         >>> container.scan()
+         >>>
+         >>> async with container.create_scope() as scope:
+         ...     ctx1 = scope.resolve(RequestContext)
+         ...     ctx2 = scope.resolve(RequestContext)
+         ...     assert ctx1 is ctx2  # Same within scope
+         >>>
+         >>> async with container.create_scope() as scope2:
+         ...     ctx3 = scope2.resolve(RequestContext)
+         ...     assert ctx3 is not ctx1  # Different scope = different instance
+
+      .. seealso::
+
+         - :class:`ScopedContainer` - The scoped container type
+         - :class:`dioxide.scope.Scope` - Scope enum
+         - :class:`dioxide.exceptions.ScopeError` - Scope errors
+
+
+
+.. py:class:: ScopedContainer(parent, scope_id)
+
+   A scoped container for REQUEST-scoped dependency resolution.
+
+   ScopedContainer provides a context for resolving REQUEST-scoped dependencies.
+   It wraps a parent Container and maintains its own cache of REQUEST-scoped
+   instances that are unique to this scope.
+
+   Key behaviors:
+       - **SINGLETON**: Resolved from parent container (shared across all scopes)
+       - **REQUEST**: Cached within this scope (fresh per scope, shared within scope)
+       - **FACTORY**: New instance each time (same as parent container)
+
+   Creating a ScopedContainer:
+       Use the async context manager pattern via ``container.create_scope()``::
+
+           async with container.create_scope() as scope:
+               # REQUEST-scoped components are cached within this scope
+               handler = scope.resolve(RequestHandler)
+               # Same scope = same instance
+               handler2 = scope.resolve(RequestHandler)
+               assert handler is handler2
+
+           # Scope exits - REQUEST components are disposed
+
+       Each scope has a unique ID for tracking and debugging::
+
+           async with container.create_scope() as scope:
+               print(f'Scope ID: {scope.scope_id}')  # e.g., "abc123..."
+
+   REQUEST-scoped dependencies:
+       Components decorated with ``@service(scope=Scope.REQUEST)`` require
+       a scope context for resolution::
+
+           @service(scope=Scope.REQUEST)
+           class RequestContext:
+               def __init__(self):
+                   self.request_id = str(uuid.uuid4())
+
+
+           # Outside scope - raises ScopeError
+           container.resolve(RequestContext)  # Error!
+
+           # Inside scope - works
+           async with container.create_scope() as scope:
+               ctx = scope.resolve(RequestContext)  # OK
+
+   Lifecycle management:
+       REQUEST-scoped components with ``@lifecycle`` are disposed when
+       the scope exits::
+
+           @service(scope=Scope.REQUEST)
+           @lifecycle
+           class DbConnection:
+               async def initialize(self) -> None:
+                   self.conn = await create_connection()
+
+               async def dispose(self) -> None:
+                   await self.conn.close()
+
+
+           async with container.create_scope() as scope:
+               db = scope.resolve(DbConnection)
+               # db.initialize() called automatically
+           # db.dispose() called automatically on scope exit
+
+   .. attribute:: scope_id
+
+      Unique identifier for this scope
+
+   .. attribute:: parent
+
+      The parent Container
+
+   .. seealso::
+
+      - :meth:`Container.create_scope` - How to create scopes
+      - :class:`dioxide.scope.Scope` - Scope enum (SINGLETON, REQUEST, FACTORY)
+      - :class:`dioxide.exceptions.ScopeError` - Raised for scope violations
+
+
+   .. py:property:: scope_id
+      :type: str
+
+
+      Get the unique identifier for this scope.
+
+
+   .. py:property:: parent
+      :type: Container
+
+
+      Get the parent container.
+
+
+   .. py:method:: resolve(component_type)
+
+      Resolve a component instance within this scope.
+
+      Resolution behavior depends on the component's scope:
+          - **SINGLETON**: Delegates to parent container (shared instance)
+          - **REQUEST**: Caches in this scope (fresh per scope)
+          - **FACTORY**: New instance each resolution (no caching)
+
+      :param component_type: The type to resolve.
+
+      :returns: An instance of the requested type.
+
+      :raises AdapterNotFoundError: If the type is a port with no adapter.
+      :raises ServiceNotFoundError: If the type is an unregistered service.
+
+      .. admonition:: Example
+
+         >>> async with container.create_scope() as scope:
+         ...     # REQUEST-scoped: cached within scope
+         ...     ctx1 = scope.resolve(RequestContext)
+         ...     ctx2 = scope.resolve(RequestContext)
+         ...     assert ctx1 is ctx2  # Same instance
+         ...
+         ...     # SINGLETON: shared with parent
+         ...     config = scope.resolve(AppConfig)
+
+
+
+   .. py:method:: __getitem__(component_type)
+
+      Resolve a component using bracket syntax.
+
+      Equivalent to calling ``scope.resolve(component_type)``.
+
+      :param component_type: The type to resolve.
+
+      :returns: An instance of the requested type.
+
+      .. admonition:: Example
+
+         >>> async with container.create_scope() as scope:
+         ...     ctx = scope[RequestContext]  # Same as scope.resolve(RequestContext)
+
+
+
+   .. py:method:: create_scope()
+
+      Nested scopes are not supported in v0.3.0.
+
+      :raises ScopeError: Always raises, as nested scopes are not supported.
+
+
+
+.. py:class:: ScopedContainerContextManager(parent)
+
+   Async context manager for ScopedContainer.
+
+   This class manages the lifecycle of a ScopedContainer, handling
+   setup on entry and disposal on exit.
+
+   Usage:
+       >>> async with container.create_scope() as scope:
+       ...     handler = scope.resolve(RequestHandler)
+
+
+   .. py:method:: __aenter__()
+      :async:
+
+
+      Enter the scope context.
+
+      Creates a new ScopedContainer with a unique ID.
+
+      :returns: The newly created ScopedContainer.
+
+
+
+   .. py:method:: __aexit__(exc_type, exc_val, exc_tb)
+      :async:
+
+
+      Exit the scope context.
+
+      Disposes all REQUEST-scoped lifecycle components.
+
+      :param exc_type: Exception type if an exception was raised.
+      :param exc_val: Exception value if an exception was raised.
+      :param exc_tb: Exception traceback if an exception was raised.
+
+
+
 .. py:data:: container
    :type:  Container
+
+.. py:function:: reset_global_container()
+
+   Reset the global container to an empty state.
+
+   This function replaces the global container's internal state with a fresh
+   Rust container instance, clearing all registrations and cached singletons.
+   The global container object reference remains the same, so any code holding
+   a reference to ``container`` will see the reset state.
+
+   .. warning::
+
+       **This function is intended for testing only.**
+
+       Calling this in production code will cause unpredictable behavior as
+       all registered services and adapters will be lost. Any code that has
+       already resolved dependencies will hold stale references.
+
+   Use this function in test fixtures to ensure test isolation::
+
+       import pytest
+       from dioxide import container, reset_global_container, Profile
+
+
+       @pytest.fixture(autouse=True)
+       def isolated_container():
+           container.scan(profile=Profile.TEST)
+           yield
+           reset_global_container()
+
+   For most testing scenarios, consider using :func:`dioxide.testing.fresh_container`
+   instead, which creates completely isolated Container instances::
+
+       from dioxide.testing import fresh_container
+
+
+       async def test_something():
+           async with fresh_container(profile=Profile.TEST) as c:
+               service = c.resolve(MyService)
+               # ... test with isolated container
+
+   :returns: None
+
+   .. admonition:: Example
+
+      >>> from dioxide import container, reset_global_container, service
+      >>>
+      >>> @service
+      ... class MyService:
+      ...     pass
+      >>>
+      >>> container.scan()
+      >>> assert not container.is_empty()
+      >>> reset_global_container()
+      >>> assert container.is_empty()
+
+   .. seealso::
+
+      :meth:`Container.reset`: Clears singleton cache but preserves registrations
+      :func:`dioxide.testing.fresh_container`: Creates isolated container instances

@@ -151,21 +151,23 @@ Module Contents
 
 .. py:data:: T
 
-.. py:function:: service(cls)
+.. py:function:: service(cls: type[T]) -> type[T]
+                 service(*, scope: dioxide.scope.Scope = Scope.SINGLETON) -> collections.abc.Callable[[type[T]], type[T]]
 
    Mark a class as a core domain service.
 
-   Services are singleton components that represent core business logic.
+   Services are components that represent core business logic.
    They are available in all profiles (production, test, development) and
    support automatic dependency injection.
 
    This is a specialized form of @component that:
-   - Always uses SINGLETON scope (one shared instance)
+   - Uses SINGLETON scope by default (one shared instance)
+   - Can use REQUEST scope for per-request instances
    - Does not require profile specification (available everywhere)
    - Represents core domain logic in hexagonal architecture
 
    Usage:
-       Basic service:
+       Basic service (SINGLETON by default):
            >>> from dioxide import service
            >>>
            >>> @service
@@ -183,6 +185,14 @@ Module Contents
            ...     def __init__(self, email: EmailService):
            ...         self.email = email
 
+       Request-scoped service:
+           >>> from dioxide import service, Scope
+           >>>
+           >>> @service(scope=Scope.REQUEST)
+           ... class RequestContext:
+           ...     def __init__(self):
+           ...         self.request_id = str(uuid.uuid4())
+
        Auto-discovery and resolution:
            >>> from dioxide import container
            >>>
@@ -190,14 +200,18 @@ Module Contents
            >>> notifications = container.resolve(NotificationService)
            >>> assert isinstance(notifications.email, EmailService)
 
-   :param cls: The class being decorated.
+   :param cls: The class being decorated (when used without parentheses).
+   :param scope: The lifecycle scope for this service. Defaults to SINGLETON.
+                 - SINGLETON: One shared instance for the lifetime of the container
+                 - REQUEST: One instance per scope (via container.create_scope())
+                 - FACTORY: New instance on every resolve()
 
-   :returns: The decorated class with dioxide metadata attached. The class can be
-             used normally and will be discovered by Container.scan().
+   :returns: The decorated class with dioxide metadata attached, or a decorator
+             function if called with keyword arguments.
 
    .. note::
 
-      - Services are always SINGLETON scope
+      - Services default to SINGLETON scope
       - Services are available in all profiles
       - Dependencies are resolved from constructor (__init__) type hints
-      - For profile-specific implementations, use @component with @profile
+      - For profile-specific implementations, use @adapter.for_()
