@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>Zero-ceremony dependency injection for Python with built-in hexagonal architecture</strong>
+  <strong>DI that makes hexagonal architecture feel inevitable</strong>
 </p>
 
 [![CI](https://github.com/mikelane/dioxide/workflows/CI/badge.svg)](https://github.com/mikelane/dioxide/actions)
@@ -76,6 +76,18 @@ dioxide exists to make clean architecture (ports-and-adapters) the path of least
 | **Competitive performance** | Rust-backed container with sub-microsecond resolution |
 
 See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy and [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for testing patterns.
+
+## Anti-goals
+
+dioxide is intentionally focused. Here's what we're **not** building:
+
+- **Not a framework** - dioxide is a library; it doesn't control your application structure
+- **Not runtime reflection magic** - Everything is explicit via decorators and type hints
+- **Not a general-purpose container** - We optimize for hexagonal architecture patterns
+- **Not configuration management** - Use Pydantic Settings or python-decouple for that
+- **Not trying to solve every DI pattern** - Constructor injection only, no property/method injection
+
+This focus keeps dioxide simple and predictable. See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy.
 
 ## Quick Start
 
