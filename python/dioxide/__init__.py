@@ -61,7 +61,7 @@ from .scope import Scope
 from .services import service
 from .testing import fresh_container
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __all__ = [
     'AdapterNotFoundError',
     'CaptiveDependencyError',
