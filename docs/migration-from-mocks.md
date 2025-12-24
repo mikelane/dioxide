@@ -22,6 +22,10 @@
 
 ## Introduction
 
+```{seealso}
+This guide focuses on migrating from mocks to fakes. For the complete testing philosophy, see {doc}`TESTING_GUIDE`. For the architectural foundation, see {doc}`user_guide/hexagonal_architecture`.
+```
+
 ### The Pain You Know Too Well
 
 If you've been writing Python tests for any length of time, you've probably experienced at least one of these moments:
@@ -56,9 +60,9 @@ You're an experienced Python developer who:
 ### The Core Shift
 
 Instead of patching internal calls with mocks, you'll:
-1. Define **ports** (Protocol interfaces) at architectural boundaries
-2. Create **fakes** (simple, real implementations) for testing
-3. Use dioxide's **profile system** to swap production adapters for fakes
+1. Define **{doc}`ports <user_guide/hexagonal_architecture>`** (Protocol interfaces) at architectural boundaries
+2. Create **{doc}`fakes <user_guide/testing_with_fakes>`** (simple, real implementations) for testing
+3. Use dioxide's **{doc}`profile system <user_guide/hexagonal_architecture>`** to swap production adapters for fakes
 
 **Result**: Tests that verify real behavior, survive refactoring, and are easier to understand.
 
@@ -146,6 +150,8 @@ Tests know too much about how the code works internally:
 Any internal refactoring breaks tests.
 
 ### After: Fakes with dioxide
+
+Using dioxide's {doc}`Container <api/dioxide/container/index>` and {doc}`Profile <user_guide/hexagonal_architecture>` system:
 
 ```python
 # test_user_service.py
@@ -289,6 +295,8 @@ The fake-based test survives the refactor because it tests *what* the code accom
 
 ## Step-by-Step Migration
 
+This section walks through converting mock-based tests to use dioxide's {doc}`hexagonal architecture <user_guide/hexagonal_architecture>` with {doc}`fakes <user_guide/testing_with_fakes>`.
+
 ### Step 1: Identify Boundaries
 
 Look at your `@patch` decorators. Each patch point is a boundary:
@@ -308,7 +316,7 @@ These patches reveal three boundaries:
 
 ### Step 2: Create Ports (Interfaces)
 
-For each boundary, define a Protocol:
+For each boundary, define a {doc}`Protocol (port) <user_guide/hexagonal_architecture>`:
 
 ```python
 # ports.py
@@ -332,7 +340,7 @@ class PaymentGateway(Protocol):
 
 ### Step 3: Create Fakes
 
-For each port, create a simple fake implementation:
+For each port, create a simple {doc}`fake implementation <user_guide/testing_with_fakes>` using the {doc}`@adapter.for_() <api/dioxide/adapter/index>` decorator:
 
 ```python
 # adapters/fakes.py
@@ -414,7 +422,7 @@ class FakePaymentGateway:
 
 ### Step 4: Update Your Service
 
-Make your service depend on ports via constructor injection:
+Make your service depend on ports via constructor injection using the {doc}`@service <api/dioxide/services/index>` decorator:
 
 ```python
 # Before: Direct imports (hard to test)
@@ -454,7 +462,7 @@ class UserService:
 
 ### Step 5: Update Tests
 
-Replace mock-based tests with fake-based tests:
+Replace mock-based tests with fake-based tests using dioxide's {doc}`Container <api/dioxide/container/index>` with `Profile.TEST`:
 
 ```python
 # Before: Mock-based
@@ -501,6 +509,8 @@ async def test_user_registration(container):
 ---
 
 ## Common Migration Patterns
+
+The following patterns show how to replace common mock scenarios with {doc}`fakes <user_guide/testing_with_fakes>`. Each fake uses the {doc}`@adapter.for_() <api/dioxide/adapter/index>` decorator with `Profile.TEST`.
 
 ### Pattern: Database Operations
 
@@ -880,9 +890,11 @@ Mixing creates confusion about which testing style to use where.
 
 ## See Also
 
-- [Testing Guide](TESTING_GUIDE.md) - Complete testing philosophy and patterns
-- [MLP Vision](MLP_VISION.md) - Design principles behind dioxide
-- [Migration from dependency-injector](migration-from-dependency-injector.rst) - Migrating from another DI framework
+- {doc}`TESTING_GUIDE` - Complete testing philosophy and patterns
+- {doc}`MLP_VISION` - Design principles behind dioxide
+- {doc}`migration-from-dependency-injector` - Migrating from another DI framework
+- {doc}`user_guide/hexagonal_architecture` - Ports and adapters architecture
+- {doc}`user_guide/testing_with_fakes` - Detailed fake implementation patterns
 
 ---
 
@@ -892,10 +904,10 @@ Mixing creates confusion about which testing style to use where.
 
 | From | To |
 |------|-----|
-| `@patch('module.function')` | Define a `Port` (Protocol) |
-| `Mock()` with `return_value` | Create a simple `Fake` adapter |
+| `@patch('module.function')` | Define a {doc}`Port <user_guide/hexagonal_architecture>` (Protocol) |
+| `Mock()` with `return_value` | Create a simple {doc}`Fake <user_guide/testing_with_fakes>` adapter |
 | `mock.assert_called_once()` | Check `fake.state` |
-| Patch paths in decorators | Profile-based injection |
+| Patch paths in decorators | {doc}`Profile-based <user_guide/hexagonal_architecture>` injection |
 
 **The benefits:**
 
