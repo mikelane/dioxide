@@ -4,6 +4,43 @@ This page provides visual explanations of dioxide's hexagonal architecture patte
 comprehensive Mermaid diagrams. These diagrams illustrate how dioxide enables clean
 architecture through ports, adapters, profiles, and lifecycle management.
 
+## The Golden Path
+
+Before diving into detailed diagrams, here's the core mental model in one picture:
+
+```
+                    ┌─────────────────┐
+                    │    @service     │
+                    │   UserService   │
+                    │  (business      │
+                    │   logic)        │
+                    └────────┬────────┘
+                             │
+                             │ depends on
+                             ▼
+                    ┌─────────────────┐
+                    │   Port          │
+                    │   (Protocol)    │
+                    │   EmailPort     │
+                    └────────┬────────┘
+                             │
+            ┌────────────────┼────────────────┐
+            │                │                │
+            ▼                ▼                ▼
+    ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+    │  @adapter     │ │  @adapter     │ │  @adapter     │
+    │  PRODUCTION   │ │  TEST         │ │  DEVELOPMENT  │
+    │  SendGrid     │ │  FakeEmail    │ │  ConsoleEmail │
+    └───────────────┘ └───────────────┘ └───────────────┘
+```
+
+This is the Dependency Inversion Principle in action: your business logic (`@service`) depends
+on abstractions (Ports/Protocols), not concrete implementations. Adapters implement those ports
+for different environments. At runtime, dioxide wires the correct adapter based on the active
+profile - your service code never changes, only the adapters do.
+
+---
+
 ## Hexagonal Architecture Overview
 
 The hexagonal architecture (also known as ports-and-adapters) places your core business logic
