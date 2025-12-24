@@ -77,6 +77,18 @@ dioxide exists to make clean architecture (ports-and-adapters) the path of least
 
 See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy and [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for testing patterns.
 
+## Anti-goals
+
+dioxide is intentionally focused. Here's what we're **not** building:
+
+- **Not a framework** - dioxide is a library; it doesn't control your application structure
+- **Not runtime reflection magic** - Everything is explicit via decorators and type hints
+- **Not a general-purpose container** - We optimize for hexagonal architecture patterns
+- **Not configuration management** - Use Pydantic Settings or python-decouple for that
+- **Not trying to solve every DI pattern** - Constructor injection only, no property/method injection
+
+This focus keeps dioxide simple and predictable. See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy.
+
 ## Quick Start
 
 dioxide embraces **hexagonal architecture** (ports-and-adapters) to make clean, testable code the path of least resistance.
