@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>Zero-ceremony dependency injection for Python with built-in hexagonal architecture</strong>
+  <strong>DI that makes hexagonal architecture feel inevitable</strong>
 </p>
 
 [![CI](https://github.com/mikelane/dioxide/workflows/CI/badge.svg)](https://github.com/mikelane/dioxide/actions)
