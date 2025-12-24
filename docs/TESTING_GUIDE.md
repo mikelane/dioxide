@@ -40,7 +40,7 @@ dioxide takes a different approach: **use real implementations that are fast and
 
 > **Testing is architecture.** Good architecture makes testing easy without mocks.
 
-dioxide encourages hexagonal architecture (ports-and-adapters), which creates natural seams for testing. Instead of mocking, you write simple fake implementations at these seams.
+dioxide encourages {doc}`hexagonal architecture <user_guide/hexagonal_architecture>` (ports-and-adapters), which creates natural seams for testing. Instead of mocking, you write simple fake implementations at these seams.
 
 **Result**: Tests that are fast, clear, and test real behavior.
 
@@ -139,7 +139,7 @@ import pytest
 from dioxide import Container, Profile, adapter, service
 from typing import Protocol
 
-# Port (interface)
+# Port (interface) - see hexagonal architecture docs for more on ports
 class EmailPort(Protocol):
     async def send(self, to: str, subject: str, body: str) -> None: ...
 
@@ -264,7 +264,7 @@ app/
 
 ## Writing Effective Fakes
 
-Fakes should be simple, fast, and deterministic. Here are patterns for writing effective fakes.
+Fakes should be simple, fast, and deterministic. Here are patterns for writing effective fakes. For more examples, see {doc}`user_guide/testing_with_fakes`.
 
 ### 3.1 Simple In-Memory Fakes
 
@@ -588,7 +588,7 @@ async def test_sends_email(fake_email, container):
 
 ## Profile-Based Testing
 
-dioxide's profile system makes it trivial to swap between real implementations and fakes.
+dioxide's {doc}`profile system <user_guide/hexagonal_architecture>` makes it trivial to swap between real implementations and fakes. For detailed API documentation, see {doc}`api/dioxide/profile_enum/index`.
 
 ### 4.1 Fast Unit Tests (TEST Profile)
 
@@ -752,7 +752,7 @@ class SimpleEmailAdapter:
 
 ## Lifecycle in Tests
 
-When testing components with lifecycle (`@lifecycle`), use the container's async context manager.
+When testing components with lifecycle ({doc}`@lifecycle <api/dioxide/lifecycle/index>`), use the {doc}`container's <api/dioxide/container/index>` async context manager.
 
 **Note**: Container lifecycle management (`async with container`, `container.start()`, `container.stop()`) is available in v0.0.4-alpha and later. If you're using an earlier version, the `@lifecycle` decorator is available but container integration is not yet implemented.
 
@@ -807,7 +807,7 @@ async def test_email_sending(container):
 
 ### 5.3 Lifecycle in Fakes (Usually Not Needed)
 
-Most fakes don't need lifecycle because they're simple in-memory structures.
+Most fakes don't need {doc}`lifecycle <api/dioxide/lifecycle/index>` because they're simple in-memory structures.
 
 ```python
 from typing import Protocol
@@ -846,7 +846,7 @@ class FakeUserRepository:
 
 ## Complete Testing Example
 
-Here's a complete example showing dioxide testing philosophy in practice.
+Here's a complete example showing dioxide testing philosophy in practice. This example demonstrates the {doc}`hexagonal architecture <user_guide/hexagonal_architecture>` pattern with ports, adapters, and services.
 
 ### Domain Layer
 
@@ -1596,7 +1596,7 @@ class TestUserService(unittest.TestCase):
 
 ### What about stubbing third-party APIs?
 
-For third-party APIs that you don't control, create a port and two adapters:
+For third-party APIs that you don't control, create a port and two {doc}`adapters <api/dioxide/adapter/index>`:
 
 ```python
 from typing import Protocol
@@ -1773,7 +1773,7 @@ This eliminates flaky tests from time-dependent logic.
 
 Default to fakes at architectural seams. Use `@patch` sparingly for edge cases. If you find yourself with complex mock setup, that's a signal to introduce a port and fake.
 
-For a deeper dive with before/after examples, see [Migration from Mocks](migration-from-mocks.md).
+For a deeper dive with before/after examples, see {doc}`Migration from Mocks <migration-from-mocks>`.
 
 ---
 
@@ -1781,9 +1781,17 @@ For a deeper dive with before/after examples, see [Migration from Mocks](migrati
 
 ### dioxide Documentation
 
-- [MLP Vision](../MLP_VISION.md) - Canonical design philosophy
-- [README](../README.md) - Quick start and API overview
-- [ROADMAP](../ROADMAP.md) - Development timeline
+- {doc}`Hexagonal Architecture Guide <user_guide/hexagonal_architecture>` - Ports, adapters, and profiles explained
+- {doc}`Testing with Fakes <user_guide/testing_with_fakes>` - User guide companion to this document
+- {doc}`Migration from Mocks <migration-from-mocks>` - Step-by-step migration guide with before/after examples
+
+#### API Reference
+
+- {doc}`@adapter.for_() <api/dioxide/adapter/index>` - Decorator for creating adapters
+- {doc}`@service <api/dioxide/services/index>` - Decorator for business logic services
+- {doc}`@lifecycle <api/dioxide/lifecycle/index>` - Decorator for initialization/cleanup
+- {doc}`Container <api/dioxide/container/index>` - Dependency injection container
+- {doc}`Profile <api/dioxide/profile_enum/index>` - Environment profiles (TEST, PRODUCTION, etc.)
 
 ### External Resources
 
