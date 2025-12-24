@@ -1754,6 +1754,27 @@ async def test_time_dependent(fake_clock, service):
 
 This eliminates flaky tests from time-dependent logic.
 
+### Why not just use `@patch`?
+
+**Short answer**: `@patch` is fine for pure functions and isolated units. Fakes at architectural boundaries are better for stateful dependencies and integration testing.
+
+**When `@patch` works well:**
+- Testing pure functions in isolation
+- Mocking third-party APIs you don't control (and haven't wrapped in a port)
+- Quick prototyping before architecture solidifies
+
+**When fakes at seams win:**
+- Stateful dependencies (databases, caches, queues)
+- Boundaries between architectural layers
+- When you want tests that survive refactoring
+- When mock configuration becomes more complex than the test itself
+
+**Our recommendation:**
+
+Default to fakes at architectural seams. Use `@patch` sparingly for edge cases. If you find yourself with complex mock setup, that's a signal to introduce a port and fake.
+
+For a deeper dive with before/after examples, see [Migration from Mocks](migration-from-mocks.md).
+
 ---
 
 ## References
