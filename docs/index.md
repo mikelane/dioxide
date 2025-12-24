@@ -289,6 +289,7 @@ Read the User Guide
 
 navigation
 why-dioxide
+philosophy
 ```
 
 ```{toctree}
