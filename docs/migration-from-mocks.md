@@ -11,24 +11,46 @@
 1. [Introduction](#introduction)
 2. [The Problem with Mocks](#the-problem-with-mocks)
 3. [Key Differences](#key-differences)
-4. [Step-by-Step Migration](#step-by-step-migration)
-5. [Common Migration Patterns](#common-migration-patterns)
-6. [When to Still Use Mocks](#when-to-still-use-mocks)
-7. [FAQ](#faq)
-8. [See Also](#see-also)
+4. [What Tests Know vs What Tests Observe](#what-tests-know-vs-what-tests-observe)
+5. [Step-by-Step Migration](#step-by-step-migration)
+6. [Common Migration Patterns](#common-migration-patterns)
+7. [When to Still Use Mocks](#when-to-still-use-mocks)
+8. [FAQ](#faq)
+9. [See Also](#see-also)
 
 ---
 
 ## Introduction
 
-This guide helps you migrate from traditional mock-based testing (`unittest.mock`, `pytest-mock`, `@patch`) to dioxide's fakes-at-the-seams approach.
+### The Pain You Know Too Well
 
-### Who This Guide Is For
+If you've been writing Python tests for any length of time, you've probably experienced at least one of these moments:
+
+**"Tests pass, production breaks."** You deployed with confidence - your test suite was green. Then came the 2 AM page. The real payment API returns a `Response` object, not the `True` your mock was configured to return. Your tests verified that your mocks work, not that your code works.
+
+**"I touched one file and 47 tests broke."** You moved `send_email` from `myapp.services.email` to `myapp.notifications.email`. A simple refactor. But every test with `@patch('myapp.services.email.send_email')` turned red. You spent the afternoon updating patch paths instead of writing features.
+
+**"I spent an hour debugging my mock setup, not my code."** The test kept failing with "expected call not made." Was it the argument matcher? The call order? The return value chain? Eventually you discovered you forgot `.return_value` in `mock_db.session.query.return_value.filter.return_value.first.return_value`. The mock configuration became harder to understand than the code being tested.
+
+**"New team members can't understand our tests."** They stare at the tower of `@patch` decorators, the intricate `side_effect` lambdas, the nested `Mock()` configurations. They know what the test does, but not what it's actually testing. The tests have become a maintenance burden, not living documentation.
+
+**"This test is flaky. Again."** It passes locally, fails in CI. Passes on retry. Something about timing or order or state leakage between tests. But the mock setup is so complex that nobody wants to debug it. So you add a retry decorator and move on.
+
+### The Root Cause
+
+Here's the uncomfortable truth: **when you use mocks, you're testing that your mock configuration is correct, not that your code behaves correctly.**
+
+Every `assert_called_once_with()` verifies that you called a method on a mock object. It says nothing about whether the real implementation would have worked. Every `.return_value` trains the mock to behave like you *think* the real thing behaves - but if your assumption is wrong, your test passes and production fails.
+
+Mocks create tests that are tightly coupled to *how* code works internally, rather than *what* it accomplishes. This is why refactoring breaks tests - you changed how without changing what, but your tests only know about how.
+
+### This Guide Is For You If
 
 You're an experienced Python developer who:
 - Uses `@patch`, `Mock()`, or `MagicMock` regularly in tests
-- Has tests that feel brittle or break during refactoring
-- Wants clearer, more maintainable tests
+- Has experienced the pain points above firsthand
+- Wants tests that verify behavior, not mock configuration
+- Is ready to invest in tests that survive refactoring
 - Is adopting dioxide for dependency injection
 
 ### The Core Shift
@@ -39,6 +61,8 @@ Instead of patching internal calls with mocks, you'll:
 3. Use dioxide's **profile system** to swap production adapters for fakes
 
 **Result**: Tests that verify real behavior, survive refactoring, and are easier to understand.
+
+The investment is real - you'll create ports and fakes upfront. But the payoff is tests that tell you when your code is broken, not when your mocks are misconfigured.
 
 ---
 
@@ -167,6 +191,99 @@ async def test_user_registration(container):
 **With Mocks**: "Did the code call the right methods?"
 
 **With Fakes**: "Did the code produce the right outcomes?"
+
+---
+
+## What Tests Know vs What Tests Observe
+
+This distinction is the key to understanding why fakes lead to better tests than mocks.
+
+### The Knowledge Problem
+
+When a test "knows" something, it's coupled to that implementation detail. When implementation changes, the test breaks - even if behavior is preserved.
+
+| Aspect | Mock-Based Test | Fake-Based Test |
+|--------|-----------------|-----------------|
+| **Knows** | Which methods are called, in what order, with what arguments | Only the public interface (ports) |
+| **Observes** | That mocks were invoked correctly | That observable outcomes occurred |
+| **Breaks when** | Any internal refactoring changes method calls | Actual behavior changes |
+| **Confidence** | "My mock configuration matches my assumptions" | "My code produces correct results" |
+
+### Testing HOW vs Testing WHAT
+
+Here's the same behavior tested both ways:
+
+**Mock-based test (testing HOW):**
+
+```python
+@patch('myapp.services.email.send_email')
+@patch('myapp.services.db.save_user')
+def test_user_registration(mock_save, mock_email):
+    mock_save.return_value = {"id": "123", "email": "alice@example.com"}
+
+    service = UserService()
+    service.register("Alice", "alice@example.com")
+
+    # Test KNOWS: save_user is called before send_email
+    # Test KNOWS: exact argument format passed to save_user
+    # Test KNOWS: send_email exists at myapp.services.email
+    mock_save.assert_called_once_with("Alice", "alice@example.com")
+    mock_email.assert_called_once()
+```
+
+This test knows:
+- The exact module path where `send_email` lives
+- That `save_user` is called with positional arguments in a specific order
+- The internal call sequence of the service
+
+**Fake-based test (testing WHAT):**
+
+```python
+async def test_user_registration(container):
+    service = container.resolve(UserService)
+    fake_email = container.resolve(EmailPort)
+    fake_users = container.resolve(UserRepository)
+
+    await service.register("Alice", "alice@example.com")
+
+    # Test OBSERVES: a user exists with the right data
+    # Test OBSERVES: an email was sent to the right address
+    assert "alice@example.com" in [u["email"] for u in fake_users.users.values()]
+    assert any(e["to"] == "alice@example.com" for e in fake_email.sent_emails)
+```
+
+This test observes:
+- A user with the correct email exists in storage
+- An email was sent to the correct address
+
+It does not know (or care about):
+- Where the email module lives in the codebase
+- Whether `save_user` takes positional or keyword arguments
+- What order the internal operations happen in
+
+### Why This Matters for Refactoring
+
+Imagine you refactor `UserService` to batch email sending for performance:
+
+```python
+# Before: sends email immediately
+async def register(self, name: str, email: str) -> dict:
+    user = await self.users.save(name, email)
+    await self.email.send(to=email, subject="Welcome!", body=f"Hello {name}")
+    return user
+
+# After: queues email for batch sending
+async def register(self, name: str, email: str) -> dict:
+    user = await self.users.save(name, email)
+    await self.email_queue.enqueue(to=email, subject="Welcome!", body=f"Hello {name}")
+    return user
+```
+
+**Mock-based test result:** FAILS. The mock was configured for `send_email`, but now `enqueue` is called. You must update the test.
+
+**Fake-based test result:** If your `FakeEmailQueue` adds to the same `sent_emails` list (or you check the queue), the test still passes. The observable outcome (email scheduled to be sent) is the same.
+
+The fake-based test survives the refactor because it tests *what* the code accomplishes, not *how* it accomplishes it.
 
 ---
 
@@ -679,12 +796,34 @@ Both approaches avoid real I/O (databases, APIs, file systems). The execution ti
 
 ### "I have hundreds of mocked tests"
 
-Migrate incrementally:
+We hear you. The thought of rewriting hundreds of tests is overwhelming. Here's the good news: **you don't have to do it all at once, and you probably shouldn't.**
 
-1. **New tests**: Write with fakes from day one
-2. **Touched code**: Convert tests when you modify related code
-3. **Brittle tests**: Prioritize tests that break frequently
-4. **Don't rewrite everything**: Migration can take months, and that's okay
+A wholesale rewrite is risky - you might introduce bugs, lose coverage, and demoralize your team. Instead, migrate incrementally using this prioritization:
+
+**Priority 1: New code gets fakes from day one**
+
+Every new feature, every new service, every new boundary - write it with ports and fakes. This stops the bleeding. Your mock debt stops growing.
+
+**Priority 2: Touched code gets migrated**
+
+When you modify a file with mocked tests, that's your opportunity. You're already in the code, already understanding the context. Convert the mocks to fakes as part of the change.
+
+**Priority 3: Brittle tests get prioritized**
+
+Keep a mental (or literal) list of tests that break frequently, are hard to understand, or that nobody wants to touch. These are your highest-ROI conversions. Every time one of these tests breaks, consider whether this is the moment to convert it.
+
+**Priority 4: Leave working tests alone**
+
+A mocked test that hasn't broken in two years and still accurately tests behavior? Leave it. Don't fix what isn't broken. You'll get to it eventually through Priority 2, or maybe you won't - and that's okay.
+
+**Realistic timeline expectations:**
+
+- **3 months**: New code uses fakes, team is comfortable with the pattern
+- **6 months**: High-churn areas are mostly converted, brittle tests eliminated
+- **12 months**: Most active code paths use fakes, mocks remain in stable legacy areas
+- **Ongoing**: Opportunistic conversion as code gets touched
+
+The goal isn't "zero mocks by Friday." The goal is a test suite that increasingly tells you when your code is broken, not when your mocks are misconfigured. Every fake you add moves you in that direction.
 
 ### "Creating fakes seems like more work"
 
