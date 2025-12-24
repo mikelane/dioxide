@@ -187,7 +187,11 @@ class UserService:
 - **Pure business logic** - No database, API, or file system code
 - **Type-safe** - Full mypy validation of dependencies
 
-### 4. Profiles (Environment Configuration)
+### 4. Profiles: Behavior Selection, Not Just Environments
+
+While Profiles may look like "environment configuration," they represent something more fundamental: **a first-class architectural mechanism for selecting behavior at application boundaries**.
+
+This distinction matters. Profiles aren't just about "production vs test" - they're about declaring which implementations of your ports should be active, and letting the container wire everything automatically.
 
 **Profiles** determine which adapters are active for a given environment. dioxide provides a `Profile` enum with standard profiles, but you can also use custom string profiles.
 
@@ -226,6 +230,206 @@ class SimpleEmailAdapter:
     async def send(self, to: str, subject: str, body: str) -> None:
         print(f"Simple email to {to}")
 ```
+
+#### The Mental Model Shift
+
+Traditional thinking treats test doubles as "test infrastructure" - something you bolt on during testing. dioxide takes a different view:
+
+| Traditional Thinking | dioxide Thinking |
+|---------------------|------------------|
+| "I need to mock the database for tests" | "I have a TEST profile adapter for UserRepository" |
+| "Let me patch the email service" | "My FakeEmailAdapter is the TEST profile implementation" |
+| "Set up mock return values" | "Seed my fake with test data" |
+| "Tests are coupled to implementation" | "Tests use real code paths through fakes" |
+| "Mocking infrastructure is test code" | "Fakes are production code with a TEST profile" |
+
+The key insight: **fakes aren't test infrastructure - they're legitimate implementations that happen to be optimized for testing**. An `InMemoryUserRepository` is just as "real" as `PostgresUserRepository`; it simply stores data differently.
+
+#### Why This Matters for Testing
+
+Profiles fundamentally change how you approach testing:
+
+| Mocking Approach | Profiles + Fakes Approach |
+|------------------|---------------------------|
+| Test mock configuration | Test real behavior |
+| Brittle (coupled to implementation details) | Refactor-friendly (tests don't know about internals) |
+| Can lie (mock passes when real code would fail) | Deterministic (fake behavior is predictable) |
+| Complex setup with `@patch`, `MagicMock`, etc. | Simple: just use `Profile.TEST` |
+| Mock assertions verify calls were made | Fake assertions verify actual state changes |
+| Mocks live in test files | Fakes live in production code alongside real adapters |
+| Different mock setup per test file | Same fakes across all tests |
+
+#### Profiles Replace Mocking Infrastructure
+
+Consider a typical notification service that sends emails. Here's how you might test it with traditional mocking:
+
+**Before: The @patch Decorator Mess**
+
+```python
+# tests/test_notification.py
+from unittest.mock import patch, MagicMock, AsyncMock
+
+class TestNotificationService:
+    @patch('app.adapters.email.sendgrid.SendGridClient')
+    @patch('app.adapters.database.postgres.get_connection')
+    async def test_sends_welcome_email(self, mock_db, mock_sendgrid):
+        # Arrange - configure mock behavior
+        mock_sendgrid.return_value.send = AsyncMock(return_value={"status": "sent"})
+        mock_db.return_value.execute = AsyncMock(return_value=[{"id": 1, "email": "alice@example.com"}])
+
+        # Create service with mocked dependencies... somehow
+        service = NotificationService(
+            email_client=mock_sendgrid.return_value,
+            db=mock_db.return_value
+        )
+
+        # Act
+        await service.send_welcome_email("alice@example.com", "Alice")
+
+        # Assert - verify mocks were called correctly
+        mock_sendgrid.return_value.send.assert_called_once()
+        call_args = mock_sendgrid.return_value.send.call_args
+        assert call_args[1]["to"] == "alice@example.com"
+        assert "Welcome" in call_args[1]["subject"]
+```
+
+Problems with this approach:
+- Tests are coupled to implementation details (import paths, method signatures)
+- Mock configuration is complex and error-prone
+- Tests pass even if real SendGrid integration is broken
+- Refactoring breaks tests even when behavior is unchanged
+- No reuse - each test file sets up its own mocks
+
+**After: Clean Profile-Based Testing**
+
+```python
+# tests/test_notification.py
+import pytest
+from dioxide import container, Profile
+from app.services.notification import NotificationService
+from app.ports import EmailPort
+
+@pytest.fixture
+def test_container():
+    """Container with TEST profile activates all fakes automatically."""
+    container.scan("app", profile=Profile.TEST)
+    return container
+
+@pytest.fixture
+def notification_service(test_container):
+    return test_container.resolve(NotificationService)
+
+@pytest.fixture
+def fake_email(test_container):
+    return test_container.resolve(EmailPort)
+
+async def test_sends_welcome_email(notification_service, fake_email):
+    # Act - use real service with real (fake) adapter
+    await notification_service.send_welcome_email("alice@example.com", "Alice")
+
+    # Assert - inspect fake's captured state
+    assert len(fake_email.sent_emails) == 1
+    email = fake_email.sent_emails[0]
+    assert email["to"] == "alice@example.com"
+    assert "Welcome" in email["subject"]
+```
+
+The improvements:
+- No mock configuration or `@patch` decorators
+- Tests use real code paths through the service
+- Fakes are reusable across all tests
+- Refactoring service internals doesn't break tests
+- Clear separation: tests verify behavior, fakes provide isolation
+
+#### Custom Profiles for Domain-Specific Scenarios
+
+The built-in profiles cover common cases, but you can create custom profiles for domain-specific scenarios:
+
+```python
+from dioxide import adapter, Profile
+from enum import Enum
+
+# Define custom profiles as string constants or extend the pattern
+class AppProfile:
+    DEMO = "demo"           # Demo environment with seeded sample data
+    LOAD_TEST = "load_test" # Load testing with metrics collection
+    STAGING = "staging"     # Pre-production validation
+
+# Demo adapter with realistic sample data
+@adapter.for_(UserRepository, profile=AppProfile.DEMO)
+class DemoUserRepository:
+    """Repository pre-seeded with demo users for sales demos."""
+
+    def __init__(self):
+        self.users = {
+            "demo@example.com": {"id": "1", "name": "Demo User", "plan": "enterprise"},
+            "alice@example.com": {"id": "2", "name": "Alice (Sales Lead)", "plan": "pro"},
+        }
+
+    async def find_by_email(self, email: str) -> dict | None:
+        return self.users.get(email)
+
+# Load test adapter with metrics
+@adapter.for_(PaymentGateway, profile=AppProfile.LOAD_TEST)
+class MetricsPaymentGateway:
+    """Payment gateway that collects latency metrics for load testing."""
+
+    def __init__(self, metrics: MetricsCollector):
+        self.metrics = metrics
+        self.call_count = 0
+
+    async def charge(self, amount: Decimal, currency: str, card_token: str) -> str:
+        import time
+        start = time.perf_counter()
+
+        # Simulate realistic latency
+        await asyncio.sleep(0.05)  # 50ms simulated latency
+
+        self.call_count += 1
+        elapsed = time.perf_counter() - start
+        self.metrics.record("payment.latency", elapsed)
+
+        return f"load_test_txn_{self.call_count}"
+```
+
+#### Profile Selection at Runtime
+
+Profiles are typically selected at application startup based on environment:
+
+```python
+# main.py
+import os
+from dioxide import container, Profile
+
+def get_active_profile() -> str:
+    """Determine active profile from environment."""
+    env = os.environ.get("APP_ENV", "development").lower()
+
+    profile_map = {
+        "production": Profile.PRODUCTION,
+        "prod": Profile.PRODUCTION,
+        "staging": Profile.STAGING,
+        "test": Profile.TEST,
+        "testing": Profile.TEST,
+        "ci": Profile.CI,
+        "development": Profile.DEVELOPMENT,
+        "dev": Profile.DEVELOPMENT,
+    }
+
+    return profile_map.get(env, Profile.DEVELOPMENT)
+
+# Application startup
+profile = get_active_profile()
+container.scan("app", profile=profile)
+
+print(f"Application started with profile: {profile}")
+```
+
+This pattern ensures:
+- Profile selection is explicit and centralized
+- Environment variables control behavior without code changes
+- Invalid environments fall back to safe defaults (development)
+- The same codebase runs in all environments
 
 ## Architecture Layers
 
