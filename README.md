@@ -645,6 +645,40 @@ async def test_send_welcome_email(test_container):
 - ✅ **No magic**: Just default parameters with `container.resolve()`
 - ✅ **Type-safe**: Full mypy support for injected types
 
+### A Note on This Pattern
+
+> **Transparency**: The `container.resolve()` default-arg pattern is service-locator-adjacent. We intentionally support it for zero-ceremony use cases.
+
+**When this pattern shines:**
+- CLI commands with Click integration
+- Simple scripts and small applications
+- Prototyping and exploration
+- Route handlers in small web apps
+
+**When to prefer explicit injection:**
+
+For larger codebases with many dependencies, prefer explicit constructor injection—it's more testable and makes dependencies visible:
+
+```python
+# Service-locator-adjacent (convenient for small apps)
+async def send_welcome_email(
+    user_email: str,
+    email: EmailPort = container.resolve(EmailPort)
+) -> None:
+    await email.send(to=user_email, subject="Welcome!", body="...")
+
+# Explicit injection (recommended for larger codebases)
+@service
+class WelcomeEmailHandler:
+    def __init__(self, email: EmailPort):
+        self.email = email
+
+    async def send(self, user_email: str) -> None:
+        await self.email.send(to=user_email, subject="Welcome!", body="...")
+```
+
+Both patterns work with dioxide's profile system for testing. Choose based on your codebase size and team preferences.
+
 ## Testing with dioxide
 
 dioxide makes testing easy through **fakes at the seams** instead of mocks. The key pattern is creating a fresh `Container` instance per test for complete isolation.
