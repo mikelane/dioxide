@@ -18,6 +18,7 @@
 [![Platform Support](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue)](https://github.com/mikelane/dioxide)
 [![Architecture](https://img.shields.io/badge/arch-x86__64%20%7C%20aarch64-green)](https://github.com/mikelane/dioxide)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=github)](https://github.com/sponsors/mikelane)
 
 > **[📖 Read the Documentation](https://dioxide.readthedocs.io)** | **[🚀 Quick Start](#quick-start)** | **[💡 Examples](https://dioxide.readthedocs.io/en/latest/examples/)** | **[📋 API Reference](https://dioxide.readthedocs.io/en/latest/api/dioxide/)**
 
