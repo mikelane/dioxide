@@ -44,7 +44,7 @@ class DescribeMultiBindingDecorator:
                 return ['mutated']
 
         assert hasattr(ComparisonOperator, '__dioxide_multi__')
-        assert ComparisonOperator.__dioxide_multi__ is True
+        assert ComparisonOperator.__dioxide_multi__ is True  # pyright: ignore[reportAttributeAccessIssue]
 
     def it_defaults_multi_to_false(self) -> None:
         """Without multi=True, __dioxide_multi__ defaults to False."""
@@ -58,7 +58,7 @@ class DescribeMultiBindingDecorator:
                 return []
 
         assert hasattr(SingleAdapter, '__dioxide_multi__')
-        assert SingleAdapter.__dioxide_multi__ is False
+        assert SingleAdapter.__dioxide_multi__ is False  # pyright: ignore[reportAttributeAccessIssue]
 
     def it_stores_priority_on_class(self) -> None:
         """The priority=N parameter stores __dioxide_priority__ = N on the class."""
@@ -72,7 +72,7 @@ class DescribeMultiBindingDecorator:
                 return []
 
         assert hasattr(PriorityOperator, '__dioxide_priority__')
-        assert PriorityOperator.__dioxide_priority__ == 10
+        assert PriorityOperator.__dioxide_priority__ == 10  # pyright: ignore[reportAttributeAccessIssue]
 
     def it_defaults_priority_to_zero(self) -> None:
         """Without priority parameter, __dioxide_priority__ defaults to 0."""
@@ -86,7 +86,7 @@ class DescribeMultiBindingDecorator:
                 return []
 
         assert hasattr(DefaultPriorityOperator, '__dioxide_priority__')
-        assert DefaultPriorityOperator.__dioxide_priority__ == 0
+        assert DefaultPriorityOperator.__dioxide_priority__ == 0  # pyright: ignore[reportAttributeAccessIssue]
 
 
 class DescribeMultiBindingResolution:
