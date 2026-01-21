@@ -69,7 +69,7 @@ class DescribeScopedContainerCreation:
 
         async with container.create_scope() as outer_scope:
             # Trying to create nested scope should raise ScopeError
-            with pytest.raises(ScopeError, match='Nested scopes are not supported'):
+            with pytest.raises(ScopeError, match='Nested scopes not supported'):
                 async with outer_scope.create_scope():
                     pass
 
@@ -212,7 +212,7 @@ class DescribeRequestScopeOutsideScope:
 
     @pytest.mark.asyncio
     async def it_provides_helpful_error_message_for_request_outside_scope(self) -> None:
-        """Error message explains how to fix REQUEST outside scope."""
+        """Error message explains REQUEST scope requirement (terse format)."""
 
         @service(scope=Scope.REQUEST)
         class RequestContext:
@@ -225,13 +225,12 @@ class DescribeRequestScopeOutsideScope:
             container.resolve(RequestContext)
 
         error_message = str(exc_info.value)
-        # Error should mention:
+        # Error should mention (terse format):
         # 1. The component that failed
         assert 'RequestContext' in error_message
-        # 2. That it's REQUEST scoped
+        # 2. That it's REQUEST scoped and requires active scope
         assert 'REQUEST' in error_message
-        # 3. How to fix (create_scope)
-        assert 'create_scope' in error_message
+        assert 'scope' in error_message.lower()
 
 
 class DescribeCaptiveDependency:

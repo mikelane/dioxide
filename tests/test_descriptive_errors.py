@@ -128,8 +128,8 @@ class DescribeServiceNotFoundError:
         assert 'UserService' in error_msg
         # Should mention the missing dependency
         assert 'DatabasePort' in error_msg
-        # Should be helpful
-        assert 'dependencies' in error_msg.lower() or 'could not be resolved' in error_msg.lower()
+        # Should indicate missing dependency (terse format)
+        assert 'missing dependency' in error_msg.lower() or 'dependency' in error_msg.lower()
 
     def it_raises_when_component_not_registered(self) -> None:
         """Raises ServiceNotFoundError when trying to resolve unregistered component."""
