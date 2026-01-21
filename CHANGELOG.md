@@ -5,6 +5,36 @@ All notable changes to dioxide will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.1.0] - 2026-01-20
+
+### Added
+
+- **Multi-binding / Collection injection** (#255, #308)
+  - `@adapter.for_(Port, multi=True)` registers multiple adapters for the same port
+  - `@adapter.for_(Port, multi=True, priority=N)` controls injection order (lower first)
+  - `list[Port]` type hints automatically collect all matching adapters
+  - Profile filtering applies — only active profile adapters included
+  - Enables plugin patterns, operator chains, and extensible architectures
+
+### Documentation
+
+- Comprehensive documentation overhaul for v1.0.0 stable release
+  - New "Migration from Mocks" guide with side-by-side examples (#287)
+  - Philosophy essay explaining why dioxide exists (#305)
+  - FAQ entry: "Why not just use @patch?" (#289)
+  - Service-locator tradeoff acknowledgment in function injection docs (#288)
+  - Reader persona navigation page (#299)
+  - Architecture golden path diagram (#298)
+  - Cross-references between testing guides (#302, #303)
+  - Updated README tagline and Anti-goals section (#286)
+
+### Infrastructure
+
+- GitHub Sponsors funding link added
+- Bumped GitHub Actions dependencies (actions/cache, github/issue-metrics)
+
 ## v1.0.1 (2025-12-21)
 
 ### Fixed
@@ -92,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - COVERAGE.md explaining testing strategy for Python/Rust hybrid projects
 - CLAUDE.md with project guidelines and best practices
 
+[1.1.0]: https://github.com/mikelane/dioxide/releases/tag/v1.1.0
 [0.2.1]: https://github.com/mikelane/dioxide/releases/tag/v0.2.1
 [0.1.1]: https://github.com/mikelane/dioxide/releases/tag/v0.1.1
 [0.1.0-beta.2]: https://github.com/mikelane/dioxide/releases/tag/v0.1.0-beta.2
