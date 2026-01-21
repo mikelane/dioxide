@@ -489,6 +489,77 @@ finally:
 
 **Status**: Fully implemented.
 
+## Multi-Binding (Collection Injection)
+
+For plugin systems where multiple implementations should be collected rather than selecting one, dioxide supports **multi-binding**:
+
+```python
+from typing import Protocol
+from dioxide import Container, Profile, adapter, service
+
+# Define a port for plugins
+class PluginPort(Protocol):
+    def process(self, data: str) -> str: ...
+
+# Register MULTIPLE adapters with multi=True
+@adapter.for_(PluginPort, multi=True, priority=10)
+class ValidationPlugin:
+    def process(self, data: str) -> str:
+        # Validate data
+        return data
+
+@adapter.for_(PluginPort, multi=True, priority=20)
+class TransformPlugin:
+    def process(self, data: str) -> str:
+        # Transform data
+        return data.upper()
+
+@adapter.for_(PluginPort, multi=True, priority=30)
+class LoggingPlugin:
+    def process(self, data: str) -> str:
+        print(f"Processing: {data}")
+        return data
+
+# Inject ALL plugins as a list
+@service
+class DataProcessor:
+    def __init__(self, plugins: list[PluginPort]) -> None:
+        self.plugins = plugins  # All plugins, ordered by priority
+
+    def run(self, data: str) -> str:
+        for plugin in self.plugins:
+            data = plugin.process(data)
+        return data
+
+# Usage
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+
+processor = container.resolve(DataProcessor)
+# processor.plugins == [ValidationPlugin, TransformPlugin, LoggingPlugin]
+# Ordered by priority (lowest first)
+
+result = processor.run("hello")
+# Processes through all plugins in priority order
+```
+
+**Key features:**
+- **`multi=True`**: Enables multi-binding mode (default is `False` for single adapter)
+- **`priority=N`**: Controls ordering (lower values first, default is 0)
+- **`list[Port]`**: Type hint tells container to inject all multi-bindings
+- **Profile filtering**: Only adapters matching the active profile are included
+- **Empty list OK**: Returns empty list if no implementations (valid for optional plugins)
+
+**Constraints:**
+- A port must be either single-binding OR multi-binding, not both
+- Error at startup if same port has both `multi=True` and `multi=False` adapters
+
+**Use cases:**
+- Plugin systems (mutation operators, validators, transformers)
+- Pipeline stages that run in sequence
+- Event handlers that all process the same event
+- Middleware chains
+
 ## Function Injection
 
 dioxide works with **any callable**, not just classes. You can inject dependencies into standalone functions, route handlers, and background tasks by using default parameters with `container.resolve()`:
@@ -901,6 +972,8 @@ See [Django Integration Guide](docs/integrations/django.md) for complete documen
 - [x] Constructor dependency injection via type hints
 - [x] Type-safe `Container.resolve()` with full mypy support
 - [x] Optional `container[Type]` bracket syntax
+- [x] Multi-binding support (`multi=True`, `priority=N`) for plugin patterns
+- [x] Collection injection via `list[Port]` type hint
 
 **Lifecycle Management**:
 - [x] `@lifecycle` decorator for opt-in lifecycle management

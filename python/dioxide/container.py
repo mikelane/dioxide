@@ -569,6 +569,7 @@ class Container:
         self._active_profile: str | None = None  # Track active profile for error messages
         self._allowed_packages = allowed_packages  # Security: restrict scannable packages
         self._lifecycle_instances: list[Any] | None = None  # Cache lifecycle instances during start()
+        self._multi_bindings: dict[type[Any], list[type[Any]]] = {}  # Port -> list of multi adapter classes
 
         # Auto-scan if profile is provided
         if profile is not None:
@@ -798,14 +799,19 @@ class Container:
         registration. For singletons, returns the cached instance (creating
         it on first call). For factories, creates a new instance every time.
 
+        For multi-bindings, use ``list[Port]`` type hint to resolve all
+        adapters registered with ``multi=True`` for that port.
+
         Args:
             component_type: The type to resolve. Must have been previously
                 registered via scan() or manual registration methods.
+                Can be a ``list[Port]`` type to resolve multi-bindings.
 
         Returns:
             An instance of the requested type. For SINGLETON scope, the same
             instance is returned on every call. For FACTORY scope, a new
-            instance is created on each call.
+            instance is created on each call. For ``list[Port]``, returns
+            a list of all multi-binding adapters for that port.
 
         Raises:
             AdapterNotFoundError: If the type is a port (Protocol/ABC) and no
@@ -838,6 +844,11 @@ class Container:
             Type annotations in constructors enable automatic dependency
             injection. The container recursively resolves all dependencies.
         """
+        # Check if this is a list[Port] type hint for multi-bindings
+        multi_binding_result = self._resolve_multi_binding(component_type)
+        if multi_binding_result is not None:
+            return multi_binding_result  # type: ignore[return-value]
+
         # Check if this is a REQUEST-scoped component being resolved outside a scope
         scope = self._get_component_scope(component_type)
         if scope is not None:
@@ -866,6 +877,45 @@ class Container:
                 # Build helpful error message for missing service/component
                 error_msg = self._build_service_not_found_message(component_type)
                 raise ServiceNotFoundError(error_msg) from e
+
+    def _resolve_multi_binding(self, component_type: Any) -> list[Any] | None:
+        """Check if component_type is list[Port] and resolve multi-bindings.
+
+        Args:
+            component_type: The type to check. May be a generic alias like list[Port].
+
+        Returns:
+            List of adapter instances if this is a multi-binding resolution,
+            None if not a list[Port] type hint.
+        """
+        import typing
+
+        # Check if this is a generic alias (e.g., list[SomePort])
+        origin = typing.get_origin(component_type)
+        if origin is not list:
+            return None
+
+        # Get the type argument (the Port type)
+        args = typing.get_args(component_type)
+        if not args:
+            return None
+
+        port_type = args[0]
+
+        # Check if we have multi-bindings for this port
+        adapter_classes = self._multi_bindings.get(port_type)
+        if adapter_classes is None:
+            # Return empty list for multi-bindings with no implementations
+            # (this is valid - it allows optional plugins)
+            return []
+
+        # Instantiate all adapters with dependency injection
+        instances = []
+        for adapter_class in adapter_classes:
+            factory = self._create_auto_injecting_factory(adapter_class)
+            instances.append(factory())
+
+        return instances
 
     def _is_port(self, cls: type[Any]) -> bool:
         """Check if a type is a port (Protocol or ABC).
@@ -1358,8 +1408,9 @@ class Container:
         # Track active profile for error messages
         self._active_profile = normalized_profile
 
-        # First, scan adapters and detect ambiguous registrations
-        port_to_adapters: dict[type[Any], list[type[Any]]] = {}
+        # First, scan adapters and separate single vs multi-binding adapters
+        port_to_single_adapters: dict[type[Any], list[type[Any]]] = {}
+        port_to_multi_adapters: dict[type[Any], list[type[Any]]] = {}
 
         for adapter_class in _adapter_registry:
             # Apply package filtering if package parameter provided
@@ -1385,13 +1436,22 @@ class Container:
                 # This shouldn't happen if @adapter.for_() was used correctly
                 continue
 
-            # Track adapters per port
-            if port_class not in port_to_adapters:
-                port_to_adapters[port_class] = []
-            port_to_adapters[port_class].append(adapter_class)
+            # Check if this is a multi-binding adapter
+            is_multi = getattr(adapter_class, '__dioxide_multi__', False)
 
-        # Check for ambiguous registrations (multiple adapters for same port)
-        for port_class, adapters in port_to_adapters.items():
+            if is_multi:
+                # Track multi-binding adapters separately
+                if port_class not in port_to_multi_adapters:
+                    port_to_multi_adapters[port_class] = []
+                port_to_multi_adapters[port_class].append(adapter_class)
+            else:
+                # Track single adapters per port
+                if port_class not in port_to_single_adapters:
+                    port_to_single_adapters[port_class] = []
+                port_to_single_adapters[port_class].append(adapter_class)
+
+        # Check for ambiguous registrations (multiple SINGLE adapters for same port)
+        for port_class, adapters in port_to_single_adapters.items():
             if len(adapters) > 1:
                 adapter_names = ', '.join(cls.__name__ for cls in adapters)
                 profile_str = f" for profile '{normalized_profile}'" if normalized_profile else ''
@@ -1400,6 +1460,20 @@ class Container:
                     f'multiple adapters found ({adapter_names}). '
                     f'Only one adapter per port+profile combination is allowed.'
                 )
+
+        # Check for mixed single/multi registrations (same port has both)
+        for port_class, single_adapters in port_to_single_adapters.items():
+            if port_class in port_to_multi_adapters:
+                single_names = ', '.join(cls.__name__ for cls in single_adapters)
+                multi_names = ', '.join(cls.__name__ for cls in port_to_multi_adapters[port_class])
+                raise ValueError(
+                    f'Port {port_class.__name__} has both single adapters ({single_names}) '
+                    f'and multi-binding adapters ({multi_names}). '
+                    f'A port must be either single-binding OR multi-binding, not both.'
+                )
+
+        # Use single adapters for ambiguity checking downstream
+        port_to_adapters = port_to_single_adapters
 
         # Check for captive dependencies (SINGLETON depends on REQUEST)
         self._check_captive_dependencies(port_to_adapters)
@@ -1423,6 +1497,12 @@ class Container:
             except KeyError:
                 # Already registered manually - skip it (manual takes precedence)
                 pass
+
+        # Register multi-binding adapters (sorted by priority)
+        for port_class, adapters in port_to_multi_adapters.items():
+            # Sort by priority (lower values first)
+            sorted_adapters = sorted(adapters, key=lambda cls: getattr(cls, '__dioxide_priority__', 0))
+            self._multi_bindings[port_class] = sorted_adapters
 
         # Then, scan components (existing logic)
         for component_class in _get_registered_components():

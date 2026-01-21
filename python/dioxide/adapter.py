@@ -155,6 +155,8 @@ class AdapterDecorator:
         *,
         profile: str | list[str] = '*',
         scope: Scope = Scope.SINGLETON,
+        multi: bool = False,
+        priority: int = 0,
     ) -> Callable[[type[T]], type[T]]:
         """Register an adapter for a port with profile(s) and optional scope.
 
@@ -163,7 +165,7 @@ class AdapterDecorator:
         The adapter will be activated when the container scans with a matching profile.
 
         The decorator:
-            1. Stores port, profile, and scope metadata on the class
+            1. Stores port, profile, scope, multi, and priority metadata on the class
             2. Registers the adapter in the global registry for auto-discovery
             3. Uses the specified scope (default: SINGLETON) for instance lifecycle
             4. Normalizes profile names to lowercase for consistent matching
@@ -190,6 +192,18 @@ class AdapterDecorator:
                   Use for test fakes that need fresh state per resolution,
                   or adapters that should not share state between callers.
 
+            multi: Enable multi-binding mode for plugin patterns. When ``True``,
+                multiple adapters can be registered for the same port, and they
+                can be injected as a collection using ``list[Port]`` type hint.
+                Default is ``False`` (single adapter per port per profile).
+
+                Multi-binding is useful for plugin systems where multiple
+                implementations should be collected rather than selecting one.
+                A port must be either single-binding OR multi-binding, not both.
+            priority: Ordering priority for multi-bindings (only used when
+                ``multi=True``). Lower values are instantiated first. Default is 0.
+                Use negative values to run before default, positive to run after.
+
         Returns:
             Decorator function that marks the class as an adapter. The decorated
             class can be used normally and will be discovered by Container.scan().
@@ -197,6 +211,7 @@ class AdapterDecorator:
         Raises:
             TypeError: If the decorated class does not implement the port's required
                 methods (detected at runtime during resolution).
+            ValueError: At scan time if a port has both single and multi adapters.
 
         Examples:
             Single profile (production)::
@@ -263,6 +278,40 @@ class AdapterDecorator:
                 email2 = container.resolve(EmailPort)
                 assert email1 is not email2  # Different instances
 
+            Multi-binding for plugin systems::
+
+                class PluginPort(Protocol):
+                    def process(self, data: str) -> str: ...
+
+
+                @adapter.for_(PluginPort, multi=True, priority=10)
+                class ValidationPlugin:
+                    def process(self, data: str) -> str:
+                        return validate(data)
+
+
+                @adapter.for_(PluginPort, multi=True, priority=20)
+                class TransformPlugin:
+                    def process(self, data: str) -> str:
+                        return transform(data)
+
+
+                @service
+                class DataProcessor:
+                    def __init__(self, plugins: list[PluginPort]):
+                        self.plugins = plugins  # All plugins, ordered by priority
+
+                    def run(self, data: str) -> str:
+                        for plugin in self.plugins:
+                            data = plugin.process(data)
+                        return data
+
+
+                container = Container()
+                container.scan(profile=Profile.PRODUCTION)
+                processor = container.resolve(DataProcessor)
+                # processor.plugins == [ValidationPlugin, TransformPlugin]
+
         See Also:
             - :class:`dioxide.scope.Scope` - SINGLETON vs FACTORY scope
             - :class:`dioxide.profile_enum.Profile` - Standard profile enum values
@@ -283,6 +332,8 @@ class AdapterDecorator:
             cls.__dioxide_port__ = port  # type: ignore[attr-defined]
             cls.__dioxide_profiles__ = frozenset(profiles)  # type: ignore[attr-defined]
             cls.__dioxide_scope__ = scope  # type: ignore[attr-defined]
+            cls.__dioxide_multi__ = multi  # type: ignore[attr-defined]
+            cls.__dioxide_priority__ = priority  # type: ignore[attr-defined]
 
             # Register with global registry
             _adapter_registry.add(cls)
