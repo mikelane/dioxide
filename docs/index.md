@@ -322,6 +322,8 @@ examples/04-lifecycle-management
 :caption: Guides
 
 guides/scoping
+guides/lifecycle-async-patterns
+guides/decorator-order
 ```
 
 ```{toctree}

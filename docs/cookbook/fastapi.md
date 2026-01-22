@@ -56,6 +56,8 @@ async def health() -> dict[str, str]:
 3. **Lifespan integration**: The `async with container` pattern ensures `@lifecycle` components are properly initialized and disposed
 4. **Clean shutdown**: On SIGTERM, FastAPI's lifespan exits, triggering container cleanup
 
+**Why this works with async lifecycle methods**: The `async with Container(...)` pattern calls `await container.start()` on entry, which runs all `initialize()` methods before the first request. Resolution via `container.resolve()` is synchronous and returns already-initialized instances. See [Lifecycle Async Patterns](../guides/lifecycle-async-patterns.md) for details.
+
 ---
 
 ## Recipe: Inject Services into Routes
@@ -450,6 +452,7 @@ async def create_user(
 
 ## See Also
 
+- [Lifecycle Async Patterns](../guides/lifecycle-async-patterns.md) - Understanding async/sync relationship
 - [Testing Patterns](testing.md) - More testing recipes
 - [Configuration](configuration.md) - Environment-specific config
 - [examples/fastapi/](https://github.com/mikelane/dioxide/tree/main/examples/fastapi) - Complete working example

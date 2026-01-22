@@ -25,6 +25,7 @@ dioxide.lifecycle
        - **Type-safe validation**: Validates initialize() and dispose() methods at decoration time
        - **Rollback on failure**: If initialization fails, already-initialized components are cleaned up
        - **Works with @service and @adapter**: Composable with other dioxide decorators
+       - **Order-independent**: Decorator order doesn't matter (both orderings work identically)
 
    The lifecycle flow follows this pattern:
 
@@ -260,6 +261,17 @@ dioxide.lifecycle
                    if self.session:
                        await self.session.close()
 
+   Important - Async/Sync Relationship:
+       Lifecycle methods (``initialize()``, ``dispose()``) are **async**, while
+       ``container.resolve()`` is **sync**. This is intentional:
+
+       - ``resolve()`` is fast and returns already-initialized instances
+       - Lifecycle methods run once at ``container.start()`` / ``container.stop()``
+       - Always call ``start()`` (or use ``async with container:``) before resolving
+         components that have ``@lifecycle``
+
+       See the :doc:`/docs/guides/lifecycle-async-patterns` guide for detailed patterns.
+
    .. seealso::
 
       - :class:`dioxide.container.Container.start` - Initialize lifecycle components
@@ -267,6 +279,7 @@ dioxide.lifecycle
       - :class:`dioxide.adapter.adapter` - For marking boundary implementations
       - :class:`dioxide.services.service` - For core domain logic
       - :class:`dioxide.exceptions.CircularDependencyError` - Raised on circular dependencies
+      - :doc:`/docs/guides/lifecycle-async-patterns` - Async/sync patterns guide
 
 
 
@@ -323,10 +336,26 @@ Module Contents
 
    Decorator Composition:
        @lifecycle works with both @service and @adapter.for_() decorators.
-       Apply @lifecycle as the innermost decorator (closest to the class):
+       **Decorator order does not affect functionality** - both orderings work
+       identically because dioxide decorators only add metadata attributes.
+
+       For consistency, we **recommend** @lifecycle as the innermost decorator:
 
        - ``@service`` + ``@lifecycle`` - For stateful core logic (rare)
        - ``@adapter.for_()`` + ``@lifecycle`` - For infrastructure adapters (common)
+
+       Both orders work::
+
+           # Recommended (but both work identically)
+           @adapter.for_(Port, profile=Profile.PRODUCTION)
+           @lifecycle
+           class MyAdapter: ...
+
+
+           # Also works (not recommended for consistency)
+           @lifecycle
+           @adapter.for_(Port, profile=Profile.PRODUCTION)
+           class MyAdapter: ...
 
    :param cls: The class to mark for lifecycle management. Must implement both
                ``initialize()`` and ``dispose()`` methods as async coroutines.
@@ -465,7 +494,8 @@ Module Contents
        - **Don't raise in dispose()**: Log errors but continue cleanup (best-effort)
        - **Use for adapters**: Infrastructure components at the seams (databases, queues, etc.)
        - **Rare for services**: Core domain logic is usually stateless (no lifecycle needed)
-       - **Apply as innermost decorator**: ``@adapter.for_() @lifecycle class ...``
+       - **Consistent ordering**: For readability, use ``@adapter.for_() @lifecycle class ...``
+         (though both orders work identically)
 
    .. seealso::
 
@@ -473,3 +503,4 @@ Module Contents
       - :class:`dioxide.container.Container.stop` - Dispose all lifecycle components
       - :class:`dioxide.adapter.adapter` - For marking infrastructure adapters
       - :class:`dioxide.services.service` - For marking core domain services
+      - :doc:`/docs/guides/lifecycle-async-patterns` - Async/sync patterns guide
