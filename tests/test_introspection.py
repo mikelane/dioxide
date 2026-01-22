@@ -177,16 +177,17 @@ class DescribeActiveProfile:
 
         assert result == Profile.DEVELOPMENT
 
-    def it_returns_none_for_custom_string_profile(self) -> None:
-        """active_profile returns None for custom string profiles not in Profile enum."""
+    def it_returns_profile_for_custom_string_profile(self) -> None:
+        """active_profile returns Profile instance for custom string profiles."""
         container = Container()
-        # Manually set a custom profile that's not in the Profile enum
+        # Manually set a custom profile (extensible Profile supports any string)
         container._active_profile = 'custom-environment'
 
         result = container.active_profile
 
-        # Custom profiles can't be converted to Profile enum, so return None
-        assert result is None
+        # Custom profiles are valid Profile instances (Profile is extensible)
+        assert result == Profile('custom-environment')
+        assert isinstance(result, Profile)
 
 
 class DescribeGetAdaptersFor:

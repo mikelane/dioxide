@@ -1309,12 +1309,12 @@ class Container:
     def active_profile(self) -> Profile | None:
         """Get the profile this container was scanned with.
 
-        Returns the Profile enum value used when scan() was called, or None if
+        Returns the Profile value used when scan() was called, or None if
         scan() hasn't been called yet. This is useful for debugging to verify
         which profile is active.
 
         Returns:
-            The Profile enum value if scan() was called with a profile,
+            The Profile value if scan() was called with a profile,
             None if scan() hasn't been called or was called without a profile.
 
         Example:
@@ -1332,20 +1332,15 @@ class Container:
 
         See Also:
             - :meth:`scan` - Set the active profile during scanning
-            - :class:`dioxide.Profile` - Available profile enum values
+            - :class:`dioxide.Profile` - Extensible profile identifiers
         """
         from dioxide.profile_enum import Profile
 
         if self._active_profile is None:
             return None
-        # Convert stored string back to Profile enum
-        # Handle both lowercase stored values and Profile.ALL ('*')
-        try:
-            return Profile(self._active_profile)
-        except ValueError:
-            # If it's not a standard profile, return None
-            # This shouldn't happen in normal use
-            return None
+        # Convert stored string back to Profile instance
+        # Profile is a str subclass, so any string is valid
+        return Profile(self._active_profile)
 
     def get_adapters_for(self, port: type[Any]) -> dict[Profile, type[Any]]:
         """Get all adapters registered for a port across all profiles.
@@ -1553,7 +1548,6 @@ class Container:
             _get_registered_components,
         )
         from dioxide.adapter import _adapter_registry
-        from dioxide.profile_enum import Profile
         from dioxide.scope import Scope
 
         # Import package modules if package parameter provided
@@ -1561,12 +1555,9 @@ class Container:
             self._import_package(package)
 
         # Normalize profile to lowercase if provided
-        # Handle both Profile enum and string values
+        # Profile is a str subclass, so we can call .lower() directly on any str
         if profile is not None:
-            if isinstance(profile, Profile):
-                normalized_profile = profile.value.lower()
-            else:
-                normalized_profile = profile.lower()
+            normalized_profile = profile.lower()
         else:
             normalized_profile = None
 
