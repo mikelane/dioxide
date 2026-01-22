@@ -263,7 +263,7 @@ Important - Async/Sync Relationship:
     - Always call ``start()`` (or use ``async with container:``) before resolving
       components that have ``@lifecycle``
 
-    See the :doc:`/docs/guides/lifecycle-async-patterns` guide for detailed patterns.
+    See the :doc:`/guides/lifecycle-async-patterns` guide for detailed patterns.
 
 See Also:
     - :class:`dioxide.container.Container.start` - Initialize lifecycle components
@@ -271,7 +271,7 @@ See Also:
     - :class:`dioxide.adapter.adapter` - For marking boundary implementations
     - :class:`dioxide.services.service` - For core domain logic
     - :class:`dioxide.exceptions.CircularDependencyError` - Raised on circular dependencies
-    - :doc:`/docs/guides/lifecycle-async-patterns` - Async/sync patterns guide
+    - :doc:`/guides/lifecycle-async-patterns` - Async/sync patterns guide
 """
 
 import inspect
@@ -479,7 +479,7 @@ def lifecycle(cls: T) -> T:
         - :class:`dioxide.container.Container.stop` - Dispose all lifecycle components
         - :class:`dioxide.adapter.adapter` - For marking infrastructure adapters
         - :class:`dioxide.services.service` - For marking core domain services
-        - :doc:`/docs/guides/lifecycle-async-patterns` - Async/sync patterns guide
+        - :doc:`/guides/lifecycle-async-patterns` - Async/sync patterns guide
     """
     # Validate that initialize() method exists
     if not hasattr(cls, 'initialize'):

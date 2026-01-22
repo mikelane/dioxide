@@ -147,24 +147,32 @@ Flask is synchronous, so you need an async event loop for lifecycle methods:
 
 ```python
 import asyncio
+import atexit
 from dioxide import Container, Profile
-from flask import Flask, g
+from flask import Flask
 
 container = Container()
+_container_started = False
+
 
 def create_app() -> Flask:
     app = Flask(__name__)
 
-    @app.before_first_request
-    def startup():
-        container.scan(profile=Profile.PRODUCTION)
-        # Run async start() in a new event loop
-        asyncio.run(container.start())
+    @app.before_request
+    def ensure_container_started():
+        global _container_started
+        if not _container_started:
+            container.scan(profile=Profile.PRODUCTION)
+            # Run async start() in a new event loop
+            asyncio.run(container.start())
+            _container_started = True
 
-    @app.teardown_appcontext
-    def shutdown(exception=None):
-        # Run async stop() in a new event loop
-        asyncio.run(container.stop())
+    # Register shutdown handler for graceful cleanup
+    def shutdown():
+        if _container_started:
+            asyncio.run(container.stop())
+
+    atexit.register(shutdown)
 
     @app.route("/users")
     def list_users():
