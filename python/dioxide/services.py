@@ -5,6 +5,27 @@ Services represent the business rules layer that sits between ports (interfaces)
 adapters (implementations), containing the core application logic that doesn't depend
 on infrastructure details.
 
+When to Use @service:
+    Use @service when you are writing **core business logic** that:
+
+    - Should be the **same across all environments** (production, test, development)
+    - Contains **domain rules** and **use cases**
+    - **Does NOT talk directly** to external systems (databases, APIs, filesystems)
+    - **Depends on ports** (Protocols/ABCs) for infrastructure needs
+
+    Do NOT use @service if you need different implementations per profile.
+    Use @adapter.for_() instead.
+
+    **Decision Tree**::
+
+        Is this core business logic that shouldn't change between environments?
+        |-- YES --> Use @service
+        |-- NO  --> Use @adapter.for_(Port, profile=...)
+
+        Does this component talk directly to external systems?
+        |-- YES --> Use @adapter.for_(Port, profile=...)
+        |-- NO  --> Probably @service
+
 Key Characteristics:
     - **Singleton scope**: One shared instance across the application
     - **Profile-agnostic**: Available in ALL profiles (production, test, development)

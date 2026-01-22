@@ -165,6 +165,19 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 - **Profiles** (`Profile.PRODUCTION`, `Profile.TEST`): Environment selection
 - **Container**: Auto-wires dependencies based on type hints
 
+### When to Use @service vs @adapter
+
+| Use `@service` when... | Use `@adapter.for_()` when... |
+|------------------------|-------------------------------|
+| Writing core business logic | Connecting to external systems |
+| Component is the same across all environments | Different implementations needed per profile |
+| Implementing domain rules and use cases | Implementing a Port (Protocol) contract |
+| Example: `UserService`, `OrderProcessor` | Example: `SendGridAdapter`, `PostgresRepository` |
+
+**The key insight:** Services ARE the abstraction (core domain). Adapters IMPLEMENT abstractions (ports) for different environments.
+
+See the [full guide on @service vs @adapter](https://dioxide.readthedocs.io/en/latest/user_guide/services-vs-adapters/) for decision trees and detailed examples.
+
 ## Constructor Dependency Injection
 
 When you create an adapter or service with constructor parameters, dioxide **automatically injects dependencies** based on type hints. This is the core mechanism that makes dependency injection "just work".
