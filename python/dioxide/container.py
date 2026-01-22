@@ -856,12 +856,7 @@ class Container:
 
             if scope == Scope.REQUEST:
                 component_name = component_type.__name__
-                raise ScopeError(
-                    f'Cannot resolve {component_name}: REQUEST-scoped components require an active scope.\n\n'
-                    f'Hint: Use container.create_scope() to create a scope context:\n'
-                    f'  async with container.create_scope() as scope:\n'
-                    f'      ctx = scope.resolve({component_name})'
-                )
+                raise ScopeError(f'Cannot resolve {component_name}: REQUEST-scoped, requires active scope')
 
         try:
             return self._rust_core.resolve(component_type)
@@ -1067,30 +1062,23 @@ class Container:
                 # If dependency is REQUEST-scoped, we have a captive dependency
                 if dep_scope == Scope.REQUEST:
                     raise CaptiveDependencyError(
-                        f'Captive dependency detected: {component_class.__name__} (SINGLETON) depends on '
-                        f'{dep_type.__name__} (REQUEST).\n\n'
-                        f'SINGLETON components cannot depend on REQUEST-scoped components because '
-                        f'the REQUEST instance would be captured and never refreshed.\n\n'
-                        f'Solutions:\n'
-                        f'1. Change {component_class.__name__} to REQUEST scope:\n'
-                        f'   @service(scope=Scope.REQUEST)\n'
-                        f'2. Change {dep_type.__name__} to SINGLETON scope (if appropriate)\n'
-                        f'3. Use a factory/provider pattern to get fresh instances'
+                        f'Captive dependency: {component_class.__name__} (SINGLETON) -> {dep_type.__name__} (REQUEST)\n'
+                        f'  SINGLETON cannot depend on REQUEST-scoped components'
                     )
 
     def _build_adapter_not_found_message(self, port_type: type[Any]) -> str:
-        """Build helpful error message for missing adapter.
+        """Build terse error message for missing adapter.
 
         Args:
             port_type: The port type that couldn't be resolved.
 
         Returns:
-            A detailed error message with context and hints.
+            A terse error message (1-3 lines) with key diagnostic info.
         """
         from dioxide.adapter import _adapter_registry
 
         port_name = port_type.__name__
-        profile_str = f" '{self._active_profile}'" if self._active_profile else ' (no profile active)'
+        profile_str = self._active_profile if self._active_profile else 'none'
 
         # Find all adapters for this port (across all profiles)
         adapters_for_port = []
@@ -1099,38 +1087,29 @@ class Container:
                 if adapter_class.__dioxide_port__ is port_type:
                     adapter_name = adapter_class.__name__
                     profiles: frozenset[str] = getattr(adapter_class, '__dioxide_profiles__', frozenset())
-                    profile_list = ', '.join(sorted(profiles)) if profiles else 'no profiles'
-                    adapters_for_port.append(f'{adapter_name} (profiles: {profile_list})')
+                    profile_list = ', '.join(sorted(profiles)) if profiles else 'none'
+                    adapters_for_port.append(f'{adapter_name} ({profile_list})')
 
+        # Build terse message: 1-3 lines max
+        lines = [f"No adapter for {port_name} in profile '{profile_str}'"]
         if adapters_for_port:
-            available_adapters = '\n  '.join(adapters_for_port)
-            hint = (
-                f'\n\nAvailable adapters for {port_name}:\n  {available_adapters}\n\n'
-                f'Hint: Add an adapter for profile{profile_str}:\n'
-                f'  @adapter.for_({port_name}, profile={self._active_profile or "your_profile"!r})'
-            )
+            lines.append(f'  Registered: {", ".join(adapters_for_port)}')
         else:
-            hint = (
-                f'\n\nNo adapters registered for {port_name}.\n\n'
-                f'Hint: Register an adapter:\n'
-                f'  @adapter.for_({port_name}, profile={self._active_profile or "your_profile"!r})\n'
-                f'  class YourAdapter:\n'
-                f'      ...'
-            )
+            lines.append('  Registered: none')
 
-        return f'No adapter registered for port {port_name} with profile{profile_str}.{hint}'
+        return '\n'.join(lines)
 
     def _build_service_not_found_message(self, service_type: type[Any]) -> str:
-        """Build helpful error message for missing service/component.
+        """Build terse error message for missing service/component.
 
         Args:
             service_type: The service type that couldn't be resolved.
 
         Returns:
-            A detailed error message with context and hints.
+            A terse error message (1-3 lines) with key diagnostic info.
         """
         service_name = service_type.__name__
-        profile_str = f" '{self._active_profile}'" if self._active_profile else ''
+        profile_str = self._active_profile if self._active_profile else 'none'
 
         # Check if it's decorated with @service or @component
         from dioxide._registry import _get_registered_components
@@ -1138,41 +1117,28 @@ class Container:
         registered_components = list(_get_registered_components())
         is_registered = service_type in registered_components
 
+        # Build terse message: 1-3 lines max
+        lines = [f"Cannot resolve {service_name} in profile '{profile_str}'"]
+
         if is_registered:
             # Service is registered but has unresolvable dependency
-            # Try to identify the missing dependency
             try:
                 init_signature = inspect.signature(service_type.__init__)
                 type_hints = get_type_hints(service_type.__init__, globalns=service_type.__init__.__globals__)
                 dependencies = [
-                    (param_name, type_hints[param_name].__name__)
+                    type_hints[param_name].__name__
                     for param_name in init_signature.parameters
                     if param_name != 'self' and param_name in type_hints
                 ]
 
                 if dependencies:
-                    deps_str = ', '.join(f'{name}: {type_name}' for name, type_name in dependencies)
-                    hint = (
-                        f'\n\n{service_name} has dependencies: {deps_str}\n\n'
-                        f'One or more dependencies could not be resolved.\n'
-                        f'Check that all dependencies are registered with @service or @adapter.for_().'
-                    )
-                else:
-                    hint = f'\n\nCheck the {service_name} constructor dependencies.'
+                    lines.append(f'  Missing dependency: {", ".join(dependencies)}')
             except (ValueError, AttributeError, NameError):
-                hint = f'\n\nCheck the {service_name} constructor dependencies.'
+                lines.append('  Missing dependency: unknown')
         else:
-            # Service is not registered at all
-            hint = (
-                f'\n\n{service_name} is not registered in the container.\n\n'
-                f'Hint: Register the service:\n'
-                f'  @service  # or @component\n'
-                f'  class {service_name}:\n'
-                f'      ...'
-            )
+            lines.append('  Not registered (missing @service decorator)')
 
-        profile_context = f' (active profile: {profile_str})' if profile_str else ''
-        return f'Cannot resolve {service_name}{profile_context}.{hint}'
+        return '\n'.join(lines)
 
     def __getitem__(self, component_type: type[T]) -> T:
         """Resolve a component using bracket syntax.
@@ -1782,7 +1748,11 @@ class Container:
             unprocessed = set(all_instances) - set(sorted_instances)
             from dioxide.exceptions import CircularDependencyError
 
-            raise CircularDependencyError(f'Circular dependency detected involving: {unprocessed}')
+            # Build terse message with component names
+            component_names = ', '.join(sorted(type(inst).__name__ for inst in unprocessed))
+            raise CircularDependencyError(
+                f'Circular dependency in @lifecycle components\n  Involved: {component_names}'
+            )
 
         return sorted_instances
 
@@ -2317,7 +2287,7 @@ class ScopedContainer:
         Raises:
             ScopeError: Always raises, as nested scopes are not supported.
         """
-        raise ScopeError('Nested scopes are not supported in v0.3.0')
+        raise ScopeError('Nested scopes not supported')
 
     async def _dispose_lifecycle_components(self) -> None:
         """Dispose all REQUEST-scoped lifecycle components in reverse order.
