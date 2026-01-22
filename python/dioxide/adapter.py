@@ -245,7 +245,6 @@ class AdapterDecorator:
 
                 - Custom string: ``profile='integration'`` - no enum equivalent, allowed
                 - Custom list: ``profile=['perf', 'load']`` - custom profiles are extensible
-                - Star wildcard: ``profile='*'`` - use ``Profile.ALL`` instead
 
                 Profile names are normalized to lowercase for case-insensitive matching.
                 Default is ``Profile.ALL`` (available in all profiles).
