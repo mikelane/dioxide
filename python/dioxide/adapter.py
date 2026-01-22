@@ -4,6 +4,30 @@ The @adapter decorator enables marking concrete implementations (adapters) for
 Protocol/ABC ports with explicit profile associations, supporting hexagonal
 (ports-and-adapters) architecture patterns.
 
+When to Use @adapter.for_():
+    Use @adapter.for_() when you are implementing a **boundary component** that:
+
+    - **Connects to external systems** (databases, APIs, filesystems, network)
+    - Needs **different implementations per profile** (production, test, development)
+    - **Implements a port** (Protocol/ABC) contract
+    - Should be **swappable** without changing business logic
+
+    Do NOT use @adapter.for_() if:
+
+    - The component is core business logic (use @service instead)
+    - The component should be the same across all environments (use @service)
+    - You're not implementing a port interface
+
+    **Decision Tree**::
+
+        Do you need different implementations based on profile (test/prod/dev)?
+        |-- YES --> Define a Port (Protocol) + use @adapter.for_(Port, profile=...)
+        |-- NO  --> Use @service
+
+        Does this component talk to external systems (DB, network, filesystem)?
+        |-- YES --> Port + @adapter.for_() (allows faking in tests)
+        |-- NO  --> Probably @service
+
 In hexagonal architecture:
     - **Ports** are abstract interfaces (Protocols/ABCs) that define contracts
     - **Adapters** are concrete implementations that fulfill port contracts
