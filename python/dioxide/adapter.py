@@ -138,7 +138,7 @@ Container Resolution:
 
 See Also:
     - :class:`dioxide.services.service` - For marking core domain logic
-    - :class:`dioxide.profile_enum.Profile` - Standard profile enum values
+    - :class:`dioxide.profile_enum.Profile` - Extensible profile identifiers
     - :class:`dioxide.lifecycle.lifecycle` - For lifecycle management
     - :class:`dioxide.container.Container` - For profile-based resolution
 """
@@ -207,7 +207,7 @@ class AdapterDecorator:
         self,
         port: type[Any],
         *,
-        profile: Profile | str | list[Profile | str] = '*',
+        profile: Profile | str | list[Profile | str] = Profile.ALL,
         scope: Scope = Scope.SINGLETON,
         multi: bool = False,
         priority: int = 0,
@@ -228,7 +228,7 @@ class AdapterDecorator:
             port: The Protocol or ABC that this adapter implements. This defines
                 the interface contract that the adapter must fulfill. Services depend
                 on this port type, and the container will inject the active adapter.
-            profile: Profile enum value(s) determining when this adapter is active.
+            profile: Profile value(s) determining when this adapter is active.
 
                 **Canonical patterns (recommended)**:
 
@@ -248,8 +248,7 @@ class AdapterDecorator:
                 - Star wildcard: ``profile='*'`` - use ``Profile.ALL`` instead
 
                 Profile names are normalized to lowercase for case-insensitive matching.
-                Default is '*' (available in all profiles), but using ``Profile.ALL``
-                is preferred.
+                Default is ``Profile.ALL`` (available in all profiles).
             scope: Instance lifecycle scope. Controls how instances are created:
 
                 - ``Scope.SINGLETON`` (default): Same instance returned on every
@@ -385,7 +384,7 @@ class AdapterDecorator:
 
         See Also:
             - :class:`dioxide.scope.Scope` - SINGLETON vs FACTORY scope
-            - :class:`dioxide.profile_enum.Profile` - Standard profile enum values
+            - :class:`dioxide.profile_enum.Profile` - Extensible profile identifiers
             - :class:`dioxide.container.Container.scan` - Profile-based scanning
             - :class:`dioxide.lifecycle.lifecycle` - For initialization/cleanup
             - :class:`dioxide.services.service` - For core domain logic
@@ -394,7 +393,7 @@ class AdapterDecorator:
         def decorator(cls: type[T]) -> type[T]:
             # Emit deprecation warnings for non-canonical profile patterns
             if isinstance(profile, str):
-                # String profile (not Profile enum) is deprecated
+                # Raw string profile (not Profile instance) is deprecated for known profiles
                 if not isinstance(profile, Profile):
                     _warn_for_string_profile(profile)
                 profiles = {profile.lower()}

@@ -1,7 +1,8 @@
-"""Tests for Profile enum (Issue #96).
+"""Tests for Profile class (Issue #96, #311).
 
-Tests for the Profile enum that defines standard environment profiles
-for hexagonal architecture adapter selection.
+Tests for the Profile class that defines standard environment profiles
+for hexagonal architecture adapter selection. The Profile class is an
+extensible string subclass that provides type safety.
 """
 
 from __future__ import annotations
@@ -9,54 +10,61 @@ from __future__ import annotations
 from dioxide import Profile
 
 
-class DescribeProfileEnum:
-    """Tests for Profile enum functionality."""
+class DescribeProfileClass:
+    """Tests for Profile class functionality."""
 
     def it_defines_standard_production_profile(self) -> None:
-        """Profile.PRODUCTION has value 'production'."""
-        assert Profile.PRODUCTION.value == 'production'
+        """Profile.PRODUCTION equals 'production'."""
+        assert Profile.PRODUCTION == 'production'
 
     def it_defines_standard_test_profile(self) -> None:
-        """Profile.TEST has value 'test'."""
-        assert Profile.TEST.value == 'test'
+        """Profile.TEST equals 'test'."""
+        assert Profile.TEST == 'test'
 
     def it_defines_standard_development_profile(self) -> None:
-        """Profile.DEVELOPMENT has value 'development'."""
-        assert Profile.DEVELOPMENT.value == 'development'
+        """Profile.DEVELOPMENT equals 'development'."""
+        assert Profile.DEVELOPMENT == 'development'
 
     def it_defines_standard_staging_profile(self) -> None:
-        """Profile.STAGING has value 'staging'."""
-        assert Profile.STAGING.value == 'staging'
+        """Profile.STAGING equals 'staging'."""
+        assert Profile.STAGING == 'staging'
 
     def it_defines_standard_ci_profile(self) -> None:
-        """Profile.CI has value 'ci'."""
-        assert Profile.CI.value == 'ci'
+        """Profile.CI equals 'ci'."""
+        assert Profile.CI == 'ci'
 
     def it_defines_all_profile_with_wildcard(self) -> None:
         """Profile.ALL uses wildcard for universal adapters."""
-        assert Profile.ALL.value == '*'
+        assert Profile.ALL == '*'
 
-    def it_is_a_string_enum(self) -> None:
-        """Profile is a string enum for serialization."""
+    def it_is_a_string_subclass(self) -> None:
+        """Profile is a string subclass for compatibility."""
         assert isinstance(Profile.PRODUCTION, str)
         assert isinstance(Profile.TEST, str)
         assert isinstance(Profile.DEVELOPMENT, str)
 
-    def it_has_exactly_expected_members(self) -> None:
-        """Profile enum has exactly the expected members."""
-        expected = {'PRODUCTION', 'TEST', 'DEVELOPMENT', 'STAGING', 'CI', 'ALL'}
-        actual = {p.name for p in Profile}
-        assert actual == expected
+    def it_has_all_expected_builtin_profiles(self) -> None:
+        """Profile class has all expected built-in profiles."""
+        expected_profiles = {
+            Profile.PRODUCTION: 'production',
+            Profile.TEST: 'test',
+            Profile.DEVELOPMENT: 'development',
+            Profile.STAGING: 'staging',
+            Profile.CI: 'ci',
+            Profile.ALL: '*',
+        }
+        for profile, expected_value in expected_profiles.items():
+            assert profile == expected_value
+            assert isinstance(profile, Profile)
 
     def it_can_be_compared_by_value(self) -> None:
         """Profile members can be compared as strings."""
-        # String enum members inherit from str, so direct comparison works at runtime
-        # mypy is overly strict here, but runtime behavior is correct
-        assert Profile.PRODUCTION == 'production'  # type: ignore
-        assert Profile.ALL == '*'  # type: ignore
+        assert Profile.PRODUCTION == 'production'
+        assert Profile.ALL == '*'
 
-    def it_can_be_accessed_by_string_value(self) -> None:
-        """Profile members can be accessed by their string value."""
-        assert Profile('production') == Profile.PRODUCTION
-        assert Profile('test') == Profile.TEST
-        assert Profile('*') == Profile.ALL
+    def it_can_create_custom_profiles(self) -> None:
+        """Custom profiles can be created for extensibility."""
+        custom = Profile('integration')
+        assert custom == 'integration'
+        assert isinstance(custom, Profile)
+        assert isinstance(custom, str)
