@@ -1,6 +1,32 @@
 # dioxide Examples
 
-This directory contains working examples demonstrating dioxide's hexagonal architecture patterns.
+This directory contains working examples demonstrating dioxide's hexagonal architecture patterns,
+real-world usage scenarios, and migration guides from other DI frameworks.
+
+## Directory Structure
+
+```
+examples/
+├── README.md                    # This file
+├── getting_started_example.py   # Quick start example
+├── hexagonal_architecture.py    # Complete hexagonal architecture demo
+│
+├── patterns/                    # Real-world patterns
+│   ├── dependency-chain/        # Multi-service dependency chains
+│   ├── circular-deps/           # Circular dependency detection/fixes
+│   ├── caching/                 # Caching adapter pattern
+│   └── external-api/            # External API with error injection
+│
+├── migrations/                  # Framework migration guides
+│   ├── from-dependency-injector/  # Migration from dependency-injector
+│   └── from-injector/             # Migration from injector
+│
+└── [framework integrations]/    # FastAPI, Flask, Celery, Click
+    ├── fastapi/
+    ├── flask/
+    ├── celery/
+    └── click/
+```
 
 ## Running the Examples
 
@@ -20,6 +46,134 @@ maturin develop
 # Run examples from repository root
 python examples/hexagonal_architecture.py
 ```
+
+---
+
+## Pattern Examples
+
+### Multi-Service Dependency Chain
+
+**Location:** `patterns/dependency-chain/`
+
+Demonstrates complex service dependencies: `OrderController -> OrderService -> [OrderRepository, ProductRepository, Cache, EventPublisher]`
+
+```bash
+# Run the example
+python examples/patterns/dependency-chain/app/main.py
+
+# Run tests
+uv run pytest examples/patterns/dependency-chain/tests/ -v
+```
+
+**Key concepts:**
+- Services depending on multiple ports
+- Deep dependency trees resolved automatically
+- Test isolation with fresh containers
+
+### Circular Dependency Detection
+
+**Location:** `patterns/circular-deps/`
+
+Shows how dioxide detects circular dependencies and provides solutions using event-based patterns.
+
+**Files:**
+- `problem.py` - Demonstrates the circular dependency error
+- `solution.py` - Shows the fix using events
+
+```bash
+# See the error
+python examples/patterns/circular-deps/problem.py
+
+# See the solution
+python examples/patterns/circular-deps/solution.py
+```
+
+### Caching Adapter Pattern
+
+**Location:** `patterns/caching/`
+
+Demonstrates the caching adapter pattern where a `CachingUserRepository` wraps the real repository.
+
+```bash
+# Run the example
+python examples/patterns/caching/app/main.py
+
+# Run tests
+uv run pytest examples/patterns/caching/tests/ -v
+```
+
+**Key concepts:**
+- Decorator pattern for cross-cutting concerns
+- Cache-aside pattern with dioxide
+- Fake cache for testing with hit/miss tracking
+
+### External API Integration
+
+**Location:** `patterns/external-api/`
+
+Complete payment gateway integration with error injection for testing various failure scenarios.
+
+```bash
+# Run the example
+python examples/patterns/external-api/app/main.py
+
+# Run tests
+uv run pytest examples/patterns/external-api/tests/ -v
+```
+
+**Key concepts:**
+- Error injection pattern for testing failures
+- Transient failure simulation with retry logic
+- Rate limiting and network error handling
+- Domain-specific error types
+
+---
+
+## Migration Guides
+
+### From dependency-injector
+
+**Location:** `migrations/from-dependency-injector/`
+
+Complete before/after comparison showing migration from the `dependency-injector` library.
+
+**Structure:**
+- `before/` - Original code using `dependency-injector`
+- `after/` - Migrated code using `dioxide`
+
+**Key changes:**
+- Replace `Container` with provider definitions -> `@adapter.for_()` decorators
+- Replace ABC interfaces -> Protocols
+- Replace `providers.Singleton/Factory` -> `scope` parameter
+- Replace provider overrides -> `Profile.TEST`
+
+```bash
+# Run dioxide version tests
+uv run pytest examples/migrations/from-dependency-injector/after/tests/ -v
+```
+
+### From injector
+
+**Location:** `migrations/from-injector/`
+
+Complete before/after comparison showing migration from the `injector` library (Guice-inspired).
+
+**Structure:**
+- `before/` - Original code using `injector`
+- `after/` - Migrated code using `dioxide`
+
+**Key changes:**
+- Remove `@inject` decorators (dioxide infers from type hints)
+- Replace `Module` classes -> `@adapter.for_()` decorators
+- Replace `Injector([modules])` -> `Container().scan(profile=...)`
+- Replace `binder.bind()` -> profile-based registration
+
+```bash
+# Run dioxide version tests
+uv run pytest examples/migrations/from-injector/after/tests/ -v
+```
+
+---
 
 ### Hexagonal Architecture Example
 
