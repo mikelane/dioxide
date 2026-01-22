@@ -3,6 +3,13 @@
 This module provides helpers for writing tests with dioxide, making it easy
 to create isolated test containers with fresh state.
 
+Instance containers (created via ``Container()`` or ``fresh_container()``) are the
+**recommended pattern for testing**. Each container instance has its own singleton
+cache, ensuring complete test isolation without state leakage.
+
+For guidance on when to use instance containers vs the global container, see
+the Container Patterns guide: :doc:`/docs/user_guide/container_patterns`
+
 Pytest Plugin Usage:
     Add the following to your ``conftest.py`` to enable dioxide pytest fixtures::
 

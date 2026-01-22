@@ -258,7 +258,7 @@ Testing Example:
         # Tests run in milliseconds, no network calls, fully isolated
 
 Global Container Instance:
-    For most applications, use the global singleton container::
+    For simple scripts and CLI tools, use the global singleton container::
 
         from dioxide import container, Profile
 
@@ -273,6 +273,13 @@ Global Container Instance:
             # All @lifecycle components initialized
             await app.run()
         # All @lifecycle components disposed
+
+    .. note::
+
+        For testing, libraries, and larger applications, prefer **instance containers**
+        (``Container()``) over the global container. Instance containers provide better
+        isolation and are easier to test. See the user guide for details:
+        :doc:`/docs/user_guide/container_patterns`
 
 Manual Registration Example:
     Register components without decorators::
