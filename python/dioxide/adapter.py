@@ -277,6 +277,7 @@ class AdapterDecorator:
 
             With lifecycle management::
 
+                # Recommended order (but both work identically)
                 @adapter.for_(CachePort, profile=Profile.PRODUCTION)
                 @lifecycle
                 class RedisAdapter:
@@ -285,6 +286,10 @@ class AdapterDecorator:
 
                     async def dispose(self) -> None:
                         self.redis.close()
+
+            Note: Decorator order is flexible - dioxide decorators only add metadata
+            attributes, so ``@lifecycle @adapter.for_(...)`` also works. We recommend
+            ``@adapter.for_() @lifecycle`` for consistency across the codebase.
 
             With FACTORY scope (new instance per resolution)::
 

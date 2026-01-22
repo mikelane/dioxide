@@ -18,6 +18,7 @@ Key Features:
     - **Type-safe validation**: Validates initialize() and dispose() methods at decoration time
     - **Rollback on failure**: If initialization fails, already-initialized components are cleaned up
     - **Works with @service and @adapter**: Composable with other dioxide decorators
+    - **Order-independent**: Decorator order doesn't matter (both orderings work identically)
 
 The lifecycle flow follows this pattern:
 
@@ -298,10 +299,26 @@ def lifecycle(cls: T) -> T:
 
     Decorator Composition:
         @lifecycle works with both @service and @adapter.for_() decorators.
-        Apply @lifecycle as the innermost decorator (closest to the class):
+        **Decorator order does not affect functionality** - both orderings work
+        identically because dioxide decorators only add metadata attributes.
+
+        For consistency, we **recommend** @lifecycle as the innermost decorator:
 
         - ``@service`` + ``@lifecycle`` - For stateful core logic (rare)
         - ``@adapter.for_()`` + ``@lifecycle`` - For infrastructure adapters (common)
+
+        Both orders work::
+
+            # Recommended (but both work identically)
+            @adapter.for_(Port, profile=Profile.PRODUCTION)
+            @lifecycle
+            class MyAdapter: ...
+
+
+            # Also works (not recommended for consistency)
+            @lifecycle
+            @adapter.for_(Port, profile=Profile.PRODUCTION)
+            class MyAdapter: ...
 
     Args:
         cls: The class to mark for lifecycle management. Must implement both
@@ -442,7 +459,8 @@ def lifecycle(cls: T) -> T:
         - **Don't raise in dispose()**: Log errors but continue cleanup (best-effort)
         - **Use for adapters**: Infrastructure components at the seams (databases, queues, etc.)
         - **Rare for services**: Core domain logic is usually stateless (no lifecycle needed)
-        - **Apply as innermost decorator**: ``@adapter.for_() @lifecycle class ...``
+        - **Consistent ordering**: For readability, use ``@adapter.for_() @lifecycle class ...``
+          (though both orders work identically)
 
     See Also:
         - :class:`dioxide.container.Container.start` - Initialize all lifecycle components
