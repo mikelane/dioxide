@@ -7,9 +7,13 @@ Canonical patterns (no warnings):
 - profile=[Profile.TEST, Profile.DEVELOPMENT] (list of enums)
 - profile=Profile.ALL (all profiles)
 
-Deprecated patterns (emit warnings):
-- profile="production" (string instead of enum)
-- profile='*' (star string instead of Profile.ALL)
+Deprecated patterns (emit warnings for KNOWN profiles only):
+- profile="production" (string instead of enum) - warns
+- profile='*' (star string instead of Profile.ALL) - warns
+
+Custom profiles (allowed without warning for extensibility):
+- profile="integration" (no enum equivalent) - no warning
+- profile="performance" (no enum equivalent) - no warning
 """
 
 from __future__ import annotations
@@ -119,8 +123,8 @@ class DescribeProfileDeprecations:
             assert len(deprecation_warnings) == 1
             assert 'Profile.CI' in str(deprecation_warnings[0].message)
 
-        def it_emits_warning_for_custom_string_profile(self) -> None:
-            """Using profile='custom' emits generic deprecation warning."""
+        def it_allows_custom_string_profile_without_warning(self) -> None:
+            """Using profile='custom' does NOT emit warning (extensibility)."""
 
             class StoragePort(Protocol):
                 def store(self, data: str) -> None: ...
@@ -134,8 +138,8 @@ class DescribeProfileDeprecations:
                         pass
 
             deprecation_warnings = [w for w in caught_warnings if issubclass(w.category, DeprecationWarning)]
-            assert len(deprecation_warnings) == 1
-            assert 'Profile enum' in str(deprecation_warnings[0].message)
+            # Custom profiles are allowed without warning for extensibility
+            assert len(deprecation_warnings) == 0
 
         def it_emits_warnings_for_list_of_strings(self) -> None:
             """Using profile=['test', 'development'] emits deprecation warnings."""
@@ -263,6 +267,40 @@ class DescribeCanonicalPatterns:
             class SingleEnumListAdapter:
                 def query(self, sql: str) -> list[dict[str, object]]:
                     return []
+
+        deprecation_warnings = [w for w in caught_warnings if issubclass(w.category, DeprecationWarning)]
+        assert len(deprecation_warnings) == 0
+
+    def it_accepts_custom_string_profile_without_warning(self) -> None:
+        """Custom profiles like 'integration' are allowed without warning."""
+
+        class IntegrationPort(Protocol):
+            def integrate(self) -> None: ...
+
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter('always')
+
+            @adapter.for_(IntegrationPort, profile='integration')
+            class IntegrationAdapter:
+                def integrate(self) -> None:
+                    pass
+
+        deprecation_warnings = [w for w in caught_warnings if issubclass(w.category, DeprecationWarning)]
+        assert len(deprecation_warnings) == 0
+
+    def it_accepts_list_of_custom_strings_without_warning(self) -> None:
+        """Custom profile lists like ['perf', 'load'] are allowed without warning."""
+
+        class BenchmarkPort(Protocol):
+            def benchmark(self) -> float: ...
+
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter('always')
+
+            @adapter.for_(BenchmarkPort, profile=['perf', 'load', 'stress'])
+            class BenchmarkAdapter:
+                def benchmark(self) -> float:
+                    return 0.0
 
         deprecation_warnings = [w for w in caught_warnings if issubclass(w.category, DeprecationWarning)]
         assert len(deprecation_warnings) == 0

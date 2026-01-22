@@ -172,17 +172,20 @@ _PROFILE_STRING_TO_ENUM_NAME: dict[str, str] = {
 
 
 def _warn_for_string_profile(profile_value: str) -> None:
-    """Emit deprecation warning for string profile usage.
+    """Emit deprecation warning for string profile usage when an enum equivalent exists.
+
+    Only warns for known profile strings that have a corresponding Profile enum value.
+    Custom profile strings (e.g., 'integration', 'performance') are allowed without
+    warning to support extensibility.
 
     Args:
-        profile_value: The string profile value being deprecated.
+        profile_value: The string profile value to check.
     """
     canonical = _PROFILE_STRING_TO_ENUM_NAME.get(profile_value.lower())
     if canonical:
         message = f"Using string profile '{profile_value}' is deprecated. Use {canonical} instead."
-    else:
-        message = f"Using string profile '{profile_value}' is deprecated. Use a Profile enum value instead."
-    warnings.warn(message, DeprecationWarning, stacklevel=3)
+        warnings.warn(message, DeprecationWarning, stacklevel=3)
+    # Custom profiles (no enum equivalent) are allowed without warning
 
 
 # Global registry for adapter-decorated classes
@@ -235,8 +238,13 @@ class AdapterDecorator:
 
                 **Deprecated patterns** (emit DeprecationWarning):
 
-                - String: ``profile='production'`` - use ``Profile.PRODUCTION`` instead
-                - List of strings: ``profile=['test', 'dev']`` - use enum list instead
+                - Known string: ``profile='production'`` - use ``Profile.PRODUCTION`` instead
+                - Wildcard string: ``profile='*'`` - use ``Profile.ALL`` instead
+
+                **Custom profiles** (allowed without warning):
+
+                - Custom string: ``profile='integration'`` - no enum equivalent, allowed
+                - Custom list: ``profile=['perf', 'load']`` - custom profiles are extensible
                 - Star wildcard: ``profile='*'`` - use ``Profile.ALL`` instead
 
                 Profile names are normalized to lowercase for case-insensitive matching.
