@@ -6,8 +6,8 @@ dioxide is a modern dependency injection framework that combines:
 - Type-safe dependency resolution with IDE autocomplete support
 - Profile-based configuration for different environments
 
-Quick Start (using global singleton container):
-    >>> from dioxide import container, service, adapter, Profile
+Quick Start (using instance container - recommended):
+    >>> from dioxide import Container, service, adapter, Profile
     >>> from typing import Protocol
     >>>
     >>> class EmailPort(Protocol):
@@ -23,17 +23,29 @@ Quick Start (using global singleton container):
     ...     def __init__(self, email: EmailPort):
     ...         self.email = email
     >>>
+    >>> container = Container()
     >>> container.scan(profile=Profile.PRODUCTION)
-    >>> service = container.resolve(UserService)
+    >>> user_service = container.resolve(UserService)
     >>> # Or use bracket syntax:
-    >>> service = container[UserService]
+    >>> user_service = container[UserService]
 
-Advanced: Creating separate containers for testing isolation:
-    >>> from dioxide import Container
+Global container (convenient for simple scripts):
+    >>> from dioxide import container, Profile
     >>>
-    >>> test_container = Container()
-    >>> test_container.scan(profile=Profile.TEST)
-    >>> service = test_container.resolve(UserService)
+    >>> container.scan(profile=Profile.PRODUCTION)
+    >>> user_service = container.resolve(UserService)
+    >>>
+    >>> # For testing with global container, use reset_global_container()
+    >>> from dioxide import reset_global_container
+    >>> reset_global_container()
+
+Testing (fresh container per test - recommended):
+    >>> from dioxide.testing import fresh_container
+    >>> from dioxide import Profile
+    >>>
+    >>> async with fresh_container(profile=Profile.TEST) as test_container:
+    ...     service = test_container.resolve(UserService)
+    ...     # Test with isolated container
 
 For more information, see the README and documentation.
 """

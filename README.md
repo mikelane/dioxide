@@ -165,6 +165,23 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 - **Profiles** (`Profile.PRODUCTION`, `Profile.TEST`): Environment selection
 - **Container**: Auto-wires dependencies based on type hints
 
+### Container Patterns: Global vs Instance
+
+dioxide offers two ways to use the container:
+
+| Pattern | Syntax | Best For |
+|---------|--------|----------|
+| **Instance** (recommended) | `container = Container()` | Libraries, web apps, testing |
+| **Global** | `from dioxide import container` | Simple scripts, CLI tools |
+
+**Instance containers** (shown in examples above) provide better isolation and are easier to test.
+Each `Container()` instance has its own singleton cache and state.
+
+**Global container** is a convenience for simple use cases where passing containers around is tedious.
+For testing with the global container, use `reset_global_container()` between tests.
+
+See [Container Patterns](https://dioxide.readthedocs.io/en/latest/user_guide/container_patterns/) for detailed guidance.
+
 ### When to Use @service vs @adapter
 
 | Use `@service` when... | Use `@adapter.for_()` when... |
