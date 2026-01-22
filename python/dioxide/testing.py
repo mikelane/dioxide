@@ -87,13 +87,6 @@ async def fresh_container(
         yield container
 
 
-# =============================================================================
-# Pytest Fixtures
-# =============================================================================
-# These fixtures are automatically available when loading this module as a
-# pytest plugin: pytest_plugins = ["dioxide.testing"]
-
-
 @pytest.fixture
 def dioxide_container() -> Iterator[Container]:
     """Provide a fresh, isolated Container for each test.
@@ -119,10 +112,11 @@ def dioxide_container() -> Iterator[Container]:
 
 @pytest.fixture
 def fresh_container_fixture() -> Iterator[Container]:
-    """Alias for dioxide_container fixture.
+    """Alternative fixture with name matching the context manager.
 
-    This fixture is an alias for ``dioxide_container`` to provide a more
-    descriptive name that matches the ``fresh_container`` context manager.
+    This fixture behaves like ``dioxide_container``, providing a fresh
+    Container for each test. The name matches the ``fresh_container``
+    context manager for consistency.
 
     Yields:
         A fresh Container instance.
@@ -154,10 +148,14 @@ def dioxide_container_session() -> Iterator[Container]:
 
     Example::
 
+        # In conftest.py - scan once at session start
+        @pytest.fixture(scope='session', autouse=True)
+        def setup_session_container(dioxide_container_session):
+            dioxide_container_session.scan(profile=Profile.TEST)
+
+
+        # In tests - just use the pre-scanned container
         async def test_shared_container(dioxide_container_session):
-            # First test in session - scan once
-            if not dioxide_container_session._is_scanned:
-                dioxide_container_session.scan(profile=Profile.TEST)
             service = dioxide_container_session.resolve(SharedService)
             # ... use shared container
     """
