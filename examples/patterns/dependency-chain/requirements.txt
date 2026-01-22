@@ -1,0 +1,2 @@
+# Production dependencies
+dioxide>=1.0.0

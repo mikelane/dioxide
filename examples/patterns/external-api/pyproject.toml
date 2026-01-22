@@ -1,0 +1,21 @@
+[project]
+name = "dioxide-external-api-example"
+version = "0.1.0"
+description = "External API integration example with error injection using dioxide"
+requires-python = ">=3.11"
+dependencies = [
+    "dioxide>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+python_classes = ["Describe*", "Test*"]
+python_functions = ["it_*", "test_*"]
+testpaths = ["tests"]
