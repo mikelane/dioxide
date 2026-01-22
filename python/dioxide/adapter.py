@@ -145,18 +145,45 @@ See Also:
 
 from __future__ import annotations
 
+import warnings
 from typing import (
     TYPE_CHECKING,
     Any,
     TypeVar,
 )
 
+from dioxide.profile_enum import Profile
 from dioxide.scope import Scope
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 T = TypeVar('T')
+
+# Mapping from lowercase profile strings to their canonical Profile enum names
+_PROFILE_STRING_TO_ENUM_NAME: dict[str, str] = {
+    'production': 'Profile.PRODUCTION',
+    'test': 'Profile.TEST',
+    'development': 'Profile.DEVELOPMENT',
+    'staging': 'Profile.STAGING',
+    'ci': 'Profile.CI',
+    '*': 'Profile.ALL',
+}
+
+
+def _warn_for_string_profile(profile_value: str) -> None:
+    """Emit deprecation warning for string profile usage.
+
+    Args:
+        profile_value: The string profile value being deprecated.
+    """
+    canonical = _PROFILE_STRING_TO_ENUM_NAME.get(profile_value.lower())
+    if canonical:
+        message = f"Using string profile '{profile_value}' is deprecated. Use {canonical} instead."
+    else:
+        message = f"Using string profile '{profile_value}' is deprecated. Use a Profile enum value instead."
+    warnings.warn(message, DeprecationWarning, stacklevel=3)
+
 
 # Global registry for adapter-decorated classes
 _adapter_registry: set[type[Any]] = set()
@@ -177,7 +204,7 @@ class AdapterDecorator:
         self,
         port: type[Any],
         *,
-        profile: str | list[str] = '*',
+        profile: Profile | str | list[Profile | str] = '*',
         scope: Scope = Scope.SINGLETON,
         multi: bool = False,
         priority: int = 0,
@@ -198,16 +225,23 @@ class AdapterDecorator:
             port: The Protocol or ABC that this adapter implements. This defines
                 the interface contract that the adapter must fulfill. Services depend
                 on this port type, and the container will inject the active adapter.
-            profile: Profile name(s) determining when this adapter is active. Can be:
+            profile: Profile enum value(s) determining when this adapter is active.
 
-                - Single string: ``profile='production'``
-                - List of strings: ``profile=['test', 'development']``
-                - Profile enum: ``profile=Profile.PRODUCTION``
+                **Canonical patterns (recommended)**:
+
+                - Single enum: ``profile=Profile.PRODUCTION``
                 - List of enums: ``profile=[Profile.TEST, Profile.DEVELOPMENT]``
-                - Universal: ``profile='*'`` or ``profile=Profile.ALL`` (all profiles)
+                - Universal: ``profile=Profile.ALL`` (all profiles)
+
+                **Deprecated patterns** (emit DeprecationWarning):
+
+                - String: ``profile='production'`` - use ``Profile.PRODUCTION`` instead
+                - List of strings: ``profile=['test', 'dev']`` - use enum list instead
+                - Star wildcard: ``profile='*'`` - use ``Profile.ALL`` instead
 
                 Profile names are normalized to lowercase for case-insensitive matching.
-                Default is '*' (available in all profiles).
+                Default is '*' (available in all profiles), but using ``Profile.ALL``
+                is preferred.
             scope: Instance lifecycle scope. Controls how instances are created:
 
                 - ``Scope.SINGLETON`` (default): Same instance returned on every
@@ -350,12 +384,19 @@ class AdapterDecorator:
         """
 
         def decorator(cls: type[T]) -> type[T]:
-            # Normalize profile to set of lowercase strings
+            # Emit deprecation warnings for non-canonical profile patterns
             if isinstance(profile, str):
+                # String profile (not Profile enum) is deprecated
+                if not isinstance(profile, Profile):
+                    _warn_for_string_profile(profile)
                 profiles = {profile.lower()}
             else:
-                # Deduplicate and normalize to lowercase
-                profiles = {p.lower() for p in profile}
+                # List of profiles - check each element
+                profiles = set()
+                for p in profile:
+                    if isinstance(p, str) and not isinstance(p, Profile):
+                        _warn_for_string_profile(p)
+                    profiles.add(p.lower())
 
             # Store metadata on class
             cls.__dioxide_port__ = port  # type: ignore[attr-defined]

@@ -16,6 +16,19 @@ class Profile(str, Enum):
     for a given environment. The Profile enum provides standard
     environment profiles used throughout dioxide for adapter selection.
 
+    **Canonical Usage Pattern**:
+
+    Always use Profile enum values instead of raw strings::
+
+        # Recommended (canonical pattern)
+        @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+        @adapter.for_(CachePort, profile=[Profile.TEST, Profile.DEVELOPMENT])
+        @adapter.for_(LogPort, profile=Profile.ALL)
+
+        # Deprecated (emits DeprecationWarning)
+        @adapter.for_(EmailPort, profile='production')  # Use Profile.PRODUCTION
+        @adapter.for_(CachePort, profile='*')  # Use Profile.ALL
+
     Attributes:
         PRODUCTION: Production environment profile
         TEST: Test environment profile
