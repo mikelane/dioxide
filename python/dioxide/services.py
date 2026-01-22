@@ -27,11 +27,16 @@ When to Use @service:
         |-- NO  --> Probably @service
 
 Key Characteristics:
-    - **Singleton scope**: One shared instance across the application
+    - **Configurable scope**: SINGLETON (default), FACTORY, or REQUEST scope
     - **Profile-agnostic**: Available in ALL profiles (production, test, development)
     - **Depends on ports**: Services depend on Protocols/ABCs, not concrete implementations
     - **Pure business logic**: No knowledge of databases, APIs, or infrastructure
     - **Constructor injection**: Dependencies resolved from __init__ type hints
+
+Scope Options:
+    - **@service** or **@service(scope=Scope.SINGLETON)**: One shared instance (default)
+    - **@service(scope=Scope.FACTORY)**: New instance on every resolve()
+    - **@service(scope=Scope.REQUEST)**: One instance per request scope
 
 In hexagonal architecture, services form the hexagon's center - the core domain
 that is isolated from external concerns. They depend on ports (abstractions), and
@@ -176,8 +181,9 @@ def service(
     They are available in all profiles (production, test, development) and
     support automatic dependency injection.
 
-    This is a specialized form of @component that:
+    Key characteristics:
     - Uses SINGLETON scope by default (one shared instance)
+    - Can use FACTORY scope for fresh instances per resolution
     - Can use REQUEST scope for per-request instances
     - Does not require profile specification (available everywhere)
     - Represents core domain logic in hexagonal architecture
@@ -200,6 +206,19 @@ def service(
             ... class NotificationService:
             ...     def __init__(self, email: EmailService):
             ...         self.email = email
+
+        Factory-scoped service (new instance each time):
+            >>> from dioxide import service, Scope
+            >>>
+            >>> @service(scope=Scope.FACTORY)
+            ... class TransactionContext:
+            ...     def __init__(self):
+            ...         self.transaction_id = str(uuid.uuid4())
+            >>>
+            >>> # Each resolve() returns a fresh instance:
+            >>> ctx1 = container.resolve(TransactionContext)
+            >>> ctx2 = container.resolve(TransactionContext)
+            >>> assert ctx1 is not ctx2
 
         Request-scoped service:
             >>> from dioxide import service, Scope
