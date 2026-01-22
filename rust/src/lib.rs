@@ -264,6 +264,21 @@ impl RustContainer {
     pub fn reset(&self) {
         self.singletons.write().unwrap().clear();
     }
+
+    /// Get list of all registered types
+    pub fn get_registered_types(&self, py: Python) -> Vec<Py<PyType>> {
+        let providers = self.providers.read().unwrap();
+        providers
+            .keys()
+            .map(|key| key.py_type.clone_ref(py))
+            .collect()
+    }
+
+    /// Check if a type is registered
+    pub fn contains(&self, type_key: &TypeKey) -> bool {
+        let providers = self.providers.read().unwrap();
+        providers.contains_key(type_key)
+    }
 }
 
 impl Default for RustContainer {
@@ -361,6 +376,17 @@ impl Container {
     /// Clear cached singleton instances for test isolation
     fn reset(&self) {
         self.rust_core.reset();
+    }
+
+    /// Get list of all registered types for introspection
+    fn get_registered_types(&self, py: Python) -> Vec<Py<PyType>> {
+        self.rust_core.get_registered_types(py)
+    }
+
+    /// Check if a type is registered
+    fn contains(&self, py_type: &Bound<'_, PyType>) -> bool {
+        let type_key = TypeKey::new(py_type.clone().unbind());
+        self.rust_core.contains(&type_key)
     }
 }
 

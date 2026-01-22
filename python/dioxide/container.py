@@ -1219,6 +1219,198 @@ class Container:
         """
         return len(self._rust_core)
 
+    # =========================================================================
+    # Introspection API (for debugging)
+    # =========================================================================
+
+    def list_registered(self) -> list[type[Any]]:
+        """List all types registered in this container.
+
+        Returns a list of all type objects (classes, protocols, ABCs) that have
+        been registered with this container, either through scan() or manual
+        registration methods.
+
+        This is useful for debugging registration issues - when you get a
+        "not registered" error, call this method to see what IS registered.
+
+        Returns:
+            List of type objects registered in this container. The list order
+            is not guaranteed to be consistent between calls.
+
+        Example:
+            >>> from dioxide import Container, Profile, adapter, service
+            >>>
+            >>> class EmailPort(Protocol):
+            ...     async def send(self, to: str) -> None: ...
+            >>>
+            >>> @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+            ... class SendGridAdapter:
+            ...     async def send(self, to: str) -> None:
+            ...         pass
+            >>>
+            >>> @service
+            ... class UserService:
+            ...     pass
+            >>>
+            >>> container = Container()
+            >>> container.scan(profile=Profile.PRODUCTION)
+            >>> registered = container.list_registered()
+            >>> # registered contains [EmailPort, UserService]
+
+        See Also:
+            - :meth:`is_registered` - Check if a specific type is registered
+            - :meth:`get_adapters_for` - Get adapter details for a port
+        """
+        return list(self._rust_core.get_registered_types())
+
+    def is_registered(self, port_or_service: type[Any]) -> bool:
+        """Check if a type is registered in this container.
+
+        Useful for verifying that a type has been registered before attempting
+        to resolve it, or for test assertions about container configuration.
+
+        Args:
+            port_or_service: The type to check. Can be a port (Protocol/ABC)
+                or a service class.
+
+        Returns:
+            True if the type is registered, False otherwise.
+
+        Example:
+            >>> from dioxide import Container, Profile, adapter
+            >>>
+            >>> class EmailPort(Protocol):
+            ...     async def send(self, to: str) -> None: ...
+            >>>
+            >>> @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+            ... class SendGridAdapter:
+            ...     async def send(self, to: str) -> None:
+            ...         pass
+            >>>
+            >>> container = Container()
+            >>> assert container.is_registered(EmailPort) is False
+            >>> container.scan(profile=Profile.PRODUCTION)
+            >>> assert container.is_registered(EmailPort) is True
+
+        See Also:
+            - :meth:`list_registered` - Get all registered types
+            - :meth:`resolve` - Actually resolve a registered type
+        """
+        return self._rust_core.contains(port_or_service)
+
+    @property
+    def active_profile(self) -> Profile | None:
+        """Get the profile this container was scanned with.
+
+        Returns the Profile enum value used when scan() was called, or None if
+        scan() hasn't been called yet. This is useful for debugging to verify
+        which profile is active.
+
+        Returns:
+            The Profile enum value if scan() was called with a profile,
+            None if scan() hasn't been called or was called without a profile.
+
+        Example:
+            >>> from dioxide import Container, Profile
+            >>>
+            >>> container = Container()
+            >>> assert container.active_profile is None
+            >>>
+            >>> container.scan(profile=Profile.PRODUCTION)
+            >>> assert container.active_profile == Profile.PRODUCTION
+            >>>
+            >>> # Or with constructor profile:
+            >>> container2 = Container(profile=Profile.TEST)
+            >>> assert container2.active_profile == Profile.TEST
+
+        See Also:
+            - :meth:`scan` - Set the active profile during scanning
+            - :class:`dioxide.Profile` - Available profile enum values
+        """
+        from dioxide.profile_enum import Profile
+
+        if self._active_profile is None:
+            return None
+        # Convert stored string back to Profile enum
+        # Handle both lowercase stored values and Profile.ALL ('*')
+        try:
+            return Profile(self._active_profile)
+        except ValueError:
+            # If it's not a standard profile, return None
+            # This shouldn't happen in normal use
+            return None
+
+    def get_adapters_for(self, port: type[Any]) -> dict[Profile, type[Any]]:
+        """Get all adapters registered for a port across all profiles.
+
+        Inspects the global adapter registry to find all adapters that implement
+        the specified port, organized by profile. This is useful for debugging
+        to see which adapters are available for a port in different profiles.
+
+        Note: This method looks at the global adapter registry, not just what's
+        registered in this container instance. This allows you to see all
+        available adapters even if the container was scanned with a different
+        profile.
+
+        Args:
+            port: The port type (Protocol/ABC) to find adapters for.
+
+        Returns:
+            Dictionary mapping Profile enum values to adapter classes.
+            Returns an empty dict if no adapters are registered for the port.
+
+        Example:
+            >>> from dioxide import Container, Profile, adapter
+            >>>
+            >>> class EmailPort(Protocol):
+            ...     async def send(self, to: str) -> None: ...
+            >>>
+            >>> @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+            ... class SendGridAdapter:
+            ...     async def send(self, to: str) -> None:
+            ...         pass
+            >>>
+            >>> @adapter.for_(EmailPort, profile=Profile.TEST)
+            ... class FakeEmailAdapter:
+            ...     async def send(self, to: str) -> None:
+            ...         pass
+            >>>
+            >>> container = Container()
+            >>> container.scan(profile=Profile.PRODUCTION)
+            >>> adapters = container.get_adapters_for(EmailPort)
+            >>> # adapters = {
+            >>> #     Profile.PRODUCTION: SendGridAdapter,
+            >>> #     Profile.TEST: FakeEmailAdapter,
+            >>> # }
+
+        See Also:
+            - :meth:`is_registered` - Check if a port has an adapter
+            - :func:`adapter.for_` - Register adapters for ports
+        """
+        from dioxide.adapter import _adapter_registry
+        from dioxide.profile_enum import Profile
+
+        result: dict[Profile, type[Any]] = {}
+
+        for adapter_class in _adapter_registry:
+            adapter_port = getattr(adapter_class, '__dioxide_port__', None)
+            if adapter_port is not port:
+                continue
+
+            # Get profiles for this adapter
+            profiles: frozenset[str] = getattr(adapter_class, '__dioxide_profiles__', frozenset())
+
+            for profile_str in profiles:
+                try:
+                    profile_enum = Profile(profile_str)
+                    result[profile_enum] = adapter_class
+                except ValueError:
+                    # Custom profile string - skip it in the result
+                    # (can't convert to Profile enum)
+                    pass
+
+        return result
+
     def _import_package(self, package_name: str) -> None:
         """Import all modules in a package to trigger decorator execution.
 
