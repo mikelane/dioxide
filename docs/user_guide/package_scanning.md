@@ -300,22 +300,25 @@ service = container.resolve(UserService)
 ### FastAPI Application
 
 ```python
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from dioxide import Container, Profile
 
-app = FastAPI()
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Initialize and cleanup container with FastAPI lifecycle."""
     container = Container()
     container.scan(package="myapp.adapters", profile=Profile.PRODUCTION)
     container.scan(package="myapp.services", profile=Profile.PRODUCTION)
-    await container.start()
-    app.state.container = container
+    async with container:
+        app.state.container = container
+        yield
 
-@app.on_event("shutdown")
-async def shutdown():
-    await app.state.container.stop()
+
+app = FastAPI(lifespan=lifespan)
 ```
 
 ### Testing with Fresh Container
