@@ -21,7 +21,7 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 The MLP Vision document is the **canonical design reference** for Dioxide. It defines:
 - **The North Star**: Make the Dependency Inversion Principle feel inevitable
 - **Guiding Principles**: 7 core principles (type-safe, explicit, fails fast, etc.)
-- **Core API Design**: `@adapter.for_()`, `@service`, `Profile` enum, container, lifecycle
+- **Core API Design**: `@adapter.for_()`, `@service`, `Profile` class, container, lifecycle
 - **Testing Philosophy**: Fakes at the seams, NOT mocks
 - **What We're NOT Building**: Explicit exclusions list for MLP scope
 
@@ -77,7 +77,7 @@ dioxide/
 │   ├── adapter.py           # @adapter.for_() decorator
 │   ├── services.py          # @service decorator
 │   ├── lifecycle.py         # @lifecycle decorator
-│   ├── profile_enum.py      # Profile enum (PRODUCTION, TEST, etc.)
+│   ├── profile_enum.py      # Profile class (extensible, type-safe)
 │   ├── scope.py             # Scope enum (SINGLETON, FACTORY)
 │   ├── exceptions.py        # Custom exceptions
 │   ├── testing.py           # Test utilities (fresh_container)
@@ -171,3 +171,66 @@ For detailed guidelines, see `.claude/rules/`:
 - Use **uv** for Python tooling: `uv run`, `uv sync`, `uv add`
 - Do NOT use `uv pip` commands
 - Use groups/extras where appropriate: `uv sync --group dev`
+
+## Profile Class API
+
+Profile is an **extensible str subclass**, NOT a StrEnum. This enables custom profiles while maintaining type safety:
+
+```python
+# Built-in profiles (class constants)
+Profile.PRODUCTION  # == 'production'
+Profile.TEST        # == 'test'
+Profile.DEVELOPMENT # == 'development'
+Profile.STAGING     # == 'staging'
+Profile.CI          # == 'ci'
+Profile.ALL         # == '*'
+
+# Custom profiles are first-class citizens
+INTEGRATION = Profile('integration')
+LOAD_TEST = Profile('load-test')
+
+# Type-safe usage
+@adapter.for_(Port, profile=INTEGRATION)
+@adapter.for_(Port, profile=[LOAD_TEST, Profile.STAGING])
+```
+
+**Patterns that DON'T work (StrEnum remnants):**
+
+| Wrong | Why | Correct |
+|-------|-----|---------|
+| `profile.value` | No `.value` attribute | `str(profile)` or just use `profile` |
+| `profile.name` | No `.name` attribute | Not available |
+| `for p in Profile:` | Not iterable | Use explicit list of constants |
+
+## Worktree Cleanup
+
+After merging a PR, clean up worktrees from the **main repo directory**, not from inside the worktree:
+
+```bash
+cd /Users/mikelane/dev/dioxide  # Main repo, NOT inside worktree
+safe-worktree-remove .worktrees/issue-XXX-name
+```
+
+**Never** run `git worktree remove` directly - use `safe-worktree-remove` which prevents self-deletion errors.
+
+## Merging PRs
+
+### CI-Aware Merge
+
+Don't poll CI manually. Use `--watch` to wait for CI then merge:
+
+```bash
+gh pr checks <number> --watch && gh pr merge <number> --squash --delete-branch
+```
+
+### Self-Authored PRs
+
+For self-authored PRs where worktree branch deletion may fail:
+
+```bash
+gh pr merge <number> --squash  # Omit --delete-branch
+# Then manually clean up:
+safe-worktree-remove .worktrees/issue-XXX-name
+```
+
+**Note**: GitHub prohibits self-approval. Use `gh pr review --comment` for self-authored PRs, not `--approve`.
