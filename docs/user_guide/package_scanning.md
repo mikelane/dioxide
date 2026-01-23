@@ -266,11 +266,11 @@ container = Container()
 # Register instance directly
 container.register_instance(ConfigPort, my_config)
 
-# Register singleton factory
-container.register_singleton(DatabasePort, PostgresAdapter)
+# Register singleton factory (called once, cached)
+container.register_singleton(DatabasePort, lambda: PostgresAdapter())
 
-# Register transient (new instance each time)
-container.register_transient(RequestHandler, RequestHandlerImpl)
+# Register factory (new instance each time)
+container.register_factory(RequestHandler, lambda: RequestHandlerImpl())
 
 # Now resolve - no scan() needed
 service = container.resolve(UserService)
