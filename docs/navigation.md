@@ -39,6 +39,7 @@ Get dioxide working with your framework of choice.
 
 1. {doc}`cookbook/fastapi` - Lifespan, dependency injection, and testing endpoints
 2. {doc}`examples/04-lifecycle-management` - Async startup/shutdown patterns
+3. {doc}`guides/lifecycle-async-patterns` - Understanding async lifecycle with sync resolution
 
 ### Django
 
@@ -48,6 +49,7 @@ Get dioxide working with your framework of choice.
 
 1. {doc}`user_guide/getting_started` - Core container patterns work everywhere
 2. {doc}`guides/scoping` - Request scoping for web applications
+3. {doc}`guides/lifecycle-async-patterns` - Async lifecycle in sync frameworks (Flask, Django)
 
 ---
 
@@ -91,4 +93,5 @@ Browse the cookbook for copy-paste solutions to common problems.
 | Using dependency-injector | Why dioxide, then migration guide |
 | Familiar with hexagonal architecture | Hexagonal architecture guide, then testing |
 | Mock-heavy test suite | Testing philosophy, then migration from mocks |
-| FastAPI developer | FastAPI cookbook, then testing patterns |
+| FastAPI developer | FastAPI cookbook, then lifecycle async patterns |
+| Flask/Django developer | Lifecycle async patterns, then cookbook |
