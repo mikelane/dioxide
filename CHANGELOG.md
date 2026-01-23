@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Container introspection API** (#327)
+  - `container.list_registrations()` returns all registered types with metadata
+  - Useful for debugging and verifying container state
+  - Shows scope (singleton/factory), source (scan/manual), and profile
+
+- **Pytest fixtures** (#324)
+  - `fresh_container` fixture for isolated test containers
+  - `production_container` and `test_container` convenience fixtures
+  - Available from `dioxide.testing` module
+
+- **Terse error messages** (#323)
+  - Runtime errors now 1-3 lines max with actionable guidance
+  - No more stack trace noise for common configuration errors
+  - Clear "what went wrong" + "how to fix it" format
+
+- **Deprecation warnings for non-canonical profile patterns** (#333)
+  - Using string profiles (`profile='production'`) now emits `DeprecationWarning`
+  - Guides users to canonical `Profile.PRODUCTION` pattern
+  - Strings still work but will be removed in v2.0
+
+### Documentation
+
+- **Developer Experience (DX) Overhaul** - Epic #309 complete (13/13 issues)
+  - Package scanning guide: behavior, side effects, best practices (#335, #321)
+  - Async/sync lifecycle patterns guide (#334, #320)
+  - Decorator order clarification (order is irrelevant) (#331, #322)
+  - Global vs instance container usage guide (#329, #313)
+  - @service vs @adapter decision tree and mental model (#326, #314)
+  - Real-world pattern examples and migration guides (#328, #319)
+  - Auto-scan documentation (#310)
+  - Profile system canonical pattern docs (#311)
+  - Scope parameter for @service documented (#315)
+
+### Tests
+
+- Comprehensive BDD tests for auto-scan feature (#332)
+- Scope parameter tests for @service decorator (#330)
+- Rust backend benchmark suite with performance baselines (#325, #318)
+
 ## [1.1.2] - 2026-01-20
 
 ### Added
