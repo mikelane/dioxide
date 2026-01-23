@@ -299,6 +299,7 @@ philosophy
 
 user_guide/getting_started
 user_guide/container_patterns
+user_guide/package_scanning
 user_guide/services-vs-adapters
 user_guide/hexagonal_architecture
 user_guide/architecture

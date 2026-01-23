@@ -24,8 +24,9 @@ Understand what dioxide offers and whether it fits your needs.
 
 1. {doc}`why-dioxide` - Philosophy, feature comparison, and honest limitations
 2. {doc}`user_guide/hexagonal_architecture` - How dioxide maps to ports-and-adapters
-3. {doc}`TESTING_GUIDE` - Testing philosophy (fakes over mocks)
-4. {doc}`migration-from-dependency-injector` - Coming from another DI framework?
+3. {doc}`user_guide/package_scanning` - How scanning works, side effects, and best practices
+4. {doc}`TESTING_GUIDE` - Testing philosophy (fakes over mocks)
+5. {doc}`migration-from-dependency-injector` - Coming from another DI framework?
 
 ---
 
