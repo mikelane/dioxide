@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-01-23
+
+### ⚠️ BREAKING CHANGES
+
+- **Profile is now an extensible `str` subclass instead of `StrEnum`** (#333)
+  - `Profile.PRODUCTION`, `Profile.TEST`, etc. still work unchanged
+  - **Broken:** `profile.value` → use `str(profile)` or just `profile`
+  - **Broken:** `profile.name` → not available, use the constant directly
+  - **Broken:** `for p in Profile:` → use explicit list `[Profile.PRODUCTION, Profile.TEST, ...]`
+  - **Broken:** `Profile['PRODUCTION']` → use `Profile.PRODUCTION` directly
+  - **New:** Custom profiles are now first-class: `MY_PROFILE = Profile('custom')`
+
 ### Added
 
 - **Container introspection API** (#327)
