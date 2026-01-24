@@ -170,6 +170,8 @@ See Also:
 
 from __future__ import annotations
 
+from typing import Self
+
 
 class DioxideError(Exception):
     """Base class for all dioxide errors with rich formatting.
@@ -223,7 +225,7 @@ class DioxideError(Exception):
 
         return '\n'.join(lines)
 
-    def with_context(self, **kwargs: object) -> DioxideError:
+    def with_context(self, **kwargs: object) -> Self:
         """Add context information to the error.
 
         Args:
@@ -235,7 +237,7 @@ class DioxideError(Exception):
         self.context.update(kwargs)
         return self
 
-    def with_suggestion(self, suggestion: str) -> DioxideError:
+    def with_suggestion(self, suggestion: str) -> Self:
         """Add a suggestion for how to fix the error.
 
         Args:
@@ -247,7 +249,7 @@ class DioxideError(Exception):
         self.suggestions.append(suggestion)
         return self
 
-    def with_example(self, example: str) -> DioxideError:
+    def with_example(self, example: str) -> Self:
         """Add an example code snippet showing how to fix the error.
 
         Args:
