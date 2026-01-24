@@ -544,6 +544,9 @@ Module Contents
       :param instance: The pre-created instance to return for this type. Must
                        be an instance of component_type or a compatible type.
 
+      :raises TypeError: If the instance is not compatible with component_type.
+          For regular classes, uses isinstance() check. For Protocol types,
+          uses structural compatibility checking (duck typing).
       :raises KeyError: If the type is already registered in this container.
           Each type can only be registered once.
 

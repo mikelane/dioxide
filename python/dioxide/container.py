@@ -589,6 +589,10 @@ class Container:
         returned whenever the type is resolved. Useful for registering
         configuration objects or external dependencies.
 
+        Type safety is enforced at runtime: the instance must be an instance
+        of component_type (or a subclass). For Protocol types, structural
+        compatibility is checked.
+
         Args:
             component_type: The type to register. This is used as the lookup
                 key when resolving dependencies.
@@ -596,6 +600,7 @@ class Container:
                 be an instance of component_type or a compatible type.
 
         Raises:
+            TypeError: If the instance is not an instance of component_type.
             KeyError: If the type is already registered in this container.
                 Each type can only be registered once.
 
@@ -612,8 +617,66 @@ class Container:
             >>> resolved = container.resolve(Config)
             >>> assert resolved is config_instance
             >>> assert resolved.debug is True
+
+        Type safety example:
+            >>> container = Container()
+            >>> container.register_instance(str, 42)  # Raises TypeError
+            Traceback (most recent call last):
+                ...
+            TypeError: instance must be of type 'str', got 'int'
         """
+        self._validate_instance_type(component_type, instance)
         self._rust_core.register_instance(component_type, instance)
+
+    def _validate_instance_type(self, component_type: type[T], instance: T) -> None:
+        """Validate that instance is compatible with component_type.
+
+        Args:
+            component_type: The expected type.
+            instance: The instance to validate.
+
+        Raises:
+            TypeError: If instance is not compatible with component_type.
+        """
+        # Check for Protocol types
+        if self._is_port(component_type):
+            # For protocols, check structural compatibility
+            if not self._implements_protocol(instance, component_type):
+                instance_type_name = type(instance).__name__
+                raise TypeError(f"instance must be of type '{component_type.__name__}', got '{instance_type_name}'")
+        else:
+            # For regular classes, use isinstance check
+            if not isinstance(instance, component_type):
+                instance_type_name = type(instance).__name__
+                raise TypeError(f"instance must be of type '{component_type.__name__}', got '{instance_type_name}'")
+
+    def _implements_protocol(self, instance: Any, protocol: type[Any]) -> bool:
+        """Check if instance implements a Protocol.
+
+        Args:
+            instance: The instance to check.
+            protocol: The Protocol type to check against.
+
+        Returns:
+            True if instance implements all methods defined by the protocol.
+        """
+        # Get all methods defined by the protocol (excluding dunder methods)
+        protocol_methods = set()
+        for name in dir(protocol):
+            if name.startswith('_'):
+                continue
+            attr = getattr(protocol, name, None)
+            if callable(attr):
+                protocol_methods.add(name)
+
+        # Check if instance has all required methods
+        for method_name in protocol_methods:
+            if not hasattr(instance, method_name):
+                return False
+            if not callable(getattr(instance, method_name)):
+                return False
+
+        return True
 
     def register_class(self, component_type: type[T], implementation: type[T]) -> None:
         """Register a class to instantiate for a given type.
