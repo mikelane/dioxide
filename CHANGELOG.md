@@ -22,9 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Container introspection API** (#327)
-  - `container.list_registrations()` returns all registered types with metadata
+  - `container.list_registered()` returns all registered types
   - Useful for debugging and verifying container state
-  - Shows scope (singleton/factory), source (scan/manual), and profile
 
 - **Pytest fixtures** (#324)
   - `fresh_container` fixture for isolated test containers
