@@ -156,6 +156,34 @@ class DescribeRegisterInstanceTypeSafety:
 
         assert resolved is fake
 
+    def it_rejects_protocol_instance_missing_required_method(self) -> None:
+        """Protocol implementations missing required methods raise TypeError."""
+
+        class EmailPort(Protocol):
+            def send(self, to: str, message: str) -> None: ...
+
+        class IncompleteAdapter:
+            pass  # Missing send method
+
+        container = Container()
+
+        with pytest.raises(TypeError, match='instance must be of type'):
+            container.register_instance(EmailPort, IncompleteAdapter())
+
+    def it_rejects_protocol_instance_with_non_callable_attribute(self) -> None:
+        """Protocol implementations with non-callable attributes raise TypeError."""
+
+        class EmailPort(Protocol):
+            def send(self, to: str, message: str) -> None: ...
+
+        class BrokenAdapter:
+            send = 'not a method'  # Attribute exists but is not callable
+
+        container = Container()
+
+        with pytest.raises(TypeError, match='instance must be of type'):
+            container.register_instance(EmailPort, BrokenAdapter())
+
 
 class DescribeConfigWithPydanticSettings:
     """Tests for integration with Pydantic Settings pattern."""
