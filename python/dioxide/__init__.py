@@ -64,6 +64,9 @@ from .container import (
 from .exceptions import (
     AdapterNotFoundError,
     CaptiveDependencyError,
+    CircularDependencyError,
+    DioxideError,
+    ResolutionError,
     ScopeError,
     ServiceNotFoundError,
 )
@@ -77,8 +80,11 @@ __version__ = '1.0.1'
 __all__ = [
     'AdapterNotFoundError',
     'CaptiveDependencyError',
+    'CircularDependencyError',
     'Container',
+    'DioxideError',
     'Profile',
+    'ResolutionError',
     'Scope',
     'ScopeError',
     'ScopedContainer',

@@ -171,7 +171,107 @@ See Also:
 from __future__ import annotations
 
 
-class AdapterNotFoundError(Exception):
+class DioxideError(Exception):
+    """Base class for all dioxide errors with rich formatting.
+
+    DioxideError provides structured error information including:
+    - A clear title describing the error
+    - Context dict with relevant state at error time
+    - Suggestions for how to fix the issue
+    - Optional code example showing the fix
+
+    Subclasses should set appropriate defaults for title and populate
+    context, suggestions, and example based on the specific error.
+    """
+
+    title: str = 'Dioxide Error'
+
+    def __init__(self, message: str = '') -> None:
+        super().__init__(message)
+        self._message = message
+        self.context: dict[str, object] = {}
+        self.suggestions: list[str] = []
+        self.example: str | None = None
+
+    def __str__(self) -> str:
+        """Format the error with title, context, suggestions, and example."""
+        lines: list[str] = []
+
+        # Title and message
+        lines.append(f'{self.title}: {self._message}')
+
+        # Context section
+        if self.context:
+            lines.append('')
+            lines.append('Context:')
+            for key, value in self.context.items():
+                lines.append(f'  - {key}: {value}')
+
+        # Suggestions section
+        if self.suggestions:
+            lines.append('')
+            lines.append('Suggestions:')
+            for suggestion in self.suggestions:
+                lines.append(f'  - {suggestion}')
+
+        # Example section
+        if self.example:
+            lines.append('')
+            lines.append('Example fix:')
+            for line in self.example.split('\n'):
+                lines.append(f'    {line}')
+
+        return '\n'.join(lines)
+
+    def with_context(self, **kwargs: object) -> DioxideError:
+        """Add context information to the error.
+
+        Args:
+            **kwargs: Key-value pairs to add to the context dict.
+
+        Returns:
+            Self for method chaining.
+        """
+        self.context.update(kwargs)
+        return self
+
+    def with_suggestion(self, suggestion: str) -> DioxideError:
+        """Add a suggestion for how to fix the error.
+
+        Args:
+            suggestion: A suggestion string to add.
+
+        Returns:
+            Self for method chaining.
+        """
+        self.suggestions.append(suggestion)
+        return self
+
+    def with_example(self, example: str) -> DioxideError:
+        """Add an example code snippet showing how to fix the error.
+
+        Args:
+            example: Code example string.
+
+        Returns:
+            Self for method chaining.
+        """
+        self.example = example
+        return self
+
+
+class ResolutionError(DioxideError):
+    """Base class for dependency resolution failures.
+
+    ResolutionError is raised when the container cannot resolve a requested type.
+    This is the parent class for more specific resolution errors like
+    AdapterNotFoundError and ServiceNotFoundError.
+    """
+
+    title: str = 'Resolution Failed'
+
+
+class AdapterNotFoundError(ResolutionError):
     """Raised when no adapter is registered for a port in the active profile.
 
     This error occurs when trying to resolve a Protocol or ABC (port) but no
@@ -317,10 +417,10 @@ class AdapterNotFoundError(Exception):
         - :class:`dioxide.profile_enum.Profile` - Standard profile values
     """
 
-    pass
+    title: str = 'Adapter Not Found'
 
 
-class ServiceNotFoundError(Exception):
+class ServiceNotFoundError(ResolutionError):
     """Raised when a service or component cannot be resolved.
 
     This error occurs when trying to resolve a service/component that either:
@@ -487,10 +587,10 @@ class ServiceNotFoundError(Exception):
         - :class:`AdapterNotFoundError` - For port resolution errors
     """
 
-    pass
+    title: str = 'Service Not Found'
 
 
-class ScopeError(Exception):
+class ScopeError(DioxideError):
     """Raised when scope-related operations fail.
 
     This error occurs when:
@@ -570,10 +670,10 @@ class ScopeError(Exception):
         - :class:`dioxide.scope.Scope` - Scope enum including REQUEST
     """
 
-    pass
+    title: str = 'Scope Error'
 
 
-class CaptiveDependencyError(Exception):
+class CaptiveDependencyError(DioxideError):
     """Raised when a longer-lived scope depends on a shorter-lived scope.
 
     This error occurs during ``container.scan()`` when a SINGLETON component
@@ -701,10 +801,10 @@ class CaptiveDependencyError(Exception):
         - :class:`ScopeError` - For runtime scope errors
     """
 
-    pass
+    title: str = 'Captive Dependency'
 
 
-class CircularDependencyError(Exception):
+class CircularDependencyError(DioxideError):
     """Raised when circular dependencies are detected among @lifecycle components.
 
     This error occurs during ``container.start()`` when @lifecycle components have
@@ -899,4 +999,4 @@ class CircularDependencyError(Exception):
         - :class:`dioxide.adapter.adapter` - For marking adapters
     """
 
-    pass
+    title: str = 'Circular Dependency'
