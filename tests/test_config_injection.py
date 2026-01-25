@@ -6,6 +6,10 @@ This test module validates the config-as-service pattern where:
 3. Type safety ensures registered instances match declared types
 """
 
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from typing import Protocol
 
 import pytest
@@ -183,6 +187,25 @@ class DescribeRegisterInstanceTypeSafety:
 
         with pytest.raises(TypeError, match='instance must be of type'):
             container.register_instance(EmailPort, BrokenAdapter())
+
+    def it_accepts_abc_implementation(self) -> None:
+        """ABC implementations are accepted for the abstract base class type."""
+
+        class StoragePort(ABC):
+            @abstractmethod
+            def save(self, key: str, value: str) -> None: ...
+
+        class FakeStorage(StoragePort):
+            def save(self, key: str, value: str) -> None:
+                pass
+
+        container = Container()
+        fake = FakeStorage()
+        container.register_instance(StoragePort, fake)
+
+        resolved = container.resolve(StoragePort)
+
+        assert resolved is fake
 
 
 class DescribeConfigWithPydanticSettings:
