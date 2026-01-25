@@ -170,7 +170,13 @@ See Also:
 
 from __future__ import annotations
 
-from typing import Self
+from typing import (
+    TYPE_CHECKING,
+    Self,
+)
+
+if TYPE_CHECKING:
+    from dioxide.scope import Scope
 
 
 class DioxideError(Exception):
@@ -421,6 +427,48 @@ class AdapterNotFoundError(ResolutionError):
 
     title: str = 'Adapter Not Found'
 
+    def __init__(
+        self,
+        message: str = '',
+        *,
+        port: type | None = None,
+        profile: str | None = None,
+        available_adapters: list[tuple[str, list[str]]] | None = None,
+    ) -> None:
+        """Initialize AdapterNotFoundError with optional structured context.
+
+        Args:
+            message: Simple string message (backward compatible).
+            port: The port type that couldn't be resolved.
+            profile: The active profile when resolution failed.
+            available_adapters: List of (adapter_name, profiles) tuples for
+                adapters registered for this port in other profiles.
+        """
+        # Build message from structured data if provided
+        if port is not None:
+            port_name = port.__name__
+            profile_str = profile if profile else 'unknown'
+
+            lines = [f"No adapter for {port_name} in profile '{profile_str}'"]
+
+            if available_adapters:
+                adapter_strs = [f'{name} ({", ".join(profiles)})' for name, profiles in available_adapters]
+                lines.append(f'  Registered: {", ".join(adapter_strs)}')
+            else:
+                lines.append('  Registered: none')
+
+            message = '\n'.join(lines)
+
+        super().__init__(message)
+
+        # Store structured data for programmatic access
+        if port is not None:
+            self.context['port'] = port.__name__
+        if profile is not None:
+            self.context['profile'] = profile
+        if available_adapters is not None:
+            self.context['available_adapters'] = available_adapters
+
 
 class ServiceNotFoundError(ResolutionError):
     """Raised when a service or component cannot be resolved.
@@ -591,6 +639,60 @@ class ServiceNotFoundError(ResolutionError):
 
     title: str = 'Service Not Found'
 
+    def __init__(
+        self,
+        message: str = '',
+        *,
+        service: type | None = None,
+        profile: str | None = None,
+        dependencies: list[str] | None = None,
+        failed_dependency: tuple[str, type, str] | None = None,
+    ) -> None:
+        """Initialize ServiceNotFoundError with optional structured context.
+
+        Args:
+            message: Simple string message (backward compatible).
+            service: The service type that couldn't be resolved.
+            profile: The active profile when resolution failed.
+            dependencies: List of dependency type names (e.g., ['email: EmailPort']).
+            failed_dependency: Tuple of (param_name, param_type, failure_reason)
+                for the specific dependency that failed.
+        """
+        # Build message from structured data if provided
+        if service is not None:
+            service_name = service.__name__
+            profile_str = profile if profile else 'unknown'
+
+            lines = [f"Cannot resolve {service_name} in profile '{profile_str}'"]
+
+            if failed_dependency:
+                param_name, param_type, reason = failed_dependency
+                param_type_name = param_type.__name__ if hasattr(param_type, '__name__') else str(param_type)
+                lines.append(f'  Missing dependency: {param_name}: {param_type_name} ({reason})')
+            elif dependencies:
+                lines.append(f'  Dependencies: {", ".join(dependencies)}')
+            else:
+                lines.append('  Not registered (missing @service decorator)')
+
+            message = '\n'.join(lines)
+
+        super().__init__(message)
+
+        # Store structured data for programmatic access
+        if service is not None:
+            self.context['service'] = service.__name__
+        if profile is not None:
+            self.context['profile'] = profile
+        if dependencies is not None:
+            self.context['dependencies'] = dependencies
+        if failed_dependency is not None:
+            param_name, param_type, reason = failed_dependency
+            self.context['failed_dependency'] = {
+                'param_name': param_name,
+                'param_type': param_type.__name__ if hasattr(param_type, '__name__') else str(param_type),
+                'reason': reason,
+            }
+
 
 class ScopeError(DioxideError):
     """Raised when scope-related operations fail.
@@ -673,6 +775,35 @@ class ScopeError(DioxideError):
     """
 
     title: str = 'Scope Error'
+
+    def __init__(
+        self,
+        message: str = '',
+        *,
+        component: type | None = None,
+        required_scope: Scope | None = None,
+    ) -> None:
+        """Initialize ScopeError with optional structured context.
+
+        Args:
+            message: Simple string message (backward compatible).
+            component: The component that requires a scope.
+            required_scope: The scope type required (e.g., Scope.REQUEST).
+        """
+        # Build message from structured data if provided
+        if component is not None:
+            component_name = component.__name__
+            scope_str = required_scope.name if required_scope is not None else 'REQUEST'
+
+            message = f'Cannot resolve {component_name}: {scope_str}-scoped, requires active scope'
+
+        super().__init__(message)
+
+        # Store structured data for programmatic access
+        if component is not None:
+            self.context['component'] = component.__name__
+        if required_scope is not None:
+            self.context['required_scope'] = required_scope.name
 
 
 class CaptiveDependencyError(DioxideError):
@@ -804,6 +935,48 @@ class CaptiveDependencyError(DioxideError):
     """
 
     title: str = 'Captive Dependency'
+
+    def __init__(
+        self,
+        message: str = '',
+        *,
+        parent: type | None = None,
+        parent_scope: Scope | None = None,
+        child: type | None = None,
+        child_scope: Scope | None = None,
+    ) -> None:
+        """Initialize CaptiveDependencyError with optional structured context.
+
+        Args:
+            message: Simple string message (backward compatible).
+            parent: The longer-lived component (e.g., SINGLETON).
+            parent_scope: The scope of the parent (e.g., Scope.SINGLETON).
+            child: The shorter-lived component (e.g., REQUEST).
+            child_scope: The scope of the child (e.g., Scope.REQUEST).
+        """
+        # Build message from structured data if provided
+        if parent is not None and child is not None:
+            parent_name = parent.__name__
+            child_name = child.__name__
+            parent_scope_str = parent_scope.name if parent_scope is not None else 'SINGLETON'
+            child_scope_str = child_scope.name if child_scope is not None else 'REQUEST'
+
+            message = (
+                f'Captive dependency: {parent_name} ({parent_scope_str}) -> {child_name} ({child_scope_str})\n'
+                f'  {parent_scope_str} cannot depend on {child_scope_str}-scoped components'
+            )
+
+        super().__init__(message)
+
+        # Store structured data for programmatic access
+        if parent is not None:
+            self.context['parent'] = parent.__name__
+        if parent_scope is not None:
+            self.context['parent_scope'] = parent_scope.name
+        if child is not None:
+            self.context['child'] = child.__name__
+        if child_scope is not None:
+            self.context['child_scope'] = child_scope.name
 
 
 class CircularDependencyError(DioxideError):
