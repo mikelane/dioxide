@@ -9,7 +9,6 @@ Issue #344: Better Errors: Implement Rich Context Collection and Formatting
 from __future__ import annotations
 
 from typing import (
-    TYPE_CHECKING,
     Any,
     Protocol,
 )
@@ -29,9 +28,6 @@ from dioxide.exceptions import (
     ServiceNotFoundError,
 )
 from dioxide.scope import Scope
-
-if TYPE_CHECKING:
-    pass
 
 
 class EmailPort(Protocol):
@@ -435,6 +431,25 @@ class DescribeServiceNotFoundErrorConstructor:
         assert 'MyService' in msg
         # Should indicate it has dependencies
         assert 'EmailPort' in msg or 'DatabasePort' in msg or 'dependenc' in msg.lower()
+
+    def it_distinguishes_empty_dependencies_from_not_registered(self) -> None:
+        """Empty dependencies list means registered with no deps, not unregistered."""
+
+        class MyService:
+            pass
+
+        # dependencies=[] means the service IS registered but has no dependencies
+        error = ServiceNotFoundError(
+            service=MyService,
+            profile='test',
+            dependencies=[],
+        )
+        msg = str(error)
+        assert 'MyService' in msg
+        # Should NOT say "Not registered" - we know it's registered with no deps
+        assert 'Not registered' not in msg
+        # Should indicate it has no dependencies
+        assert 'no dependenc' in msg.lower() or 'Dependencies' in msg
 
 
 class DescribeScopeErrorConstructor:

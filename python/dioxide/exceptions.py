@@ -669,8 +669,12 @@ class ServiceNotFoundError(ResolutionError):
                 param_name, param_type, reason = failed_dependency
                 param_type_name = param_type.__name__ if hasattr(param_type, '__name__') else str(param_type)
                 lines.append(f'  Missing dependency: {param_name}: {param_type_name} ({reason})')
-            elif dependencies:
-                lines.append(f'  Dependencies: {", ".join(dependencies)}')
+            elif dependencies is not None:
+                # dependencies=[] means registered with no deps, dependencies=['...'] has deps
+                if dependencies:
+                    lines.append(f'  Dependencies: {", ".join(dependencies)}')
+                else:
+                    lines.append('  No dependencies')
             else:
                 lines.append('  Not registered (missing @service decorator)')
 
