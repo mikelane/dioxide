@@ -6,6 +6,10 @@ This test module validates the config-as-service pattern where:
 3. Type safety ensures registered instances match declared types
 """
 
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from typing import Protocol
 
 import pytest
@@ -184,6 +188,25 @@ class DescribeRegisterInstanceTypeSafety:
         with pytest.raises(TypeError, match='instance must be of type'):
             container.register_instance(EmailPort, BrokenAdapter())
 
+    def it_accepts_abc_implementation(self) -> None:
+        """ABC implementations are accepted for the abstract base class type."""
+
+        class StoragePort(ABC):
+            @abstractmethod
+            def save(self, key: str, value: str) -> None: ...
+
+        class FakeStorage(StoragePort):
+            def save(self, key: str, value: str) -> None:
+                pass
+
+        container = Container()
+        fake = FakeStorage()
+        container.register_instance(StoragePort, fake)
+
+        resolved = container.resolve(StoragePort)
+
+        assert resolved is fake
+
 
 class DescribeConfigWithPydanticSettings:
     """Tests for integration with Pydantic Settings pattern."""
@@ -240,3 +263,94 @@ class DescribeConfigWithPydanticSettings:
 
         assert app.db.host == 'localhost'
         assert app.cache.ttl == 300
+
+
+class DescribeRegisterInstanceWithServiceDecorator:
+    """Tests for overriding @service decorated classes with register_instance."""
+
+    def it_overrides_service_decorated_class_when_registered_before_scan(self) -> None:
+        """A registered instance overrides the @service decorated class."""
+
+        @service
+        class AppConfig:
+            def __init__(self) -> None:
+                self.database_url = 'original://default'
+
+        container = Container()
+        override = AppConfig()
+        override.database_url = 'override://test'
+        container.register_instance(AppConfig, override)
+        container.scan()
+
+        resolved = container.resolve(AppConfig)
+
+        assert resolved is override
+        assert resolved.database_url == 'override://test'
+
+    def it_injects_overridden_service_into_dependent_services(self) -> None:
+        """Dependent services receive the overridden instance."""
+
+        @service
+        class DatabaseConfig:
+            def __init__(self) -> None:
+                self.host = 'production-db.example.com'
+                self.port = 5432
+
+        @service
+        class DatabaseService:
+            def __init__(self, config: DatabaseConfig) -> None:
+                self.config = config
+
+            def get_connection_string(self) -> str:
+                return f'postgresql://{self.config.host}:{self.config.port}'
+
+        container = Container()
+        test_config = DatabaseConfig()
+        test_config.host = 'localhost'
+        test_config.port = 5433
+        container.register_instance(DatabaseConfig, test_config)
+        container.scan()
+
+        db_service = container.resolve(DatabaseService)
+
+        assert db_service.config is test_config
+        assert db_service.get_connection_string() == 'postgresql://localhost:5433'
+
+
+class DescribeRegisterInstanceAfterScan:
+    """Tests for error behavior when registering after scan."""
+
+    def it_raises_key_error_when_registering_already_scanned_type(self) -> None:
+        """Registering an instance after scan raises KeyError for duplicate."""
+
+        @service
+        class Config:
+            def __init__(self) -> None:
+                self.value = 'original'
+
+        container = Container()
+        container.scan()
+
+        override = Config()
+        override.value = 'override'
+
+        with pytest.raises(KeyError, match='Duplicate provider registration'):
+            container.register_instance(Config, override)
+
+    def it_allows_registering_unscanned_type_after_scan(self) -> None:
+        """Types not in scan can still be registered after scan."""
+
+        class NewConfig:
+            def __init__(self, setting: str) -> None:
+                self.setting = setting
+
+        container = Container()
+        container.scan()
+
+        new_config = NewConfig(setting='added-after-scan')
+        container.register_instance(NewConfig, new_config)
+
+        resolved = container.resolve(NewConfig)
+
+        assert resolved is new_config
+        assert resolved.setting == 'added-after-scan'
