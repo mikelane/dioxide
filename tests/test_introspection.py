@@ -1,10 +1,13 @@
-"""Tests for container introspection API (#316).
+"""Tests for container introspection API (#316, #349).
 
 The introspection API provides methods to inspect container state for debugging:
 - list_registered(): List all registered ports
 - is_registered(port): Check if a port has an adapter
 - get_adapters_for(port): Get adapters by profile for a port
 - active_profile: Get the current container profile
+- debug(): Print a summary of all registered components (#349)
+- explain(cls): Show resolution tree for a type (#349)
+- graph(format): Generate dependency graph in Mermaid or DOT format (#349)
 """
 
 from typing import Protocol
@@ -255,3 +258,335 @@ class DescribeGetAdaptersFor:
         result = container.get_adapters_for(UserService)
 
         assert result == {}
+
+
+# =============================================================================
+# Issue #349: Container Introspection API - debug(), explain(), graph()
+# =============================================================================
+
+
+class DescribeContainerDebug:
+    """Tests for Container.debug() method.
+
+    The debug() method returns a human-readable summary of all registered
+    components, including services, adapters, and active profile.
+    """
+
+    def it_returns_string_with_container_summary(self) -> None:
+        """debug() returns a formatted string summary."""
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.debug()
+
+        assert isinstance(output, str)
+        assert '=== dioxide Container Debug ===' in output
+        assert 'Active Profile: test' in output
+
+    def it_shows_none_profile_when_not_scanned(self) -> None:
+        """debug() shows 'none' for profile when container is not scanned."""
+        container = Container()
+
+        output = container.debug()
+
+        assert 'Active Profile: none' in output
+
+    def it_lists_registered_services(self) -> None:
+        """debug() lists services that are registered."""
+
+        @service
+        class UserService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.debug()
+
+        assert 'Services' in output
+        assert 'UserService' in output
+
+    def it_shows_service_scope(self) -> None:
+        """debug() shows the scope of each service."""
+        from dioxide import Scope
+
+        @service(scope=Scope.FACTORY)
+        class RequestHandler:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.debug()
+
+        assert 'RequestHandler' in output
+        assert 'FACTORY' in output
+
+    def it_groups_adapters_by_port(self) -> None:
+        """debug() groups adapters by their port type."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.debug()
+
+        assert 'Adapters by Port' in output
+        assert 'EmailPort' in output
+        assert 'FakeEmail' in output
+
+    def it_shows_adapter_profiles(self) -> None:
+        """debug() shows which profiles each adapter is registered for."""
+
+        @adapter.for_(EmailPort, profile=[Profile.TEST, Profile.DEVELOPMENT])
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.debug()
+
+        assert 'FakeEmail' in output
+        assert 'test' in output.lower()
+
+    def it_shows_lifecycle_indicator(self) -> None:
+        """debug() indicates components with lifecycle management."""
+        from dioxide import lifecycle
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        @lifecycle
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+            async def initialize(self) -> None:
+                pass
+
+            async def dispose(self) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.debug()
+
+        assert 'lifecycle' in output.lower()
+
+
+class DescribeContainerExplain:
+    """Tests for Container.explain() method.
+
+    The explain() method shows how a type would be resolved, including
+    the resolution path, which adapter/service is selected, and all
+    transitive dependencies.
+    """
+
+    def it_shows_resolution_tree_for_service(self) -> None:
+        """explain() shows the resolution tree for a service."""
+
+        @service
+        class UserService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.explain(UserService)
+
+        assert isinstance(output, str)
+        assert 'UserService' in output
+
+    def it_shows_service_dependencies(self) -> None:
+        """explain() shows dependencies of a service."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        @service
+        class UserService:
+            def __init__(self, email: EmailPort):
+                self.email = email
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.explain(UserService)
+
+        assert 'UserService' in output
+        assert 'EmailPort' in output
+        assert 'FakeEmail' in output
+
+    def it_shows_port_resolution_with_adapter(self) -> None:
+        """explain() shows which adapter implements a port."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.explain(EmailPort)
+
+        assert 'EmailPort' in output
+        assert 'FakeEmail' in output
+
+    def it_shows_scope_information(self) -> None:
+        """explain() shows the scope of each component."""
+
+        @service
+        class UserService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.explain(UserService)
+
+        assert 'SINGLETON' in output
+
+    def it_shows_transitive_dependencies(self) -> None:
+        """explain() shows nested/transitive dependencies."""
+
+        @service
+        class Config:
+            pass
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            def __init__(self, config: Config):
+                self.config = config
+
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        @service
+        class UserService:
+            def __init__(self, email: EmailPort):
+                self.email = email
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.explain(UserService)
+
+        assert 'UserService' in output
+        assert 'EmailPort' in output
+        assert 'FakeEmail' in output
+        assert 'Config' in output
+
+    def it_handles_unregistered_type(self) -> None:
+        """explain() provides helpful message for unregistered types."""
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.explain(EmailPort)
+
+        assert 'not registered' in output.lower() or 'EmailPort' in output
+
+
+class DescribeContainerGraph:
+    """Tests for Container.graph() method.
+
+    The graph() method generates a dependency graph visualization
+    in Mermaid or DOT format.
+    """
+
+    def it_returns_mermaid_format_by_default(self) -> None:
+        """graph() returns Mermaid format by default."""
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph()
+
+        assert isinstance(output, str)
+        assert 'graph TD' in output
+
+    def it_supports_dot_format(self) -> None:
+        """graph() supports DOT format when requested."""
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        assert 'digraph' in output
+
+    def it_includes_services_in_graph(self) -> None:
+        """graph() includes registered services."""
+
+        @service
+        class UserService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph()
+
+        assert 'UserService' in output
+
+    def it_includes_ports_in_graph(self) -> None:
+        """graph() includes ports (protocols)."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph()
+
+        assert 'EmailPort' in output
+
+    def it_shows_dependency_edges(self) -> None:
+        """graph() shows edges between components and their dependencies."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        @service
+        class UserService:
+            def __init__(self, email: EmailPort):
+                self.email = email
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph()
+
+        # Mermaid edge syntax: ServiceA --> PortB
+        assert 'UserService' in output
+        assert 'EmailPort' in output
+        assert '-->' in output
+
+    def it_uses_subgraphs_to_organize_components(self) -> None:
+        """graph() uses subgraphs to separate services, ports, and adapters."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        @service
+        class UserService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph()
+
+        assert 'subgraph' in output
