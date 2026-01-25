@@ -1513,19 +1513,15 @@ class Container:
         lines: list[str] = []
         lines.append('=== dioxide Container Debug ===')
 
-        # Active profile
         profile_str = self._active_profile if self._active_profile else 'none'
         lines.append(f'Active Profile: {profile_str}')
         lines.append('')
 
-        # Collect services (registered components)
-        services: list[tuple[str, str, bool]] = []  # (name, scope, has_lifecycle)
+        services: list[tuple[str, str, bool]] = []
         for component_class in _get_registered_components():
-            # Check profile filtering (services are typically '*' / ALL profiles)
             component_profiles: frozenset[str] = getattr(component_class, '__dioxide_profiles__', frozenset())
-            if self._active_profile is not None:
-                if self._active_profile not in component_profiles and '*' not in component_profiles:
-                    continue
+            if not self._matches_active_profile(component_profiles):
+                continue
 
             name = component_class.__name__
             scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
@@ -1663,13 +1659,12 @@ class Container:
         is_port = self._is_port(cls)
 
         if is_port:
-            # Find the adapter for this port in the current profile
             adapter_class = None
             adapter_profiles_str = ''
             for adapter_cls in _adapter_registry:
                 if getattr(adapter_cls, '__dioxide_port__', None) is cls:
                     adapter_profiles: frozenset[str] = getattr(adapter_cls, '__dioxide_profiles__', frozenset())
-                    if self._active_profile in adapter_profiles or '*' in adapter_profiles:
+                    if self._matches_active_profile(adapter_profiles):
                         adapter_class = adapter_cls
                         adapter_profiles_str = ', '.join(sorted(adapter_profiles))
                         break
@@ -1774,52 +1769,96 @@ class Container:
             return self._graph_dot()
         return self._graph_mermaid()
 
-    def _graph_mermaid(self) -> str:
-        """Generate Mermaid format dependency graph.
+    def _matches_active_profile(self, profiles: frozenset[str]) -> bool:
+        """Check if a component's profiles match the active profile.
+
+        Args:
+            profiles: The component's registered profiles.
 
         Returns:
-            Mermaid graph definition string.
+            True if the component should be included for the active profile.
+        """
+        if self._active_profile is None:
+            return True
+        return self._active_profile in profiles or '*' in profiles
+
+    def _collect_graph_data(
+        self,
+    ) -> tuple[
+        list[tuple[str, str]],  # services: (name, scope)
+        set[str],  # ports
+        list[tuple[str, str, str]],  # adapters: (name, port_name, profiles)
+        list[tuple[str, str]],  # edges: (from, to)
+    ]:
+        """Collect component data for graph generation.
+
+        Returns:
+            Tuple of (services, ports, adapters, edges).
         """
         from dioxide._registry import _get_registered_components
         from dioxide.adapter import _adapter_registry
         from dioxide.scope import Scope
 
-        lines: list[str] = ['graph TD']
-
-        # Collect services
-        services: list[tuple[str, str]] = []  # (name, scope)
+        services: list[tuple[str, str]] = []
         for component_class in _get_registered_components():
             component_profiles: frozenset[str] = getattr(component_class, '__dioxide_profiles__', frozenset())
-            if self._active_profile is not None:
-                if self._active_profile not in component_profiles and '*' not in component_profiles:
-                    continue
+            if not self._matches_active_profile(component_profiles):
+                continue
             name = component_class.__name__
             scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
             scope_str = scope.name if hasattr(scope, 'name') else str(scope).upper()
             services.append((name, scope_str))
 
-        # Collect ports and adapters
         ports: set[str] = set()
-        adapters: list[tuple[str, str, str]] = []  # (adapter_name, port_name, profiles)
-
+        adapters: list[tuple[str, str, str]] = []
         for adapter_class in _adapter_registry:
             port_class = getattr(adapter_class, '__dioxide_port__', None)
             if port_class is None:
                 continue
-
             adapter_profiles: frozenset[str] = getattr(adapter_class, '__dioxide_profiles__', frozenset())
-            # Only show adapters for current profile
-            if self._active_profile is not None:
-                if self._active_profile not in adapter_profiles and '*' not in adapter_profiles:
-                    continue
-
+            if not self._matches_active_profile(adapter_profiles):
+                continue
             port_name = port_class.__name__
             adapter_name = adapter_class.__name__
             profiles_str = ', '.join(sorted(adapter_profiles))
             ports.add(port_name)
             adapters.append((adapter_name, port_name, profiles_str))
 
-        # Build subgraphs
+        edges: list[tuple[str, str]] = []
+        service_names = {s[0] for s in services}
+        for component_class in _get_registered_components():
+            component_profiles = getattr(component_class, '__dioxide_profiles__', frozenset())
+            if not self._matches_active_profile(component_profiles):
+                continue
+            try:
+                init_signature = inspect.signature(component_class.__init__)
+                globalns = getattr(component_class.__init__, '__globals__', {})
+                localns = dict(vars(component_class))
+                localns[component_class.__name__] = component_class
+                type_hints = get_type_hints(component_class.__init__, globalns=globalns, localns=localns)
+                for param_name in init_signature.parameters:
+                    if param_name == 'self':
+                        continue
+                    if param_name in type_hints:
+                        dep_type = type_hints[param_name]
+                        dep_name = dep_type.__name__
+                        if dep_name in ports or dep_name in service_names:
+                            edges.append((component_class.__name__, dep_name))
+            except (ValueError, AttributeError, NameError):
+                pass
+
+        return services, ports, adapters, edges
+
+    def _graph_mermaid(self) -> str:
+        """Generate Mermaid format dependency graph.
+
+        Returns:
+            Mermaid graph definition string.
+        """
+        services, ports, adapters, edges = self._collect_graph_data()
+
+        lines: list[str] = ['graph TD']
+
         if services:
             lines.append('    subgraph Services')
             for name, scope_str in sorted(services):
@@ -1841,33 +1880,9 @@ class Container:
             lines.append('    end')
             lines.append('')
 
-        # Build edges
-        # Service -> Port dependencies
-        for component_class in _get_registered_components():
-            component_profiles = getattr(component_class, '__dioxide_profiles__', frozenset())
-            if self._active_profile is not None:
-                if self._active_profile not in component_profiles and '*' not in component_profiles:
-                    continue
+        for from_node, to_node in edges:
+            lines.append(f'    {from_node} --> {to_node}')
 
-            try:
-                init_signature = inspect.signature(component_class.__init__)
-                globalns = getattr(component_class.__init__, '__globals__', {})
-                localns = dict(vars(component_class))
-                localns[component_class.__name__] = component_class
-                type_hints = get_type_hints(component_class.__init__, globalns=globalns, localns=localns)
-
-                for param_name in init_signature.parameters:
-                    if param_name == 'self':
-                        continue
-                    if param_name in type_hints:
-                        dep_type = type_hints[param_name]
-                        dep_name = dep_type.__name__
-                        if dep_name in ports or dep_name in [s[0] for s in services]:
-                            lines.append(f'    {component_class.__name__} --> {dep_name}')
-            except (ValueError, AttributeError, NameError):
-                pass
-
-        # Port -> Adapter edges (dotted)
         for adapter_name, port_name, _ in adapters:
             lines.append(f'    {port_name} -.-> {adapter_name}')
 
@@ -1879,48 +1894,13 @@ class Container:
         Returns:
             DOT graph definition string.
         """
-        from dioxide._registry import _get_registered_components
-        from dioxide.adapter import _adapter_registry
-        from dioxide.scope import Scope
+        services, ports, adapters, edges = self._collect_graph_data()
 
         lines: list[str] = ['digraph Container {']
         lines.append('    rankdir=TB;')
         lines.append('    node [shape=box];')
         lines.append('')
 
-        # Collect services
-        services: list[tuple[str, str]] = []
-        for component_class in _get_registered_components():
-            component_profiles: frozenset[str] = getattr(component_class, '__dioxide_profiles__', frozenset())
-            if self._active_profile is not None:
-                if self._active_profile not in component_profiles and '*' not in component_profiles:
-                    continue
-            name = component_class.__name__
-            scope = getattr(component_class, '__dioxide_scope__', Scope.SINGLETON)
-            scope_str = scope.name if hasattr(scope, 'name') else str(scope).upper()
-            services.append((name, scope_str))
-
-        # Collect ports and adapters
-        ports: set[str] = set()
-        adapters: list[tuple[str, str, str]] = []
-
-        for adapter_class in _adapter_registry:
-            port_class = getattr(adapter_class, '__dioxide_port__', None)
-            if port_class is None:
-                continue
-
-            adapter_profiles: frozenset[str] = getattr(adapter_class, '__dioxide_profiles__', frozenset())
-            if self._active_profile is not None:
-                if self._active_profile not in adapter_profiles and '*' not in adapter_profiles:
-                    continue
-
-            port_name = port_class.__name__
-            adapter_name = adapter_class.__name__
-            profiles_str = ', '.join(sorted(adapter_profiles))
-            ports.add(port_name)
-            adapters.append((adapter_name, port_name, profiles_str))
-
-        # Services subgraph
         if services:
             lines.append('    subgraph cluster_services {')
             lines.append('        label="Services";')
@@ -1929,7 +1909,6 @@ class Container:
             lines.append('    }')
             lines.append('')
 
-        # Ports subgraph
         if ports:
             lines.append('    subgraph cluster_ports {')
             lines.append('        label="Ports";')
@@ -1939,7 +1918,6 @@ class Container:
             lines.append('    }')
             lines.append('')
 
-        # Adapters subgraph
         if adapters:
             lines.append('    subgraph cluster_adapters {')
             lines.append('        label="Adapters";')
@@ -1948,32 +1926,9 @@ class Container:
             lines.append('    }')
             lines.append('')
 
-        # Edges
-        for component_class in _get_registered_components():
-            component_profiles = getattr(component_class, '__dioxide_profiles__', frozenset())
-            if self._active_profile is not None:
-                if self._active_profile not in component_profiles and '*' not in component_profiles:
-                    continue
+        for from_node, to_node in edges:
+            lines.append(f'    {from_node} -> {to_node};')
 
-            try:
-                init_signature = inspect.signature(component_class.__init__)
-                globalns = getattr(component_class.__init__, '__globals__', {})
-                localns = dict(vars(component_class))
-                localns[component_class.__name__] = component_class
-                type_hints = get_type_hints(component_class.__init__, globalns=globalns, localns=localns)
-
-                for param_name in init_signature.parameters:
-                    if param_name == 'self':
-                        continue
-                    if param_name in type_hints:
-                        dep_type = type_hints[param_name]
-                        dep_name = dep_type.__name__
-                        if dep_name in ports or dep_name in [s[0] for s in services]:
-                            lines.append(f'    {component_class.__name__} -> {dep_name};')
-            except (ValueError, AttributeError, NameError):
-                pass
-
-        # Port -> Adapter edges (dashed)
         for adapter_name, port_name, _ in adapters:
             lines.append(f'    {port_name} -> {adapter_name} [style=dashed];')
 
