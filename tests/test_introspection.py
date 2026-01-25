@@ -590,3 +590,299 @@ class DescribeContainerGraph:
         output = container.graph()
 
         assert 'subgraph' in output
+
+    def it_shows_port_adapter_edges_with_dotted_lines(self) -> None:
+        """graph() shows port-to-adapter edges with dotted line style."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph()
+
+        # Mermaid uses -.-> for dotted edges
+        assert '-.->' in output
+
+    def it_generates_dot_format_with_subgraphs(self) -> None:
+        """graph(format='dot') generates DOT format with cluster subgraphs."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        @service
+        class UserService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        assert 'digraph Container' in output
+        assert 'cluster_services' in output
+        assert 'cluster_ports' in output
+        assert 'cluster_adapters' in output
+
+    def it_generates_dot_format_with_service_nodes(self) -> None:
+        """graph(format='dot') includes service nodes with scope labels."""
+
+        @service
+        class UserService:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        assert 'UserService' in output
+        assert 'label=' in output
+
+    def it_generates_dot_format_with_port_nodes(self) -> None:
+        """graph(format='dot') includes port nodes with diamond shape."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        assert 'EmailPort' in output
+        assert 'shape=diamond' in output
+
+    def it_generates_dot_format_with_adapter_nodes(self) -> None:
+        """graph(format='dot') includes adapter nodes with profile labels."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        assert 'FakeEmail' in output
+
+    def it_generates_dot_format_with_dependency_edges(self) -> None:
+        """graph(format='dot') includes edges between services and ports."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        @service
+        class UserService:
+            def __init__(self, email: EmailPort):
+                self.email = email
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        # DOT syntax: ServiceA -> PortB;
+        assert 'UserService -> EmailPort' in output
+
+    def it_generates_dot_format_with_dashed_port_adapter_edges(self) -> None:
+        """graph(format='dot') shows port-to-adapter edges with dashed style."""
+
+        @adapter.for_(EmailPort, profile=Profile.TEST)
+        class FakeEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        # DOT syntax for dashed edges
+        assert 'style=dashed' in output
+
+    def it_filters_out_of_profile_adapters_in_dot(self) -> None:
+        """graph(format='dot') filters adapters not matching current profile."""
+
+        @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+        class ProdEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        @adapter.for_(CachePort, profile=Profile.TEST)
+        class TestCache:
+            def get(self, key: str) -> str | None:
+                return None
+
+            def set(self, key: str, value: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        # ProdEmail should be filtered out (wrong profile)
+        assert 'ProdEmail' not in output
+        # TestCache should be included
+        assert 'TestCache' in output
+
+
+class DescribeContainerDebugEdgeCases:
+    """Additional edge case tests for Container.debug() method."""
+
+    def it_writes_output_to_file_when_provided(self) -> None:
+        """debug() writes output to file object when file parameter provided."""
+        import io
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output_buffer = io.StringIO()
+        result = container.debug(file=output_buffer)
+
+        # Should both write to file and return string
+        assert result == output_buffer.getvalue()
+        assert '=== dioxide Container Debug ===' in output_buffer.getvalue()
+
+    def it_shows_all_adapters_from_registry_for_debugging(self) -> None:
+        """debug() shows all adapters from global registry for debugging visibility."""
+
+        @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+        class ProdEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.debug()
+
+        # debug() shows all adapters for debugging, even from other profiles
+        # This is intentional - helps debug why resolution might fail
+        assert 'ProdEmail' in output
+        assert 'production' in output.lower()
+
+
+class DescribeContainerExplainEdgeCases:
+    """Additional edge case tests for Container.explain() method."""
+
+    def it_detects_circular_dependencies(self) -> None:
+        """explain() shows circular reference when cycles detected."""
+        # We need to create classes where both types are resolvable
+        # The circular detection happens when explain recursively visits
+        # a type that was already visited in the current path
+
+        # Create a service that depends on itself (self-referencing)
+        @service
+        class SelfRefService:
+            def __init__(self, other: 'SelfRefService'):
+                self.other = other
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.explain(SelfRefService)
+
+        # The first appearance will show the service
+        # The second (recursive) appearance will show circular reference
+        assert 'SelfRefService' in output
+        assert 'circular reference' in output.lower()
+
+    def it_shows_no_adapter_message_for_missing_adapter(self) -> None:
+        """explain() shows 'no adapter' when port has no adapter for profile."""
+
+        class UnimplementedPort(Protocol):
+            def do_something(self) -> None: ...
+
+        # Register an adapter for a different profile
+        @adapter.for_(UnimplementedPort, profile=Profile.PRODUCTION)
+        class ProdOnlyAdapter:
+            def do_something(self) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.explain(UnimplementedPort)
+
+        assert 'no adapter' in output.lower()
+
+    def it_handles_type_hint_errors_gracefully(self) -> None:
+        """explain() handles classes with problematic type hints gracefully."""
+
+        @service
+        class ServiceWithNoInit:
+            pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        # Should not raise, should produce output
+        output = container.explain(ServiceWithNoInit)
+
+        assert 'ServiceWithNoInit' in output
+
+
+class DescribeContainerGraphEdgeCases:
+    """Additional edge case tests for Container.graph() method."""
+
+    def it_handles_empty_container_mermaid(self) -> None:
+        """graph() returns minimal Mermaid output for empty container."""
+        container = Container()
+
+        output = container.graph()
+
+        assert 'graph TD' in output
+
+    def it_handles_empty_container_dot(self) -> None:
+        """graph(format='dot') returns minimal DOT output for empty container."""
+        container = Container()
+
+        output = container.graph(format='dot')
+
+        assert 'digraph Container' in output
+        assert '}' in output
+
+    def it_filters_services_not_matching_profile_in_mermaid(self) -> None:
+        """graph() filters services not matching the active profile."""
+
+        @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+        class ProdEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph()
+
+        # ProdEmail should be filtered out
+        assert 'ProdEmail' not in output
+
+    def it_filters_services_not_matching_profile_in_dot(self) -> None:
+        """graph(format='dot') filters services not matching the active profile."""
+
+        @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+        class ProdEmail:
+            async def send(self, to: str, subject: str, body: str) -> None:
+                pass
+
+        container = Container()
+        container.scan(profile=Profile.TEST)
+
+        output = container.graph(format='dot')
+
+        # ProdEmail should be filtered out
+        assert 'ProdEmail' not in output
