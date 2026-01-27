@@ -105,11 +105,11 @@ _PYTEST_AVAILABLE = 'pytest' in sys.modules
 
 if not _PYTEST_AVAILABLE:
     try:
-        import pytest as _pytest_module
+        import pytest as _  # noqa: F401
 
         _PYTEST_AVAILABLE = True
     except ImportError:
-        _pytest_module = None  # type: ignore[assignment]
+        pass
 
 if _PYTEST_AVAILABLE:
     # Import pytest for use in decorators (we know it's available now)
