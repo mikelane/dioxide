@@ -50,6 +50,7 @@ Example using fresh_container context manager::
 
 from __future__ import annotations
 
+import sys
 from collections.abc import (
     AsyncIterator,
     Iterator,
@@ -98,23 +99,21 @@ async def fresh_container(
 # When pytest_plugins = ['dioxide.testing'] is used, pytest will import this module
 # and the fixtures will be available. When pytest is not installed, the fixtures
 # simply won't be defined (but fresh_container still works).
-#
-# We use a function to lazily define fixtures to avoid issues with type checking.
 
+# Check if pytest is available by trying to import it
+_PYTEST_AVAILABLE = 'pytest' in sys.modules
 
-def _define_pytest_fixtures() -> bool:
-    """Define pytest fixtures if pytest is available.
-
-    Returns:
-        True if fixtures were defined, False otherwise.
-    """
+if not _PYTEST_AVAILABLE:
     try:
-        import pytest  # noqa: PLC0415
-    except ImportError:
-        return False
+        import pytest as _pytest_module
 
-    # Define the fixtures in the module's global namespace
-    global dioxide_container, fresh_container_fixture, dioxide_container_session
+        _PYTEST_AVAILABLE = True
+    except ImportError:
+        _pytest_module = None  # type: ignore[assignment]
+
+if _PYTEST_AVAILABLE:
+    # Import pytest for use in decorators (we know it's available now)
+    import pytest
 
     @pytest.fixture
     def dioxide_container() -> Iterator[Container]:
@@ -187,9 +186,3 @@ def _define_pytest_fixtures() -> bool:
                 # ... use shared container
         """
         yield Container()
-
-    return True
-
-
-# Define fixtures at module load time if pytest is available
-_PYTEST_AVAILABLE = _define_pytest_fixtures()
