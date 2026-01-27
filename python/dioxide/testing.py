@@ -50,14 +50,13 @@ Example using fresh_container context manager::
 
 from __future__ import annotations
 
+import sys
 from collections.abc import (
     AsyncIterator,
     Iterator,
 )
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
-
-import pytest
 
 from dioxide.container import Container
 
@@ -74,6 +73,8 @@ async def fresh_container(
 
     This context manager creates a new Container instance, scans for components,
     manages lifecycle (start/stop), and ensures complete isolation between tests.
+
+    This function does NOT require pytest to be installed.
 
     Args:
         profile: Profile to scan with (e.g., Profile.TEST). If None, scans all profiles.
@@ -94,76 +95,94 @@ async def fresh_container(
         yield container
 
 
-@pytest.fixture
-def dioxide_container() -> Iterator[Container]:
-    """Provide a fresh, isolated Container for each test.
+# Pytest fixtures are only defined when pytest is available.
+# When pytest_plugins = ['dioxide.testing'] is used, pytest will import this module
+# and the fixtures will be available. When pytest is not installed, the fixtures
+# simply won't be defined (but fresh_container still works).
 
-    This fixture creates a new Container instance for each test function,
-    ensuring complete isolation between tests. The container is NOT
-    pre-scanned - you should call ``container.scan(profile=...)`` in your
-    test to register components with the desired profile.
+# Check if pytest is available by trying to import it
+_PYTEST_AVAILABLE = 'pytest' in sys.modules
 
-    Yields:
-        A fresh Container instance.
+if not _PYTEST_AVAILABLE:
+    try:
+        import pytest as _  # noqa: F401
 
-    Example::
+        _PYTEST_AVAILABLE = True
+    except ImportError:
+        pass
 
-        async def test_user_service(dioxide_container):
-            dioxide_container.scan(profile=Profile.TEST)
-            service = dioxide_container.resolve(UserService)
-            result = await service.register_user('Alice', 'alice@example.com')
-            assert result['name'] == 'Alice'
-    """
-    yield Container()
+if _PYTEST_AVAILABLE:
+    # Import pytest for use in decorators (we know it's available now)
+    import pytest
+
+    @pytest.fixture
+    def dioxide_container() -> Iterator[Container]:
+        """Provide a fresh, isolated Container for each test.
+
+        This fixture creates a new Container instance for each test function,
+        ensuring complete isolation between tests. The container is NOT
+        pre-scanned - you should call ``container.scan(profile=...)`` in your
+        test to register components with the desired profile.
+
+        Yields:
+            A fresh Container instance.
+
+        Example::
+
+            async def test_user_service(dioxide_container):
+                dioxide_container.scan(profile=Profile.TEST)
+                service = dioxide_container.resolve(UserService)
+                result = await service.register_user('Alice', 'alice@example.com')
+                assert result['name'] == 'Alice'
+        """
+        yield Container()
+
+    @pytest.fixture
+    def fresh_container_fixture() -> Iterator[Container]:
+        """Alternative fixture with name matching the context manager.
+
+        This fixture behaves like ``dioxide_container``, providing a fresh
+        Container for each test. The name matches the ``fresh_container``
+        context manager for consistency.
+
+        Yields:
+            A fresh Container instance.
+
+        Example::
+
+            async def test_isolated(fresh_container_fixture):
+                fresh_container_fixture.scan(profile=Profile.TEST)
+                # Guaranteed fresh container, no state leakage
+                pass
+        """
+        yield Container()
+
+    @pytest.fixture(scope='session')
+    def dioxide_container_session() -> Iterator[Container]:
+        """Provide a shared Container for the entire test session.
+
+        This session-scoped fixture creates a single Container instance that is
+        shared across all tests in the session. Use this for performance when
+        tests can safely share container state.
+
+        WARNING: Session-scoped containers share state between tests. Only use
+        this when you understand the implications and tests are designed to
+        handle shared state.
+
+        Yields:
+            A shared Container instance for the session.
+
+        Example::
+
+            # In conftest.py - scan once at session start
+            @pytest.fixture(scope='session', autouse=True)
+            def setup_session_container(dioxide_container_session):
+                dioxide_container_session.scan(profile=Profile.TEST)
 
 
-@pytest.fixture
-def fresh_container_fixture() -> Iterator[Container]:
-    """Alternative fixture with name matching the context manager.
-
-    This fixture behaves like ``dioxide_container``, providing a fresh
-    Container for each test. The name matches the ``fresh_container``
-    context manager for consistency.
-
-    Yields:
-        A fresh Container instance.
-
-    Example::
-
-        async def test_isolated(fresh_container_fixture):
-            fresh_container_fixture.scan(profile=Profile.TEST)
-            # Guaranteed fresh container, no state leakage
-            pass
-    """
-    yield Container()
-
-
-@pytest.fixture(scope='session')
-def dioxide_container_session() -> Iterator[Container]:
-    """Provide a shared Container for the entire test session.
-
-    This session-scoped fixture creates a single Container instance that is
-    shared across all tests in the session. Use this for performance when
-    tests can safely share container state.
-
-    WARNING: Session-scoped containers share state between tests. Only use
-    this when you understand the implications and tests are designed to
-    handle shared state.
-
-    Yields:
-        A shared Container instance for the session.
-
-    Example::
-
-        # In conftest.py - scan once at session start
-        @pytest.fixture(scope='session', autouse=True)
-        def setup_session_container(dioxide_container_session):
-            dioxide_container_session.scan(profile=Profile.TEST)
-
-
-        # In tests - just use the pre-scanned container
-        async def test_shared_container(dioxide_container_session):
-            service = dioxide_container_session.resolve(SharedService)
-            # ... use shared container
-    """
-    yield Container()
+            # In tests - just use the pre-scanned container
+            async def test_shared_container(dioxide_container_session):
+                service = dioxide_container_session.resolve(SharedService)
+                # ... use shared container
+        """
+        yield Container()
