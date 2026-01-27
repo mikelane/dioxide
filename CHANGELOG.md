@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-01-27
+
+### Added
+
+- **Container introspection API** (#360)
+  - `container.debug()` prints summary of all registered services and adapters
+  - `container.explain(cls)` shows the resolution tree for a type
+  - `container.graph(format)` generates Mermaid or DOT format dependency graphs
+
+- **Config injection pattern** (#357, #359)
+  - `container.register_instance(cls, instance)` registers pre-created instances
+  - Works with `@service` decorated classes and Pydantic BaseSettings
+  - Registration before `scan()` takes precedence over decorator registration
+  - Type-safe: instance must be compatible with the registered type
+
+- **Rich error messages** (#356, #358)
+  - `DioxideError` base class with structured formatting (title, context, suggestions, example)
+  - Builder methods: `with_context()`, `with_suggestion()`, `with_example()`
+  - Exception constructors accept structured parameters for programmatic access
+  - `AdapterNotFoundError`: accepts port, profile, available_adapters
+  - `ServiceNotFoundError`: accepts service, profile, dependencies, failed_dependency
+  - `ScopeError`: accepts component, required_scope
+  - `CaptiveDependencyError`: accepts parent, parent_scope, child, child_scope
+
+- **Async lifecycle verification** (#355)
+  - Comprehensive test suite documenting async `initialize()` and `dispose()` behavior
+  - Verified dependency ordering, rollback on failure, error handling patterns
+
+### Fixed
+
+- **pytest no longer required at runtime** (#363)
+  - `import dioxide` now works without pytest installed
+  - pytest fixtures only defined when pytest is available
+  - `fresh_container` context manager works without pytest
+
+### Documentation
+
+- Fixed incorrect method name in CHANGELOG
+
 ## [2.0.0] - 2026-01-23
 
 ### ⚠️ BREAKING CHANGES
@@ -174,6 +213,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - COVERAGE.md explaining testing strategy for Python/Rust hybrid projects
 - CLAUDE.md with project guidelines and best practices
 
+[2.0.1]: https://github.com/mikelane/dioxide/releases/tag/v2.0.1
+[2.0.0]: https://github.com/mikelane/dioxide/releases/tag/v2.0.0
 [1.1.2]: https://github.com/mikelane/dioxide/releases/tag/v1.1.2
 [0.2.1]: https://github.com/mikelane/dioxide/releases/tag/v0.2.1
 [0.1.1]: https://github.com/mikelane/dioxide/releases/tag/v0.1.1
