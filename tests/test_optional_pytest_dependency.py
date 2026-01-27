@@ -20,7 +20,9 @@ class DescribeDioxideImportWithoutPytest:
     def it_imports_dioxide_without_pytest(self) -> None:
         """Core dioxide package imports successfully without pytest."""
         # We run a subprocess with a script that blocks pytest imports
-        # and then tries to import dioxide
+        # and then tries to import dioxide.
+        # The subprocess uses the same Python interpreter (sys.executable)
+        # which has dioxide installed, so no cwd is needed.
         script = textwrap.dedent("""
             import sys
             from importlib.abc import MetaPathFinder
@@ -57,7 +59,6 @@ class DescribeDioxideImportWithoutPytest:
             [sys.executable, '-c', script],
             capture_output=True,
             text=True,
-            cwd='/Users/mikelane/dev/dioxide/.worktrees/issue-362-pytest-import',
         )
 
         assert result.returncode == 0, (
@@ -99,7 +100,6 @@ class DescribeDioxideImportWithoutPytest:
             [sys.executable, '-c', script],
             capture_output=True,
             text=True,
-            cwd='/Users/mikelane/dev/dioxide/.worktrees/issue-362-pytest-import',
         )
 
         assert result.returncode == 0, (
