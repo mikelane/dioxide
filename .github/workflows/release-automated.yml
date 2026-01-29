@@ -547,18 +547,32 @@ jobs:
       contents: read
 
     steps:
-      - name: Wait for PyPI to update
-        run: sleep 60
-
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
-      - name: Verify package on PyPI
+      - name: Verify installation from PyPI
         run: |
-          pip install dioxide==${{ needs.validate.outputs.version }}
-          python -c "import dioxide; print(f'Successfully installed version {dioxide.__version__}')"
+          VERSION="${{ needs.validate.outputs.version }}"
+          MAX_ATTEMPTS=10
+          DELAY=30
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $i/$MAX_ATTEMPTS: checking for dioxide==$VERSION on PyPI..."
+            if pip install --dry-run dioxide==$VERSION 2>/dev/null; then
+              echo "Package found on PyPI, installing..."
+              pip install dioxide==$VERSION
+              python -c "import dioxide; print(f'Successfully verified version {dioxide.__version__}')"
+              exit 0
+            fi
+            echo "Package not yet available, waiting ${DELAY}s..."
+            sleep $DELAY
+            DELAY=$((DELAY + 15))  # Increase delay each attempt
+          done
+
+          echo "Package not found after $MAX_ATTEMPTS attempts"
+          exit 1
 
       - name: Create deployment summary
         run: |
