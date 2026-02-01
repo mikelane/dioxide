@@ -84,6 +84,13 @@ addopts = [
 markers = [
     "asyncio: mark test as an async test using asyncio",
     "slow: mark test as slow (deselect with '-m \"not slow\"')",
+    "docs_ux: mark test as documentation UX test",
+    "quickstart: mark test as quickstart scenario",
+    "service_adapter: mark test as service/adapter guidance scenario",
+    "why_dioxide: mark test as why-dioxide scenario",
+    "testing: mark test as testing patterns scenario",
+    "contributing: mark test as contributor scenario",
+    "error_messages: mark test as error message scenario",
 ]
 
 [tool.mypy]
@@ -113,7 +120,7 @@ strict_concatenate = true
 exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*", "click", "click.*", "typer", "typer.*", "django", "django.*", "rest_framework", "rest_framework.*", "ninja", "ninja.*"]
+module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*", "click", "click.*", "typer", "typer.*", "django", "django.*", "rest_framework", "rest_framework.*", "ninja", "ninja.*", "pytest_bdd", "pytest_bdd.*", "playwright", "playwright.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -288,6 +295,25 @@ test = [
     "mutmut>=3.2.3",
 ]
 docs = [
+    "furo>=2024.8.6",
+    "linkify-it-py>=2.0.0",
+    "myst-parser>=4.0.1",
+    "sphinx>=8.2.3",
+    "sphinx-autoapi>=3.6.0",
+    "sphinx-autodoc-typehints>=3.2.0",
+    "sphinx-autobuild>=2024.10.3",
+    "sphinx-copybutton>=0.5.2",
+    "sphinx-design>=0.6.1",
+    "sphinx-tippy>=0.4.3",
+    "sphinx-togglebutton>=0.3.2",
+    "sphinxcontrib-mermaid>=1.2.3",
+]
+docs-ux = [
+    # BDD testing for documentation UX
+    "pytest-bdd>=8.0.0",
+    "pytest-playwright>=0.6.0",
+    "playwright>=1.49.0",
+    # Docs dependencies for building/testing locally
     "furo>=2024.8.6",
     "linkify-it-py>=2.0.0",
     "myst-parser>=4.0.1",
