@@ -517,3 +517,13 @@ It's honest about its limitations (no provider functions, no request scope yet) 
 
 Get Started
 ```
+
+---
+
+## See Also
+
+- {doc}`user_guide/getting_started` - Hands-on tutorial to start using dioxide
+- {doc}`philosophy` - Deep dive into why dioxide exists and its design decisions
+- {doc}`TESTING_GUIDE` - Testing philosophy: fakes over mocks
+- {doc}`migration-from-dependency-injector` - Migrating from dependency-injector
+- {doc}`user_guide/hexagonal_architecture` - Ports and adapters pattern explained

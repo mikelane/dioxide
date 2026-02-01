@@ -197,4 +197,10 @@ That is all there is to it. That is why dioxide exists.
 
 ---
 
-*For technical details on how to use dioxide, see the {doc}`Getting Started guide <user_guide/getting_started>`. For the complete design specification, see {doc}`MLP Vision <MLP_VISION>`. For testing patterns, see the {doc}`Testing Guide <TESTING_GUIDE>`.*
+## See Also
+
+- {doc}`user_guide/getting_started` - Hands-on tutorial to start using dioxide
+- {doc}`why-dioxide` - Feature comparison with other DI frameworks
+- {doc}`MLP_VISION` - Complete design specification and roadmap
+- {doc}`TESTING_GUIDE` - Testing philosophy: fakes over mocks
+- {doc}`user_guide/hexagonal_architecture` - Ports and adapters pattern explained
