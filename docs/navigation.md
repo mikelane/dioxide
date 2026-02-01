@@ -11,8 +11,9 @@ Choose your path based on what you want to accomplish.
 Get dioxide running with a minimal example to understand the core concepts.
 
 1. {doc}`user_guide/getting_started` - Install and build your first container
-2. {doc}`examples/01-basic-dependency-injection` - See a complete working example
-3. {doc}`examples/02-email-service-with-profiles` - Understand profile switching
+2. {doc}`guides/choosing-decorators` - Which decorator: @service or @adapter? (decision tree)
+3. {doc}`examples/01-basic-dependency-injection` - See a complete working example
+4. {doc}`examples/02-email-service-with-profiles` - Understand profile switching
 
 ---
 
@@ -96,3 +97,4 @@ Browse the cookbook for copy-paste solutions to common problems.
 | Mock-heavy test suite | Testing philosophy, then migration from mocks |
 | FastAPI developer | FastAPI cookbook, then lifecycle async patterns |
 | Flask/Django developer | Lifecycle async patterns, then cookbook |
+| Confused about decorators | {doc}`guides/choosing-decorators` - visual decision tree |
