@@ -6,6 +6,16 @@ This page provides an honest comparison with alternatives to help you choose the
 
 ---
 
+## The Mission
+
+> **Make the Dependency Inversion Principle feel inevitable.**
+
+Most Python codebases suffer from tight coupling because it is the path of least resistance. Importing `sendgrid` directly into business logic is trivially easy. Defining ports, creating adapters, and wiring them together requires discipline.
+
+dioxide exists to flip this equation. When adding a dependency is as simple as a type hint, and swapping implementations is a single profile parameter, clean architecture becomes the natural choice.
+
+---
+
 ## The Philosophy
 
 ### 1. Clean Architecture Made Simple
@@ -79,68 +89,74 @@ How does dioxide compare to popular Python DI frameworks?
 
 :::{list-table} Feature Comparison Matrix
 :header-rows: 1
-:widths: 30 18 18 18 18
+:widths: 25 15 20 15 15
 
 * - Feature
   - dioxide
   - dependency-injector
-  - lagom
   - injector
+  - Manual DI
+
+* - **Profile/environment switching**
+  - Built-in
+  - Manual override
+  - Manual
+  - Manual
+
+* - **Hexagonal architecture support**
+  - Native API
+  - Possible
+  - Possible
+  - Possible
 
 * - **Type hint wiring**
+  - Full (mypy)
+  - Partial (stubs)
+  - Full (mypy)
   - Full
-  - Partial
-  - Full
-  - Full
-
-* - **Built-in profiles**
-  - Yes
-  - No (manual override)
-  - No
-  - No
 
 * - **Auto-discovery**
-  - Yes (automatic)
+  - Yes (scan packages)
   - No
   - No
-  - No
+  - N/A
 
 * - **Async lifecycle**
   - Yes (`@lifecycle`)
-  - Partial
+  - Yes (Resources)
   - No
-  - No
+  - Manual
 
 * - **Circular detection**
   - At startup
   - At runtime
-  - At runtime
   - At startup
-
-* - **Container syntax**
-  - Declarative (decorators)
-  - Imperative (providers)
-  - Declarative
-  - Declarative
+  - N/A
 
 * - **Performance**
-  - Rust-backed (<1us)
-  - Python (~10-50us)
-  - Python (~5-20us)
-  - Python (~5-20us)
+  - Rust-backed
+  - Cython-backed
+  - Pure Python
+  - N/A
 
 * - **Learning curve**
+  - Medium
+  - High
+  - Low
+  - Low
+
+* - **Boilerplate**
   - Low
   - High
   - Low
-  - Medium
-
-* - **XML/YAML config**
-  - No
-  - No
-  - No
-  - No
+  - None
 :::
+
+**Notes on comparison:**
+
+- **dependency-injector** is mature and feature-rich, written in Cython for performance. It uses an imperative provider-based API (`providers.Singleton(...)`) with explicit wiring.
+- **injector** is inspired by Google Guice, with a simpler API. It uses Modules for configuration and supports full mypy typing.
+- **Manual DI** means passing dependencies explicitly in constructors without a framework. Zero overhead but requires manual wiring.
 
 ---
 
@@ -403,6 +419,67 @@ dioxide uses Rust for performance. Installing from source requires a Rust toolch
 - Linux (x86_64, ARM64)
 - macOS (x86_64, ARM64)
 - Windows (x86_64)
+
+---
+
+## What dioxide is NOT
+
+These are not limitations to be fixed later. They are intentional design decisions.
+
+### NOT a Framework
+
+dioxide is a library, not a framework. It does not dictate your application structure:
+
+- No required base classes
+- No mandatory folder layouts
+- No lifecycle hooks you must implement
+- Integrate it into your architecture, not the reverse
+
+### NOT a Configuration System
+
+dioxide does not manage configuration. Use the right tool for configuration:
+
+```python
+# Use Pydantic Settings for configuration
+from pydantic_settings import BaseSettings
+
+class AppConfig(BaseSettings):
+    database_url: str
+    sendgrid_api_key: str
+
+# dioxide injects the config, doesn't manage it
+@service
+class NotificationService:
+    def __init__(self, config: AppConfig): ...
+```
+
+### NOT Trying to Solve Every DI Pattern
+
+dioxide focuses on constructor injection only:
+
+- **No property injection** - Explicit constructor parameters are clearer
+- **No method injection** - If you need it, the design may need rethinking
+- **No circular dependency resolution** - Circular deps are architecture problems, not DI problems
+
+### NOT Necessarily the Fastest for Raw Lookups
+
+While dioxide's Rust backend is fast, the comparison depends on what you measure:
+
+- **Cached singleton resolution**: dioxide is extremely fast (~167ns)
+- **Initial container setup**: Comparable to other frameworks
+- **Complex provider factories**: dependency-injector's Cython may be faster for some patterns
+
+Choose dioxide for the developer experience, not micro-benchmarks.
+
+### NOT Feature-Complete by Design
+
+dioxide intentionally has a small API surface:
+
+- 3 decorators: `@adapter.for_()`, `@service`, `@lifecycle`
+- 1 container class: `Container(profile=...)`
+- That's it
+
+If you need AOP interceptors, request scoping, or complex factory patterns, you may want a more feature-rich framework.
 
 ---
 
