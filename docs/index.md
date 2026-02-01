@@ -224,7 +224,7 @@ async def test_notification():
 
 :::::
 
-```{button-ref} user_guide/testing_with_fakes
+```{button-ref} testing/index
 :color: primary
 :outline:
 :class: sd-rounded-pill
@@ -303,7 +303,19 @@ user_guide/package_scanning
 user_guide/services-vs-adapters
 user_guide/hexagonal_architecture
 user_guide/architecture
-user_guide/testing_with_fakes
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Testing
+
+testing/index
+testing/philosophy
+testing/patterns
+testing/fixtures
+testing/integration
+testing/troubleshooting
 ```
 
 ```{toctree}
@@ -357,5 +369,4 @@ api/index
 :caption: Development
 
 versioning
-TESTING_GUIDE
 ```

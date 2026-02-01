@@ -1,6 +1,19 @@
 Testing with Fakes
 ==================
 
+.. note::
+
+   **This documentation has been consolidated.**
+
+   For the latest and most comprehensive testing documentation, see the
+   :doc:`/testing/index` section which includes:
+
+   - :doc:`/testing/philosophy` - Fakes over mocks philosophy
+   - :doc:`/testing/patterns` - Common fake implementations
+   - :doc:`/testing/fixtures` - Test fixtures and container patterns
+   - :doc:`/testing/integration` - Framework integration testing
+   - :doc:`/testing/troubleshooting` - Common issues and solutions
+
 **Version:** 1.0.0
 
 **Last Updated:** 2025-11-22
