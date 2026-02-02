@@ -40,32 +40,66 @@ PyPI
 
 ---
 
-## Why dioxide?
+## Find What You Need
 
-:::{card-carousel} 3
+Choose your path based on what you want to accomplish:
 
-```{card} Zero Ceremony
-:class-card: sd-border-0 sd-shadow-sm
-:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
+:::::{grid} 2
+:gutter: 4
 
-Auto-injection via type hints. No manual `.bind()` or `.register()` calls. Just decorate and go.
-```
+::::{grid-item-card} Just want to get started?
+:class-card: sd-border-primary sd-shadow-sm
+:link: user_guide/getting_started
+:link-type: doc
 
-```{card} Built-in Profiles
-:class-card: sd-border-0 sd-shadow-sm
-:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
+**15 minutes to your first app**
 
-Swap implementations by environment. Production uses real services, tests use fast fakes.
-```
+Install dioxide, understand the core concepts, and build a working example with ports, adapters, and services.
 
-```{card} Type Safety
-:class-card: sd-border-0 sd-shadow-sm
-:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
++++
+{bdg-primary}`Quickstart` {bdg-secondary}`Install` {bdg-secondary}`Tutorial`
+::::
 
-Full mypy and pyright support. If the types check, the wiring is correct.
-```
+::::{grid-item-card} Evaluating dioxide for your project?
+:class-card: sd-border-primary sd-shadow-sm
+:link: why-dioxide
+:link-type: doc
 
-:::
+**Honest comparison & philosophy**
+
+See how dioxide compares to dependency-injector, lagom, and other frameworks. Understand the design decisions and limitations.
+
++++
+{bdg-primary}`Comparison` {bdg-secondary}`Philosophy` {bdg-secondary}`Tradeoffs`
+::::
+
+::::{grid-item-card} Need testing patterns?
+:class-card: sd-border-primary sd-shadow-sm
+:link: TESTING_GUIDE
+:link-type: doc
+
+**Fakes over mocks philosophy**
+
+Learn why dioxide prefers fakes to mocks, how to structure test adapters, and patterns for fast, deterministic tests.
+
++++
+{bdg-primary}`Testing` {bdg-secondary}`Fakes` {bdg-secondary}`Fixtures`
+::::
+
+::::{grid-item-card} Integrating with a framework?
+:class-card: sd-border-primary sd-shadow-sm
+:link: cookbook/index
+:link-type: doc
+
+**Framework integration recipes**
+
+Copy-paste recipes for FastAPI, testing patterns, configuration, and database integration.
+
++++
+{bdg-primary}`FastAPI` {bdg-secondary}`Testing` {bdg-secondary}`Database`
+::::
+
+:::::
 
 ---
 
@@ -116,6 +150,35 @@ class NotificationService:
 container.scan("myapp", profile=Profile.PRODUCTION)
 service = container.resolve(NotificationService)
 ```
+
+---
+
+## Why dioxide?
+
+:::{card-carousel} 3
+
+```{card} Zero Ceremony
+:class-card: sd-border-0 sd-shadow-sm
+:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
+
+Auto-injection via type hints. No manual `.bind()` or `.register()` calls. Just decorate and go.
+```
+
+```{card} Built-in Profiles
+:class-card: sd-border-0 sd-shadow-sm
+:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
+
+Swap implementations by environment. Production uses real services, tests use fast fakes.
+```
+
+```{card} Type Safety
+:class-card: sd-border-0 sd-shadow-sm
+:class-header: sd-bg-transparent sd-border-0 sd-text-center sd-fs-3
+
+Full mypy and pyright support. If the types check, the wiring is correct.
+```
+
+:::
 
 ---
 
@@ -257,12 +320,12 @@ async def create_user(user: UserData):
     await service.register_user(user.email, user.name)
 ```
 
-```{button-ref} user_guide/getting_started
+```{button-ref} cookbook/fastapi
 :color: primary
 :outline:
 :class: sd-rounded-pill
 
-See the Getting Started guide
+See the FastAPI cookbook
 ```
 
 ---
@@ -285,9 +348,9 @@ Read the User Guide
 ```{toctree}
 :maxdepth: 2
 :hidden:
-:caption: Overview
+:caption: Getting Started
 
-navigation
+user_guide/getting_started
 why-dioxide
 philosophy
 ```
@@ -297,11 +360,10 @@ philosophy
 :hidden:
 :caption: User Guide
 
-user_guide/getting_started
-user_guide/container_patterns
-user_guide/package_scanning
 user_guide/services-vs-adapters
 user_guide/hexagonal_architecture
+user_guide/container_patterns
+user_guide/package_scanning
 user_guide/architecture
 ```
 
@@ -321,22 +383,24 @@ testing/troubleshooting
 ```{toctree}
 :maxdepth: 2
 :hidden:
-:caption: Tutorial Examples
+:caption: Advanced Topics
 
-examples/01-basic-dependency-injection
-examples/02-email-service-with-profiles
-examples/03-multi-tier-application
-examples/04-lifecycle-management
+guides/choosing-decorators
+guides/scoping
+guides/lifecycle-async-patterns
+guides/decorator-order
 ```
 
 ```{toctree}
 :maxdepth: 2
 :hidden:
-:caption: Guides
+:caption: Cookbook
 
-guides/scoping
-guides/lifecycle-async-patterns
-guides/decorator-order
+cookbook/index
+cookbook/fastapi
+cookbook/configuration
+cookbook/database
+cookbook/testing
 ```
 
 ```{toctree}
@@ -350,9 +414,12 @@ integrations/django
 ```{toctree}
 :maxdepth: 2
 :hidden:
-:caption: Cookbook
+:caption: Tutorials
 
-cookbook/index
+examples/01-basic-dependency-injection
+examples/02-email-service-with-profiles
+examples/03-multi-tier-application
+examples/04-lifecycle-management
 ```
 
 ```{toctree}
@@ -366,7 +433,11 @@ api/index
 ```{toctree}
 :maxdepth: 1
 :hidden:
-:caption: Development
+:caption: Contributing
 
 versioning
+navigation
+migration-from-dependency-injector
+design/ADR-001-container-architecture
+design/ADR-002-pyo3-binding-strategy
 ```

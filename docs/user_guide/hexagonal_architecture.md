@@ -1342,7 +1342,12 @@ async def test_notification(test_container):
 - Clear architecture (explicit boundaries)
 - Type-safe (mypy validates everything)
 
-**Next steps:**
+---
 
-- Read [Testing with Fakes](testing_with_fakes.rst) for detailed testing patterns
-- Explore the [API Reference](../api/dioxide/index.rst) for detailed API documentation
+## See Also
+
+- {doc}`testing_with_fakes` - Detailed testing patterns with fakes
+- {doc}`services-vs-adapters` - When to use `@service` vs `@adapter`
+- {doc}`/TESTING_GUIDE` - Comprehensive testing philosophy
+- {doc}`/cookbook/database` - Database adapter patterns
+- {doc}`/api/dioxide/index` - API reference documentation
