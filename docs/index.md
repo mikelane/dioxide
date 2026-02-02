@@ -88,15 +88,15 @@ Learn why dioxide prefers fakes to mocks, how to structure test adapters, and pa
 
 ::::{grid-item-card} Integrating with a framework?
 :class-card: sd-border-primary sd-shadow-sm
-:link: cookbook/fastapi
+:link: cookbook/index
 :link-type: doc
 
-**FastAPI, Django, Flask, Celery**
+**Framework integration recipes**
 
-Copy-paste recipes for integrating dioxide with your web framework or task queue of choice.
+Copy-paste recipes for FastAPI, testing patterns, configuration, and database integration.
 
 +++
-{bdg-primary}`FastAPI` {bdg-secondary}`Django` {bdg-secondary}`Celery`
+{bdg-primary}`FastAPI` {bdg-secondary}`Testing` {bdg-secondary}`Database`
 ::::
 
 :::::
