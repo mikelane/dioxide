@@ -299,7 +299,6 @@ docs = [
     "sphinx-design>=0.6.1",
     "sphinx-tippy>=0.4.3",
     "sphinx-togglebutton>=0.3.2",
-    "sphinxcontrib-mermaid>=1.2.3",
 ]
 
 [tool.commitizen]

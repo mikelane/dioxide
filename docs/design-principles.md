@@ -214,26 +214,10 @@ class ConsoleEmailAdapter:
 
 #### Architecture Layers
 
-```
-┌─────────────────────────────────────┐
-│   @service (Core Domain Logic)     │  ← Business rules
-│   - UserService                    │  ← Profile-agnostic
-│   - OrderService                   │  ← Depends on ports
-└──────────────┬──────────────────────┘
-               │ depends on
-               ▼
-┌─────────────────────────────────────┐
-│   Ports (Protocols/ABCs)            │  ← Interfaces/contracts
-│   - EmailPort                       │  ← No decorators!
-│   - UserRepository                  │  ← Just type definitions
-└──────────────┬──────────────────────┘
-               │ implemented by
-               ▼
-┌─────────────────────────────────────┐
-│   @adapter.for_(Port, profile=...)  │  ← Boundary implementations
-│   - SendGridAdapter                 │  ← Profile-specific
-│   - FakeEmailAdapter                │  ← Swappable
-└─────────────────────────────────────┘
+```{image} _static/images/diagrams/MLP_VISION-0--service-core-domain.svg
+:alt: @service (Core Domain Logic)
+:align: center
+:class: diagram
 ```
 
 **Type Safety:** Services depend on `EmailPort` (Protocol), container injects `SendGridAdapter` or `FakeEmailAdapter` based on active profile.

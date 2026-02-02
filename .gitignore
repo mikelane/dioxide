@@ -67,3 +67,4 @@ strategic-roadmap.md
 docs/_build/
 docs/autoapi/
 .worktrees/
+scripts/diagram-tools/node_modules/

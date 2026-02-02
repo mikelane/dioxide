@@ -6,46 +6,25 @@ This guide clarifies the mental model for when to use `@service` versus `@adapte
 
 Use this flowchart when deciding which decorator to apply.
 
+```{image} ../_static/images/diagrams/decision-tree.svg
+:alt: Decision tree for choosing @service vs @adapter
+:align: center
+:class: diagram
 ```
-Do you need to swap implementations based on profile (test/prod/dev)?
-├── YES → Define a Port (Protocol) + use @adapter.for_(Port, profile=...)
-│         Examples: Database, Email, Payment Gateway, External APIs
-│
-└── NO → Use @service
-         Examples: Business logic, Domain services, Use cases
 
-Is this core business logic that shouldn't change between environments?
-├── YES → @service
-└── NO → @adapter.for_(Port)
-
-Does this component talk to external systems (DB, network, filesystem)?
-├── YES → Port + @adapter (allows faking in tests)
-└── NO → Probably @service
-```
+**Key questions:**
+- **Need to swap implementations based on profile?** → Port + `@adapter.for_()`
+- **Core business logic that shouldn't change?** → `@service`
+- **Talks to external systems (DB, network, filesystem)?** → Port + `@adapter`
 
 ## The Mental Model
 
 Understanding the relationship between services, ports, and adapters is fundamental to dioxide and hexagonal architecture.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Hexagonal Architecture                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   External World          │  Application Core  │  External World │
-│   (Driving Side)          │                    │  (Driven Side)  │
-│                           │                    │                  │
-│   ┌─────────┐            │   ┌──────────┐    │   ┌─────────┐   │
-│   │ FastAPI │──adapter──>│   │ @service │────│──>│  Port   │   │
-│   │ Click   │            │   │ (core    │    │   │(Protocol)│   │
-│   │ Flask   │            │   │  logic)  │    │   └────┬────┘   │
-│   └─────────┘            │   └──────────┘    │        │        │
-│                           │                    │   ┌────▼────┐   │
-│                           │                    │   │ @adapter │   │
-│                           │                    │   │(implements│  │
-│                           │                    │   │   port)  │   │
-│                           │                    │   └─────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+```{image} ../_static/images/diagrams/user_guide-services-vs-adapters-0-external-world-br-dr.svg
+:alt: External World<br/>(Driving Side)
+:align: center
+:class: diagram
 ```
 
 ### @service: The Core
