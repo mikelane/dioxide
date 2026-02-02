@@ -1,5 +1,7 @@
 # Document Audit: MLP Vision Alignment
 
+> **Historical Document**: This audit was created during the MLP development phase. References to `MLP_VISION.md` now point to `docs/design-principles.md`.
+
 **Audit Date**: 2025-11-07
 **Purpose**: Identify documents that conflict with MLP_VISION.md
 **Action**: Update or deprecate conflicting documents

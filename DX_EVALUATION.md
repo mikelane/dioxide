@@ -1,5 +1,7 @@
 # Dioxide: PM Assessment Against MLP Vision
 
+> **Historical Document**: This assessment was created during early development. References to `MLP_VISION.md` now point to `docs/design-principles.md`. The gaps identified here have since been addressed.
+
 **Assessment Date**: 2025-11-07
 **Assessor**: Product-Technical Lead
 **Current Release**: v0.0.1-alpha (Released Nov 6, 2025)

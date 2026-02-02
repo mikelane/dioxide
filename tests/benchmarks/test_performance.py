@@ -3,7 +3,7 @@
 This module benchmarks dioxide's core operations to validate performance
 characteristics align with MLP Vision goals.
 
-Performance targets (from MLP_VISION.md):
+Performance targets (from design-principles.md):
 - Dependency resolution should be "instant" (aspirational < 1μs, realistic < 10μs)
 - Container initialization should be fast (< 10ms for 100 components)
 - Zero runtime overhead compared to manual DI

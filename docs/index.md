@@ -99,6 +99,19 @@ Copy-paste recipes for FastAPI, testing patterns, configuration, and database in
 {bdg-primary}`FastAPI` {bdg-secondary}`Testing` {bdg-secondary}`Database`
 ::::
 
+::::{grid-item-card} Hit an error?
+:class-card: sd-border-primary sd-shadow-sm
+:link: troubleshooting/index
+:link-type: doc
+
+**Diagnose and fix common issues**
+
+Quick diagnosis table and detailed solutions for adapter not found, circular dependencies, scope errors, and more.
+
++++
+{bdg-primary}`Errors` {bdg-secondary}`Debugging` {bdg-secondary}`Solutions`
+::::
+
 :::::
 
 ---
