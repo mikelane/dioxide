@@ -31,6 +31,12 @@ The recommended way to create isolated test containers:
 Pytest Plugin Fixtures
 ----------------------
 
+.. note::
+
+   The pytest fixtures documented in this section require pytest to be installed.
+   These fixtures are available when you add the dioxide pytest plugin to your
+   ``conftest.py`` as shown below.
+
 Add the following to your ``conftest.py`` to enable dioxide pytest fixtures:
 
 .. code-block:: python

@@ -1,8 +1,6 @@
 Testing with dioxide
 ====================
 
-**Version:** 1.0.0
-
 This section documents dioxide's core testing philosophy and provides comprehensive
 patterns for writing fast, reliable tests.
 
