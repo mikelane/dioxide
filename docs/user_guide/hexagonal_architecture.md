@@ -438,21 +438,21 @@ dioxide makes hexagonal architecture explicit through distinct decorator roles:
 ```{mermaid}
 flowchart TB
     subgraph services["@service (Core Domain Logic)"]
-        direction LR
+        direction TB
         US[UserService]
         OS[OrderService]
         NS[NotificationService]
     end
 
     subgraph ports["Ports (Protocols/ABCs)"]
-        direction LR
+        direction TB
         EP[EmailPort]
         UR[UserRepository]
         PG[PaymentGateway]
     end
 
     subgraph adapters["@adapter.for_(Port, profile=...)"]
-        direction LR
+        direction TB
         SG["SendGridAdapter<br/>(PRODUCTION)"]
         FE["FakeEmailAdapter<br/>(TEST)"]
         CE["ConsoleEmailAdapter<br/>(DEVELOPMENT)"]

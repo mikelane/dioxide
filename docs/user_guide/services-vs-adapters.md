@@ -27,25 +27,29 @@ Does this component talk to external systems (DB, network, filesystem)?
 
 Understanding the relationship between services, ports, and adapters is fundamental to dioxide and hexagonal architecture.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Hexagonal Architecture                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   External World          │  Application Core  │  External World │
-│   (Driving Side)          │                    │  (Driven Side)  │
-│                           │                    │                  │
-│   ┌─────────┐            │   ┌──────────┐    │   ┌─────────┐   │
-│   │ FastAPI │──adapter──>│   │ @service │────│──>│  Port   │   │
-│   │ Click   │            │   │ (core    │    │   │(Protocol)│   │
-│   │ Flask   │            │   │  logic)  │    │   └────┬────┘   │
-│   └─────────┘            │   └──────────┘    │        │        │
-│                           │                    │   ┌────▼────┐   │
-│                           │                    │   │ @adapter │   │
-│                           │                    │   │(implements│  │
-│                           │                    │   │   port)  │   │
-│                           │                    │   └─────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+```{mermaid}
+flowchart LR
+    subgraph driving["External World<br/>(Driving Side)"]
+        direction TB
+        FA[FastAPI]
+        CL[Click]
+        FL[Flask]
+    end
+
+    subgraph core["Application Core"]
+        direction TB
+        SVC["@service<br/>(core logic)"]
+    end
+
+    subgraph driven["External World<br/>(Driven Side)"]
+        direction TB
+        PORT["Port<br/>(Protocol)"]
+        ADP["@adapter<br/>(implements port)"]
+    end
+
+    driving -->|"calls"| core
+    core -->|"depends on"| PORT
+    PORT -->|"implemented by"| ADP
 ```
 
 ### @service: The Core

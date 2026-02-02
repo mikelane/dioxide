@@ -214,26 +214,36 @@ class ConsoleEmailAdapter:
 
 #### Architecture Layers
 
-```
-┌─────────────────────────────────────┐
-│   @service (Core Domain Logic)     │  ← Business rules
-│   - UserService                    │  ← Profile-agnostic
-│   - OrderService                   │  ← Depends on ports
-└──────────────┬──────────────────────┘
-               │ depends on
-               ▼
-┌─────────────────────────────────────┐
-│   Ports (Protocols/ABCs)            │  ← Interfaces/contracts
-│   - EmailPort                       │  ← No decorators!
-│   - UserRepository                  │  ← Just type definitions
-└──────────────┬──────────────────────┘
-               │ implemented by
-               ▼
-┌─────────────────────────────────────┐
-│   @adapter.for_(Port, profile=...)  │  ← Boundary implementations
-│   - SendGridAdapter                 │  ← Profile-specific
-│   - FakeEmailAdapter                │  ← Swappable
-└─────────────────────────────────────┘
+```{mermaid}
+flowchart TB
+    subgraph services["@service (Core Domain Logic)"]
+        direction TB
+        S1["UserService"]
+        S2["OrderService"]
+    end
+
+    subgraph ports["Ports (Protocols/ABCs)"]
+        direction TB
+        P1["EmailPort"]
+        P2["UserRepository"]
+    end
+
+    subgraph adapters["@adapter.for_(Port, profile=...)"]
+        direction TB
+        A1["SendGridAdapter"]
+        A2["FakeEmailAdapter"]
+    end
+
+    services -->|"depends on"| ports
+    ports -->|"implemented by"| adapters
+
+    note1["Business rules<br/>Profile-agnostic"]
+    note2["Interfaces/contracts<br/>No decorators!"]
+    note3["Boundary implementations<br/>Profile-specific, Swappable"]
+
+    services ~~~ note1
+    ports ~~~ note2
+    adapters ~~~ note3
 ```
 
 **Type Safety:** Services depend on `EmailPort` (Protocol), container injects `SendGridAdapter` or `FakeEmailAdapter` based on active profile.
