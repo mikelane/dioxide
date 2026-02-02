@@ -23,9 +23,9 @@ const THEME = {
   border: '#f5c2e7',
 };
 
-// Fixed diagrams without <br/> tags
+// Fixed diagrams - dark text on light backgrounds for contrast
 const diagrams = [
-  // Decision tree - simplified
+  // Decision tree - simplified with dark text on colored nodes
   {
     name: 'decision-tree.svg',
     code: `flowchart TD
@@ -37,8 +37,8 @@ const diagrams = [
     E -->|YES| B
     E -->|NO| D
 
-    style B fill:#fab387
-    style D fill:#89b4fa`,
+    style B fill:#fab387,color:#1e1e2e
+    style D fill:#89b4fa,color:#1e1e2e`,
   },
 
   // Golden path - cleaner labels
@@ -63,7 +63,7 @@ const diagrams = [
     port -->|implemented by| adapters`,
   },
 
-  // Scoping diagram 0 - container overview
+  // Scoping diagram 0 - container overview with dark text
   {
     name: 'guides-scoping-0-container-applicatio.svg',
     code: `flowchart TB
@@ -87,15 +87,41 @@ const diagrams = [
         S2 --> R2A
     end
 
-    style S1 fill:#89b4fa
-    style S2 fill:#89b4fa
-    style R1A fill:#fab387
-    style R1B fill:#fab387
-    style R2A fill:#fab387
-    style R2B fill:#fab387`,
+    style S1 fill:#89b4fa,color:#1e1e2e
+    style S2 fill:#89b4fa,color:#1e1e2e
+    style R1A fill:#fab387,color:#1e1e2e
+    style R1B fill:#fab387,color:#1e1e2e
+    style R2A fill:#fab387,color:#1e1e2e
+    style R2B fill:#fab387,color:#1e1e2e`,
   },
 
-  // Scoping diagram 3 - parent container
+  // Scoping diagram 2 - singleton vs scoped (was missing, had bad contrast)
+  {
+    name: 'guides-scoping-2-singleton-shared-.svg',
+    code: `flowchart LR
+    subgraph Singleton["Singleton - Shared"]
+        US["UserService"]
+        ES["EmailService"]
+    end
+
+    subgraph Scoped["Request-Scoped"]
+        RC["RequestContext"]
+        DB["DatabaseSession"]
+        AL["AuditLogger"]
+    end
+
+    US --> RC
+    US --> DB
+    US --> AL
+
+    style US fill:#89b4fa,color:#1e1e2e
+    style ES fill:#89b4fa,color:#1e1e2e
+    style RC fill:#fab387,color:#1e1e2e
+    style DB fill:#fab387,color:#1e1e2e
+    style AL fill:#fab387,color:#1e1e2e`,
+  },
+
+  // Scoping diagram 3 - parent container with dark text
   {
     name: 'guides-scoping-3-parent-container.svg',
     code: `flowchart TB
@@ -115,13 +141,13 @@ const diagrams = [
     CS1 -->|depends on| PS1
     PS2 -->|injected with| CS1
 
-    style PS1 fill:#89b4fa
-    style PS2 fill:#89b4fa
-    style CS1 fill:#fab387
-    style CS2 fill:#fab387`,
+    style PS1 fill:#89b4fa,color:#1e1e2e
+    style PS2 fill:#89b4fa,color:#1e1e2e
+    style CS1 fill:#fab387,color:#1e1e2e
+    style CS2 fill:#fab387,color:#1e1e2e`,
   },
 
-  // Scoping diagram 5 - flowchart decision
+  // Scoping diagram 5 - flowchart decision with dark text
   {
     name: 'guides-scoping-5-flowchart.svg',
     code: `flowchart TD
@@ -133,9 +159,9 @@ const diagrams = [
     E -->|No| G["SINGLETON default"]
     E -->|Yes| F
 
-    style C fill:#89b4fa
-    style G fill:#89b4fa
-    style F fill:#fab387`,
+    style C fill:#89b4fa,color:#1e1e2e
+    style G fill:#89b4fa,color:#1e1e2e
+    style F fill:#fab387,color:#1e1e2e`,
   },
 
   // MLP Vision - architecture layers

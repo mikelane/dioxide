@@ -50,8 +50,8 @@
 <rect x="336.64000000000004" y="319" width="103.5" height="36" rx="0" ry="0" fill="#89b4fa" stroke="var(--_node-stroke)" stroke-width="0.75" />
 <polygon points="99.75000000000001,226 329.95000000000005,226 338.95000000000005,244 329.95000000000005,262 99.75000000000001,262 90.75000000000001,244" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
 <text x="221.14000000000004" y="58" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;Swap implementations per profile?&quot;</text>
-<text x="141.8" y="337" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;Port + @adapter.for_()&quot;</text>
+<text x="141.8" y="337" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;Port + @adapter.for_()&quot;</text>
 <text x="294.19000000000005" y="151" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;Core business logic?&quot;</text>
-<text x="388.39000000000004" y="337" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;@service&quot;</text>
+<text x="388.39000000000004" y="337" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;@service&quot;</text>
 <text x="214.85000000000002" y="244" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;Talks to external systems?&quot;</text>
 </svg>

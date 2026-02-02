@@ -54,9 +54,9 @@
 <rect x="166.385" y="969.8000000000001" width="167.85000000000002" height="36" rx="0" ry="0" fill="#89b4fa" stroke="var(--_node-stroke)" stroke-width="0.75" />
 <text x="240.15" y="58" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">New Component</text>
 <text x="240.15" y="215.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Core business logic?</text>
-<text x="127.5" y="485.8" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;@service SINGLETON&quot;</text>
+<text x="127.5" y="485.8" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;@service SINGLETON&quot;</text>
 <text x="352.8" y="485.8" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Holds per-request state?</text>
 <text x="271.46" y="784.7" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Needs per-request resources?</text>
-<text x="441.57500000000005" y="987.8000000000001" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;Scope.REQUEST&quot;</text>
-<text x="250.31" y="987.8000000000001" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;SINGLETON default&quot;</text>
+<text x="441.57500000000005" y="987.8000000000001" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;Scope.REQUEST&quot;</text>
+<text x="250.31" y="987.8000000000001" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;SINGLETON default&quot;</text>
 </svg>

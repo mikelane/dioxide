@@ -45,8 +45,8 @@
 <rect x="591.7275" y="96" width="210.75000000000003" height="36" rx="0" ry="0" fill="#89b4fa" stroke="var(--_node-stroke)" stroke-width="0.75" />
 <rect x="296.75" y="269" width="217.9" height="36" rx="0" ry="0" fill="#fab387" stroke="var(--_node-stroke)" stroke-width="0.75" />
 <rect x="61.999999999999986" y="269" width="210.75000000000003" height="36" rx="0" ry="0" fill="#fab387" stroke="var(--_node-stroke)" stroke-width="0.75" />
-<text x="701.3924999999999" y="460" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;ConfigService - singleton&quot;</text>
-<text x="697.1025" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;UserService - singleton&quot;</text>
-<text x="405.7" y="287" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;DatabaseSession - scoped&quot;</text>
-<text x="167.375" y="287" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">&quot;RequestContext - scoped&quot;</text>
+<text x="701.3924999999999" y="460" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;ConfigService - singleton&quot;</text>
+<text x="697.1025" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;UserService - singleton&quot;</text>
+<text x="405.7" y="287" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;DatabaseSession - scoped&quot;</text>
+<text x="167.375" y="287" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#1e1e2e">&quot;RequestContext - scoped&quot;</text>
 </svg>
