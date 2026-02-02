@@ -287,7 +287,7 @@ async def test_notification():
 
 :::::
 
-```{button-ref} user_guide/testing_with_fakes
+```{button-ref} testing/index
 :color: primary
 :outline:
 :class: sd-rounded-pill
@@ -370,22 +370,25 @@ user_guide/architecture
 ```{toctree}
 :maxdepth: 2
 :hidden:
+:caption: Testing
+
+testing/index
+testing/philosophy
+testing/patterns
+testing/fixtures
+testing/integration
+testing/troubleshooting
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
 :caption: Advanced Topics
 
 guides/choosing-decorators
 guides/scoping
 guides/lifecycle-async-patterns
 guides/decorator-order
-```
-
-```{toctree}
-:maxdepth: 2
-:hidden:
-:caption: Testing
-
-TESTING_GUIDE
-user_guide/testing_with_fakes
-migration-from-mocks
 ```
 
 ```{toctree}
