@@ -31,7 +31,7 @@
 This document analyzes ergonomics for `Scope.REQUEST` in dioxide and recommends an API design that:
 
 1. **Maintains consistency** with existing dioxide patterns (`@adapter.for_()`, `@service`, `@lifecycle`)
-2. **Follows the "explicit over clever" principle** from MLP_VISION.md
+2. **Follows the "explicit over clever" principle** from design-principles.md
 3. **Provides world-class framework integration** (FastAPI, Flask)
 4. **Enables friction-free testing** with pytest fixtures
 5. **Fails fast** with clear, actionable error messages
@@ -142,7 +142,7 @@ class Container(containers.DeclarativeContainer):
 
 ## Design Principles
 
-Based on dioxide's MLP_VISION.md, this design follows:
+Based on dioxide's design-principles.md, this design follows:
 
 1. **Type-Checker is the Source of Truth**
    - Full mypy support for scoped containers

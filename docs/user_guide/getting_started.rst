@@ -254,9 +254,8 @@ dioxide automatically wires dependencies based on the active profile:
    from dioxide import Container, Profile
 
    async def main():
-       # Production: activates SendGridAdapter
-       container = Container()
-       container.scan(profile=Profile.PRODUCTION)
+       # Production: auto-scans and activates SendGridAdapter
+       container = Container(profile=Profile.PRODUCTION)
 
        user_service = container.resolve(UserService)
        await user_service.register_user("alice@example.com", "Alice")
@@ -275,9 +274,7 @@ Testing is trivial - just change the profile:
    @pytest.fixture
    def container():
        """Create test container with fakes."""
-       c = Container()
-       c.scan(profile=Profile.TEST)  # Activates FakeEmailAdapter
-       return c
+       return Container(profile=Profile.TEST)  # Activates FakeEmailAdapter
 
    @pytest.mark.asyncio
    async def test_register_user_sends_welcome_email(container):
@@ -402,9 +399,8 @@ Here's the complete code you can copy and run:
 
        print(f"Starting with profile: {profile.value}\n")
 
-       # Create container and scan for components
-       container = Container()
-       container.scan(profile=profile)
+       # Create container - auto-scans and activates components for profile
+       container = Container(profile=profile)
 
        # Resolve and use service
        user_service = container.resolve(UserService)
@@ -560,14 +556,12 @@ Profiles
 
    from dioxide import Container, Profile
 
-   # Production
-   prod_container = Container()
-   prod_container.scan(profile=Profile.PRODUCTION)
+   # Production - auto-scans and activates production adapters
+   prod_container = Container(profile=Profile.PRODUCTION)
    # Activates: PostgresAdapter, SendGridAdapter, etc.
 
-   # Testing
-   test_container = Container()
-   test_container.scan(profile=Profile.TEST)
+   # Testing - auto-scans and activates test fakes
+   test_container = Container(profile=Profile.TEST)
    # Activates: InMemoryAdapter, FakeEmailAdapter, etc.
 
 Container
@@ -579,11 +573,8 @@ The **Container** is dioxide's dependency injection engine:
 
    from dioxide import Container, Profile
 
-   # Create container
-   container = Container()
-
-   # Scan for components with profile
-   container.scan(profile=Profile.PRODUCTION)
+   # Create container with profile (auto-scans for components)
+   container = Container(profile=Profile.PRODUCTION)
 
    # Resolve dependencies
    user_service = container.resolve(UserService)
@@ -594,11 +585,21 @@ The **Container** is dioxide's dependency injection engine:
 
 **How it works**:
 
-1. ``container.scan(profile=...)`` discovers all ``@adapter`` and ``@service`` decorators
+1. ``Container(profile=...)`` auto-scans for all ``@adapter`` and ``@service`` decorators
 2. Activates adapters matching the profile
 3. Builds dependency graph from constructor type hints
 4. ``container.resolve(Type)`` walks graph and injects dependencies
 5. Singletons cached (one instance per type per container)
+
+.. note::
+
+   For more control, you can use explicit scanning with custom package paths:
+
+   .. code-block:: python
+
+      container = Container()
+      container.scan(package="myapp.services", profile=Profile.PRODUCTION)
+      container.scan(package="myapp.adapters", profile=Profile.PRODUCTION)
 
 Next Steps
 ----------

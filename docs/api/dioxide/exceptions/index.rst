@@ -177,11 +177,21 @@ dioxide.exceptions
 
 
 
+Attributes
+----------
+
+.. autoapisummary::
+
+   dioxide.exceptions.DOCS_BASE_URL
+
+
 Exceptions
 ----------
 
 .. autoapisummary::
 
+   dioxide.exceptions.DioxideError
+   dioxide.exceptions.ResolutionError
    dioxide.exceptions.AdapterNotFoundError
    dioxide.exceptions.ServiceNotFoundError
    dioxide.exceptions.ScopeError
@@ -192,9 +202,119 @@ Exceptions
 Module Contents
 ---------------
 
-.. py:exception:: AdapterNotFoundError
+.. py:data:: DOCS_BASE_URL
+   :value: 'https://dioxide.readthedocs.io/en/stable'
+
+
+.. py:exception:: DioxideError(message = '')
 
    Bases: :py:obj:`Exception`
+
+
+   Base class for all dioxide errors with rich formatting.
+
+   DioxideError provides structured error information including:
+   - A clear title describing the error
+   - Context dict with relevant state at error time
+   - Suggestions for how to fix the issue
+   - Optional code example showing the fix
+   - Documentation URL for detailed troubleshooting
+
+   Subclasses should set appropriate defaults for title and docs_url,
+   and populate context, suggestions, and example based on the specific error.
+
+
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Dioxide Error'
+
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/'
+
+
+
+   .. py:attribute:: context
+      :type:  dict[str, object]
+
+
+   .. py:attribute:: suggestions
+      :type:  list[str]
+      :value: []
+
+
+
+   .. py:attribute:: example
+      :type:  str | None
+      :value: None
+
+
+
+   .. py:method:: __str__()
+
+      Format the error with title, context, suggestions, and example.
+
+
+
+   .. py:method:: with_context(**kwargs)
+
+      Add context information to the error.
+
+      :param \*\*kwargs: Key-value pairs to add to the context dict.
+
+      :returns: Self for method chaining.
+
+
+
+   .. py:method:: with_suggestion(suggestion)
+
+      Add a suggestion for how to fix the error.
+
+      :param suggestion: A suggestion string to add.
+
+      :returns: Self for method chaining.
+
+
+
+   .. py:method:: with_example(example)
+
+      Add an example code snippet showing how to fix the error.
+
+      :param example: Code example string.
+
+      :returns: Self for method chaining.
+
+
+
+.. py:exception:: ResolutionError(message = '')
+
+   Bases: :py:obj:`DioxideError`
+
+
+   Base class for dependency resolution failures.
+
+   ResolutionError is raised when the container cannot resolve a requested type.
+   This is the parent class for more specific resolution errors like
+   AdapterNotFoundError and ServiceNotFoundError.
+
+
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Resolution Failed'
+
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/'
+
+
+
+.. py:exception:: AdapterNotFoundError(message = '', *, port = None, profile = None, available_adapters = None)
+
+   Bases: :py:obj:`ResolutionError`
 
 
    Raised when no adapter is registered for a port in the active profile.
@@ -344,9 +464,21 @@ Module Contents
       - :class:`dioxide.profile_enum.Profile` - Standard profile values
 
 
-.. py:exception:: ServiceNotFoundError
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Adapter Not Found'
 
-   Bases: :py:obj:`Exception`
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/adapter-not-found.html'
+
+
+
+.. py:exception:: ServiceNotFoundError(message = '', *, service = None, profile = None, dependencies = None, failed_dependency = None)
+
+   Bases: :py:obj:`ResolutionError`
 
 
    Raised when a service or component cannot be resolved.
@@ -517,9 +649,21 @@ Module Contents
       - :class:`AdapterNotFoundError` - For port resolution errors
 
 
-.. py:exception:: ScopeError
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Service Not Found'
 
-   Bases: :py:obj:`Exception`
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/service-not-found.html'
+
+
+
+.. py:exception:: ScopeError(message = '', *, component = None, required_scope = None)
+
+   Bases: :py:obj:`DioxideError`
 
 
    Raised when scope-related operations fail.
@@ -603,9 +747,21 @@ Module Contents
       - :class:`dioxide.scope.Scope` - Scope enum including REQUEST
 
 
-.. py:exception:: CaptiveDependencyError
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Scope Error'
 
-   Bases: :py:obj:`Exception`
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/scope-error.html'
+
+
+
+.. py:exception:: CaptiveDependencyError(message = '', *, parent = None, parent_scope = None, child = None, child_scope = None)
+
+   Bases: :py:obj:`DioxideError`
 
 
    Raised when a longer-lived scope depends on a shorter-lived scope.
@@ -737,9 +893,21 @@ Module Contents
       - :class:`ScopeError` - For runtime scope errors
 
 
-.. py:exception:: CircularDependencyError
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Captive Dependency'
 
-   Bases: :py:obj:`Exception`
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/captive-dependency.html'
+
+
+
+.. py:exception:: CircularDependencyError(message = '')
+
+   Bases: :py:obj:`DioxideError`
 
 
    Raised when circular dependencies are detected among @lifecycle components.
@@ -937,3 +1105,14 @@ Module Contents
       - :class:`dioxide.container.Container.start` - Where this error is raised
       - :class:`dioxide.services.service` - For marking services
       - :class:`dioxide.adapter.adapter` - For marking adapters
+
+
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Circular Dependency'
+
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/circular-dependency.html'

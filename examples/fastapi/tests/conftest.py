@@ -58,7 +58,7 @@ shown above. The fixture-based clearing shown here is appropriate when:
 
 See Also:
     - docs/TESTING_GUIDE.md: Comprehensive testing patterns
-    - MLP_VISION.md: Testing philosophy (fakes > mocks)
+    - design-principles.md: Testing philosophy (fakes > mocks)
 """
 
 from __future__ import annotations

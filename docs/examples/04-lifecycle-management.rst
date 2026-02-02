@@ -68,8 +68,7 @@ The container provides an async context manager that automatically calls ``initi
    from dioxide import Container, Profile
 
    async def main():
-       container = Container()
-       container.scan("myapp", profile=Profile.PRODUCTION)
+       container = Container(profile=Profile.PRODUCTION)
 
        async with container:
            # All @lifecycle components initialized here (in dependency order)
@@ -84,8 +83,7 @@ For more control, use ``start()`` and ``stop()`` explicitly:
 .. code-block:: python
 
    async def main():
-       container = Container()
-       container.scan("myapp", profile=Profile.PRODUCTION)
+       container = Container(profile=Profile.PRODUCTION)
 
        try:
            await container.start()  # Initialize all @lifecycle components
@@ -285,8 +283,7 @@ Here's a complete example with a database connection:
        print("\n🏭 PRODUCTION - With Lifecycle Management")
        print("-" * 70)
 
-       container = Container()
-       container.scan(__name__, profile=Profile.PRODUCTION)
+       container = Container(profile=Profile.PRODUCTION)
 
        async with container:
            # All @lifecycle components initialized here
@@ -303,8 +300,7 @@ Here's a complete example with a database connection:
        print("\n🧪 TEST - No Lifecycle Needed")
        print("-" * 70)
 
-       test_container = Container()
-       test_container.scan(__name__, profile=Profile.TEST)
+       test_container = Container(profile=Profile.TEST)
 
        # No async context manager needed for test fakes!
        user_repo = test_container.resolve(UserRepository)
@@ -699,6 +695,6 @@ To learn more:
 * **FastAPI Integration**: See ``examples/fastapi/`` for a complete web application
 * **Testing Guide**: See ``docs/TESTING_GUIDE.md`` for testing philosophy and patterns
 * **API Reference**: Explore the full API documentation
-* **MLP Vision**: Read ``docs/MLP_VISION.md`` for dioxide's design philosophy
+* **Design Principles**: Read ``docs/design-principles.md`` for dioxide's design philosophy
 
 Happy coding with dioxide!

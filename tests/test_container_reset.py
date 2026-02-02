@@ -121,7 +121,7 @@ class DescribeContainerReset:
         assert call_count == 2
 
     def it_enables_test_isolation_pattern(self) -> None:
-        """Demonstrates the pytest fixture pattern from MLP_VISION.md."""
+        """Demonstrates the pytest fixture pattern from design-principles.md."""
         # This test demonstrates the intended usage pattern:
         #
         # @pytest.fixture(autouse=True)

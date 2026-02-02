@@ -539,14 +539,16 @@ Module Contents
       returned whenever the type is resolved. Useful for registering
       configuration objects or external dependencies.
 
+      Type safety is enforced at runtime: the instance must be an instance
+      of component_type (or a subclass). For Protocol types, structural
+      compatibility is checked.
+
       :param component_type: The type to register. This is used as the lookup
                              key when resolving dependencies.
       :param instance: The pre-created instance to return for this type. Must
                        be an instance of component_type or a compatible type.
 
-      :raises TypeError: If the instance is not compatible with component_type.
-          For regular classes, uses isinstance() check. For Protocol types,
-          uses structural compatibility checking (duck typing).
+      :raises TypeError: If the instance is not an instance of component_type.
       :raises KeyError: If the type is already registered in this container.
           Each type can only be registered once.
 
@@ -564,6 +566,13 @@ Module Contents
          >>> resolved = container.resolve(Config)
          >>> assert resolved is config_instance
          >>> assert resolved.debug is True
+
+      Type safety example:
+          >>> container = Container()
+          >>> container.register_instance(str, 42)  # Raises TypeError
+          Traceback (most recent call last):
+              ...
+          TypeError: instance must be of type 'str', got 'int'
 
 
 
@@ -975,11 +984,11 @@ Module Contents
 
       Get the profile this container was scanned with.
 
-      Returns the Profile enum value used when scan() was called, or None if
+      Returns the Profile value used when scan() was called, or None if
       scan() hasn't been called yet. This is useful for debugging to verify
       which profile is active.
 
-      :returns: The Profile enum value if scan() was called with a profile,
+      :returns: The Profile value if scan() was called with a profile,
                 None if scan() hasn't been called or was called without a profile.
 
       .. admonition:: Example
@@ -999,7 +1008,7 @@ Module Contents
       .. seealso::
 
          - :meth:`scan` - Set the active profile during scanning
-         - :class:`dioxide.Profile` - Available profile enum values
+         - :class:`dioxide.Profile` - Extensible profile identifiers
 
 
    .. py:method:: get_adapters_for(port)
@@ -1049,6 +1058,101 @@ Module Contents
 
          - :meth:`is_registered` - Check if a port has an adapter
          - :func:`adapter.for_` - Register adapters for ports
+
+
+
+   .. py:method:: debug(file = None)
+
+      Print a summary of all registered components.
+
+      Shows services, adapters (grouped by port), and active profile.
+      Useful for verifying what's actually registered in the container.
+
+      :param file: Optional file-like object to write to (default: returns string).
+                   If provided, also writes the output to the file.
+
+      :returns: Formatted debug string with container summary.
+
+      .. admonition:: Example
+
+         >>> container = Container()
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> print(container.debug())
+         === dioxide Container Debug ===
+         Active Profile: production
+
+         Services (2):
+           - UserService (SINGLETON)
+           - NotificationService (SINGLETON)
+
+         Adapters by Port:
+           EmailPort:
+             - SendGridAdapter (profiles: production)
+           DatabasePort:
+             - PostgresAdapter (profiles: production, lifecycle)
+
+
+
+   .. py:method:: explain(cls)
+
+      Explain how a type would be resolved.
+
+      Shows the resolution path, which adapter/service is selected,
+      and all transitive dependencies in a tree format.
+
+      :param cls: The type to explain resolution for. Can be a service,
+                  port (Protocol/ABC), or any registered type.
+
+      :returns: Formatted string showing the resolution tree.
+
+      .. admonition:: Example
+
+         >>> container = Container()
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> print(container.explain(UserService))
+         === Resolution: UserService ===
+
+         UserService (SINGLETON)
+         +-- db: DatabasePort
+         |   +-- PostgresAdapter (profile: production)
+         |       +-- config: AppConfig
+         +-- email: EmailPort
+             +-- SendGridAdapter (profile: production)
+                 +-- config: AppConfig
+
+
+
+   .. py:method:: graph(format = 'mermaid')
+
+      Generate a dependency graph visualization.
+
+      Creates a visual representation of the dependency graph that can be
+      rendered with Mermaid (default) or Graphviz DOT format.
+
+      :param format: Output format, either 'mermaid' (default) or 'dot'.
+
+      :returns: String containing the graph in the requested format.
+
+      .. admonition:: Example
+
+         >>> container = Container()
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> print(container.graph())
+         graph TD
+             subgraph Services
+                 UserService[UserService<br/>SINGLETON]
+             end
+
+             subgraph Ports
+                 EmailPort{{EmailPort}}
+             end
+
+             subgraph Adapters
+                 SendGridAdapter[SendGridAdapter<br/>production]
+             end
+
+             UserService --> EmailPort
+             EmailPort -.-> SendGridAdapter
 
 
 

@@ -515,16 +515,14 @@ Here's a complete, runnable example:
        # Production
        print("\n🏭 PRODUCTION - PostgreSQL + Redis + SendGrid")
        print("-" * 70)
-       prod_container = Container()
-       prod_container.scan(__name__, profile=Profile.PRODUCTION)
+       prod_container = Container(profile=Profile.PRODUCTION)
        prod_service = prod_container.resolve(NotificationService)
        await prod_service.send_notification(1, "Hello from production!")
 
        # Test
        print("\n🧪 TEST - In-Memory + Dict + Fake")
        print("-" * 70)
-       test_container = Container()
-       test_container.scan(__name__, profile=Profile.TEST)
+       test_container = Container(profile=Profile.TEST)
 
        # Seed test data
        users = test_container.resolve(UserRepository)

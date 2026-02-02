@@ -8,15 +8,15 @@
 
 **This is an ASPIRATIONAL vision document** - it describes the long-term ideal developer experience for dioxide.
 
-**For current implementation:** See **[MLP_VISION.md](MLP_VISION.md)** - the canonical design specification for what we're building NOW.
+**For current implementation:** See **[design-principles.md](design-principles.md)** - the canonical design specification for what we're building NOW.
 
 **Relationship:**
-- **MLP_VISION.md** = Concrete spec for MLP (Minimum Loveable Product) - BUILD THIS FIRST
+- **design-principles.md** = Concrete spec for MLP (Minimum Loveable Product) - BUILD THIS FIRST
 - **DX_VISION.md** = Aspirational UX goals for post-MLP - THE LONG-TERM DREAM
 
 Many features shown in this document (async/await, configuration management, observability, CLI tools) are **explicitly out of scope** for MLP. They represent post-MLP aspirations.
 
-**Last Updated:** 2025-11-07 (aligned with MLP_VISION.md)
+**Last Updated:** 2025-11-07 (aligned with design-principles.md)
 
 ---
 
@@ -24,7 +24,7 @@ Many features shown in this document (async/await, configuration management, obs
 
 This document captures the **aspirational developer experience** for dioxide - what we want developers to feel when they use this framework. It's not a feature list or roadmap, but rather a **guiding philosophy** that informs every design decision.
 
-**Note:** Code examples may show post-MLP features. For current MLP API, always refer to [MLP_VISION.md](MLP_VISION.md).
+**Note:** Code examples may show post-MLP features. For current MLP API, always refer to [design-principles.md](design-principles.md).
 
 When making choices about API design, error messages, documentation, or features, we ask:
 - **Does this make the simple case simpler?**
@@ -903,7 +903,7 @@ When developers use dioxide, they should feel:
 
 The following sections describe features that are **explicitly out of scope** for the MLP. They represent the long-term aspirational vision for dioxide.
 
-**For MLP scope:** See [MLP_VISION.md - What We're NOT Building](MLP_VISION.md#what-were-not-building)
+**For MLP scope:** See [design-principles.md - What We're NOT Building](design-principles.md#what-were-not-building)
 
 ---
 
@@ -1512,5 +1512,5 @@ class UserService:
 **Next Review:** After 0.0.2-alpha MLP realignment
 
 **Changelog:**
-- v1.2 (2025-11-07): Aligned with MLP_VISION.md, added document status warnings, marked post-MLP sections, updated code examples to use MLP API (global singleton container, `@component.factory`, `@profile`)
+- v1.2 (2025-11-07): Aligned with design-principles.md, added document status warnings, marked post-MLP sections, updated code examples to use MLP API (global singleton container, `@component.factory`, `@profile`)
 - v1.1 (2025-01-30): Added sections on async/await support, configuration management, framework integrations (FastAPI/Flask/Django), production readiness (lifecycle, health checks, observability), developer tooling (IDE/CLI), and real-world patterns (multi-tenant, feature flags, plugins, repository)

@@ -14,18 +14,18 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 
 **v1.0.0 STABLE**: MLP Complete! Hexagonal architecture API, lifecycle management, circular dependency detection, performance benchmarking, framework integrations (FastAPI, Flask, Celery, Click), and comprehensive testing guide all implemented.
 
-## MLP Vision: The North Star
+## Design Principles: The North Star
 
-**CRITICAL**: Before making ANY architectural, API, or design decisions, consult **`docs/MLP_VISION.md`**.
+**CRITICAL**: Before making ANY architectural, API, or design decisions, consult **`docs/design-principles.md`**.
 
-The MLP Vision document is the **canonical design reference** for Dioxide. It defines:
+The Design Principles document is the **canonical design reference** for Dioxide. It defines:
 - **The North Star**: Make the Dependency Inversion Principle feel inevitable
 - **Guiding Principles**: 7 core principles (type-safe, explicit, fails fast, etc.)
 - **Core API Design**: `@adapter.for_()`, `@service`, `Profile` class, container, lifecycle
 - **Testing Philosophy**: Fakes at the seams, NOT mocks
 - **What We're NOT Building**: Explicit exclusions list for MLP scope
 
-**Key principle:** If MLP_VISION.md says not to build something for MLP, don't build it. Simplicity over features.
+**Key principle:** If design-principles.md says not to build something for MLP, don't build it. Simplicity over features.
 
 ## Quick Reference Commands
 
@@ -93,7 +93,7 @@ dioxide/
 │   └── benchmarks/          # Performance benchmark tests
 ├── examples/                # Example applications
 ├── docs/                    # Documentation
-│   ├── MLP_VISION.md        # Canonical design specification
+│   ├── design-principles.md # Canonical design specification
 │   ├── TESTING_GUIDE.md     # Testing philosophy and patterns
 │   └── design/              # Architecture Decision Records
 ├── .claude/rules/           # Modular guidelines (see below)
@@ -104,7 +104,7 @@ dioxide/
 
 When working on this project, follow these requirements **in order**:
 
-1. **Consult MLP Vision** - Check `docs/MLP_VISION.md` before design decisions
+1. **Consult Design Principles** - Check `docs/design-principles.md` before design decisions
 2. **Ensure issue exists** - ALL work must have a GitHub issue - NO EXCEPTIONS
 3. **Create feature branch** - Never work directly on main
 4. **Always follow TDD** - Write tests before implementation
@@ -136,7 +136,7 @@ For detailed guidelines, see `.claude/rules/`:
 | Pull Requests | `pull-requests.md` | All changes go through PRs |
 | Documentation | `documentation.md` | Docs are NOT optional |
 | Git Commits | `git-commits.md` | Conventional commits with issue reference |
-| MLP Vision | `mlp-vision-summary.md` | 7 guiding principles summary |
+| Design Principles | `mlp-vision-summary.md` | 7 guiding principles summary |
 
 ## Configuration Files
 
@@ -159,7 +159,7 @@ For detailed guidelines, see `.claude/rules/`:
 
 | Document | Purpose |
 |----------|---------|
-| `docs/MLP_VISION.md` | **CANONICAL DESIGN DOCUMENT** - The north star |
+| `docs/design-principles.md` | **CANONICAL DESIGN DOCUMENT** - The north star |
 | `README.md` | Project overview and quick start |
 | `STATUS.md` | Current sprint status and progress |
 | `ROADMAP.md` | Long-term vision |

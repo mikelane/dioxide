@@ -891,7 +891,7 @@ Mixing creates confusion about which testing style to use where.
 ## See Also
 
 - {doc}`TESTING_GUIDE` - Complete testing philosophy and patterns
-- {doc}`MLP_VISION` - Design principles behind dioxide
+- {doc}`design-principles` - Design principles behind dioxide
 - {doc}`migration-from-dependency-injector` - Migrating from another DI framework
 - {doc}`user_guide/hexagonal_architecture` - Ports and adapters architecture
 - {doc}`user_guide/testing_with_fakes` - Detailed fake implementation patterns

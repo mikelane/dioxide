@@ -1,6 +1,10 @@
-# Dioxide MLP Vision: The Canonical Design
+# Dioxide Design Principles
 
-**Version:** 1.0.0 MLP (Minimum Loveable Product)
+> **For Contributors**: This document captures dioxide's core design philosophy,
+> established during v1.0.0 and maintained through current releases. It serves as
+> the reference for contributors making architectural decisions.
+
+**Version:** 1.0.0+
 **Created:** 2025-11-07
 **Status:** Canonical - This is the north star for all development decisions
 
@@ -303,8 +307,7 @@ class Database:
 from dioxide import Container, Profile
 
 async def main():
-    container = Container()
-    container.scan(profile=Profile.PRODUCTION)
+    container = Container(profile=Profile.PRODUCTION)
 
     async with container:
         # All @lifecycle components initialized here (in dependency order)

@@ -166,14 +166,12 @@ Using Adapters with Profiles
            )
 
    # Production: Uses SendGridAdapter
-   prod_container = Container()
-   prod_container.scan("myapp", profile=Profile.PRODUCTION)
+   prod_container = Container(profile=Profile.PRODUCTION)
    prod_service = prod_container.resolve(UserService)
    await prod_service.register_user("alice@example.com", "Alice")
 
    # Testing: Uses FakeEmailAdapter
-   test_container = Container()
-   test_container.scan("myapp", profile=Profile.TEST)
+   test_container = Container(profile=Profile.TEST)
    test_service = test_container.resolve(UserService)
    await test_service.register_user("bob@test.com", "Bob")
 
@@ -268,16 +266,14 @@ Here's a complete, runnable example:
        # Production Profile
        print("\n🏭 PRODUCTION PROFILE - SendGrid Adapter")
        print("-" * 70)
-       prod_container = Container()
-       prod_container.scan(__name__, profile=Profile.PRODUCTION)
+       prod_container = Container(profile=Profile.PRODUCTION)
        prod_service = prod_container.resolve(UserService)
        await prod_service.register_user("alice@example.com", "Alice")
 
        # Test Profile
        print("🧪 TEST PROFILE - Fake Adapter")
        print("-" * 70)
-       test_container = Container()
-       test_container.scan(__name__, profile=Profile.TEST)
+       test_container = Container(profile=Profile.TEST)
        test_service = test_container.resolve(UserService)
        await test_service.register_user("bob@test.com", "Bob")
 
@@ -290,8 +286,7 @@ Here's a complete, runnable example:
        # Development Profile
        print("\n💻 DEVELOPMENT PROFILE - Console Adapter")
        print("-" * 70)
-       dev_container = Container()
-       dev_container.scan(__name__, profile=Profile.DEVELOPMENT)
+       dev_container = Container(profile=Profile.DEVELOPMENT)
        dev_service = dev_container.resolve(UserService)
        await dev_service.register_user("charlie@dev.local", "Charlie")
 

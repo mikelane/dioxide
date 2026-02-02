@@ -99,6 +99,19 @@ Copy-paste recipes for FastAPI, testing patterns, configuration, and database in
 {bdg-primary}`FastAPI` {bdg-secondary}`Testing` {bdg-secondary}`Database`
 ::::
 
+::::{grid-item-card} Hit an error?
+:class-card: sd-border-primary sd-shadow-sm
+:link: troubleshooting/index
+:link-type: doc
+
+**Diagnose and fix common issues**
+
+Quick diagnosis table and detailed solutions for adapter not found, circular dependencies, scope errors, and more.
+
++++
+{bdg-primary}`Errors` {bdg-secondary}`Debugging` {bdg-secondary}`Solutions`
+::::
+
 :::::
 
 ---
@@ -115,7 +128,7 @@ Define your ports (interfaces), adapters (implementations), and services:
 
 ```python
 from typing import Protocol
-from dioxide import adapter, service, Profile, container
+from dioxide import adapter, service, Profile, Container
 
 # Define port (interface)
 class EmailPort(Protocol):
@@ -146,8 +159,8 @@ class NotificationService:
     async def notify_user(self, user_email: str, message: str):
         await self.email.send(user_email, "Notification", message)
 
-# Production: activates SendGridAdapter
-container.scan("myapp", profile=Profile.PRODUCTION)
+# Production: auto-scans and activates SendGridAdapter
+container = Container(profile=Profile.PRODUCTION)
 service = container.resolve(NotificationService)
 ```
 
@@ -206,7 +219,7 @@ Different implementations for different environments. No mocking frameworks need
 
 ```python
 # Test uses FakeEmailAdapter automatically
-container.scan("app", profile=Profile.TEST)
+container = Container(profile=Profile.TEST)
 ```
 ::::
 
@@ -275,7 +288,7 @@ def test_notification(mock_email):
 ```python
 # Fakes - real implementations, real behavior
 async def test_notification():
-    container.scan("app", profile=Profile.TEST)
+    container = Container(profile=Profile.TEST)
     email = container.resolve(EmailPort)
 
     service = container.resolve(NotificationService)
@@ -303,12 +316,13 @@ dioxide integrates seamlessly with popular Python frameworks:
 
 ```python
 from fastapi import FastAPI
-from dioxide import container, Profile
+from dioxide import Container, Profile
 from contextlib import asynccontextmanager
+
+container = Container(profile=Profile.PRODUCTION)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    container.scan("myapp", profile=Profile.PRODUCTION)
     async with container:
         yield
 
@@ -431,6 +445,14 @@ api/index
 ```
 
 ```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Troubleshooting
+
+troubleshooting/index
+```
+
+```{toctree}
 :maxdepth: 1
 :hidden:
 :caption: Contributing
@@ -438,6 +460,7 @@ api/index
 versioning
 navigation
 migration-from-dependency-injector
+design-principles
 design/ADR-001-container-architecture
 design/ADR-002-pyo3-binding-strategy
 ```

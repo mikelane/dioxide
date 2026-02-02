@@ -13,8 +13,8 @@ dioxide
    - Type-safe dependency resolution with IDE autocomplete support
    - Profile-based configuration for different environments
 
-   Quick Start (using global singleton container):
-       >>> from dioxide import container, service, adapter, Profile
+   Quick Start (using instance container - recommended):
+       >>> from dioxide import Container, service, adapter, Profile
        >>> from typing import Protocol
        >>>
        >>> class EmailPort(Protocol):
@@ -30,17 +30,29 @@ dioxide
        ...     def __init__(self, email: EmailPort):
        ...         self.email = email
        >>>
+       >>> container = Container()
        >>> container.scan(profile=Profile.PRODUCTION)
-       >>> service = container.resolve(UserService)
+       >>> user_service = container.resolve(UserService)
        >>> # Or use bracket syntax:
-       >>> service = container[UserService]
+       >>> user_service = container[UserService]
 
-   Advanced: Creating separate containers for testing isolation:
-       >>> from dioxide import Container
+   Global container (convenient for simple scripts):
+       >>> from dioxide import container, Profile
        >>>
-       >>> test_container = Container()
-       >>> test_container.scan(profile=Profile.TEST)
-       >>> service = test_container.resolve(UserService)
+       >>> container.scan(profile=Profile.PRODUCTION)
+       >>> user_service = container.resolve(UserService)
+       >>>
+       >>> # For testing with global container, use reset_global_container()
+       >>> from dioxide import reset_global_container
+       >>> reset_global_container()
+
+   Testing (fresh container per test - recommended):
+       >>> from dioxide.testing import fresh_container
+       >>> from dioxide import Profile
+       >>>
+       >>> async with fresh_container(profile=Profile.TEST) as test_container:
+       ...     service = test_container.resolve(UserService)
+       ...     # Test with isolated container
 
    For more information, see the README and documentation.
 
@@ -84,6 +96,9 @@ Exceptions
 
    dioxide.AdapterNotFoundError
    dioxide.CaptiveDependencyError
+   dioxide.CircularDependencyError
+   dioxide.DioxideError
+   dioxide.ResolutionError
    dioxide.ScopeError
    dioxide.ServiceNotFoundError
 
@@ -195,11 +210,16 @@ Package Contents
       returned whenever the type is resolved. Useful for registering
       configuration objects or external dependencies.
 
+      Type safety is enforced at runtime: the instance must be an instance
+      of component_type (or a subclass). For Protocol types, structural
+      compatibility is checked.
+
       :param component_type: The type to register. This is used as the lookup
                              key when resolving dependencies.
       :param instance: The pre-created instance to return for this type. Must
                        be an instance of component_type or a compatible type.
 
+      :raises TypeError: If the instance is not an instance of component_type.
       :raises KeyError: If the type is already registered in this container.
           Each type can only be registered once.
 
@@ -217,6 +237,13 @@ Package Contents
          >>> resolved = container.resolve(Config)
          >>> assert resolved is config_instance
          >>> assert resolved.debug is True
+
+      Type safety example:
+          >>> container = Container()
+          >>> container.register_instance(str, 42)  # Raises TypeError
+          Traceback (most recent call last):
+              ...
+          TypeError: instance must be of type 'str', got 'int'
 
 
 
@@ -417,12 +444,17 @@ Package Contents
       registration. For singletons, returns the cached instance (creating
       it on first call). For factories, creates a new instance every time.
 
+      For multi-bindings, use ``list[Port]`` type hint to resolve all
+      adapters registered with ``multi=True`` for that port.
+
       :param component_type: The type to resolve. Must have been previously
                              registered via scan() or manual registration methods.
+                             Can be a ``list[Port]`` type to resolve multi-bindings.
 
       :returns: An instance of the requested type. For SINGLETON scope, the same
                 instance is returned on every call. For FACTORY scope, a new
-                instance is created on each call.
+                instance is created on each call. For ``list[Port]``, returns
+                a list of all multi-binding adapters for that port.
 
       :raises AdapterNotFoundError: If the type is a port (Protocol/ABC) and no
           adapter is registered for the current profile.
@@ -536,6 +568,262 @@ Package Contents
          >>> assert len(container) == 0
          >>> container.scan()
          >>> assert len(container) == 2
+
+
+
+   .. py:method:: list_registered()
+
+      List all types registered in this container.
+
+      Returns a list of all type objects (classes, protocols, ABCs) that have
+      been registered with this container, either through scan() or manual
+      registration methods.
+
+      This is useful for debugging registration issues - when you get a
+      "not registered" error, call this method to see what IS registered.
+
+      :returns: List of type objects registered in this container. The list order
+                is not guaranteed to be consistent between calls.
+
+      .. admonition:: Example
+
+         >>> from dioxide import Container, Profile, adapter, service
+         >>>
+         >>> class EmailPort(Protocol):
+         ...     async def send(self, to: str) -> None: ...
+         >>>
+         >>> @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+         ... class SendGridAdapter:
+         ...     async def send(self, to: str) -> None:
+         ...         pass
+         >>>
+         >>> @service
+         ... class UserService:
+         ...     pass
+         >>>
+         >>> container = Container()
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> registered = container.list_registered()
+         >>> # registered contains [EmailPort, UserService]
+
+      .. seealso::
+
+         - :meth:`is_registered` - Check if a specific type is registered
+         - :meth:`get_adapters_for` - Get adapter details for a port
+
+
+
+   .. py:method:: is_registered(port_or_service)
+
+      Check if a type is registered in this container.
+
+      Useful for verifying that a type has been registered before attempting
+      to resolve it, or for test assertions about container configuration.
+
+      :param port_or_service: The type to check. Can be a port (Protocol/ABC)
+                              or a service class.
+
+      :returns: True if the type is registered, False otherwise.
+
+      .. admonition:: Example
+
+         >>> from dioxide import Container, Profile, adapter
+         >>>
+         >>> class EmailPort(Protocol):
+         ...     async def send(self, to: str) -> None: ...
+         >>>
+         >>> @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+         ... class SendGridAdapter:
+         ...     async def send(self, to: str) -> None:
+         ...         pass
+         >>>
+         >>> container = Container()
+         >>> assert container.is_registered(EmailPort) is False
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> assert container.is_registered(EmailPort) is True
+
+      .. seealso::
+
+         - :meth:`list_registered` - Get all registered types
+         - :meth:`resolve` - Actually resolve a registered type
+
+
+
+   .. py:property:: active_profile
+      :type: dioxide.profile_enum.Profile | None
+
+
+      Get the profile this container was scanned with.
+
+      Returns the Profile value used when scan() was called, or None if
+      scan() hasn't been called yet. This is useful for debugging to verify
+      which profile is active.
+
+      :returns: The Profile value if scan() was called with a profile,
+                None if scan() hasn't been called or was called without a profile.
+
+      .. admonition:: Example
+
+         >>> from dioxide import Container, Profile
+         >>>
+         >>> container = Container()
+         >>> assert container.active_profile is None
+         >>>
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> assert container.active_profile == Profile.PRODUCTION
+         >>>
+         >>> # Or with constructor profile:
+         >>> container2 = Container(profile=Profile.TEST)
+         >>> assert container2.active_profile == Profile.TEST
+
+      .. seealso::
+
+         - :meth:`scan` - Set the active profile during scanning
+         - :class:`dioxide.Profile` - Extensible profile identifiers
+
+
+   .. py:method:: get_adapters_for(port)
+
+      Get all adapters registered for a port across all profiles.
+
+      Inspects the global adapter registry to find all adapters that implement
+      the specified port, organized by profile. This is useful for debugging
+      to see which adapters are available for a port in different profiles.
+
+      Note: This method looks at the global adapter registry, not just what's
+      registered in this container instance. This allows you to see all
+      available adapters even if the container was scanned with a different
+      profile.
+
+      :param port: The port type (Protocol/ABC) to find adapters for.
+
+      :returns: Dictionary mapping Profile enum values to adapter classes.
+                Returns an empty dict if no adapters are registered for the port.
+
+      .. admonition:: Example
+
+         >>> from dioxide import Container, Profile, adapter
+         >>>
+         >>> class EmailPort(Protocol):
+         ...     async def send(self, to: str) -> None: ...
+         >>>
+         >>> @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+         ... class SendGridAdapter:
+         ...     async def send(self, to: str) -> None:
+         ...         pass
+         >>>
+         >>> @adapter.for_(EmailPort, profile=Profile.TEST)
+         ... class FakeEmailAdapter:
+         ...     async def send(self, to: str) -> None:
+         ...         pass
+         >>>
+         >>> container = Container()
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> adapters = container.get_adapters_for(EmailPort)
+         >>> # adapters = {
+         >>> #     Profile.PRODUCTION: SendGridAdapter,
+         >>> #     Profile.TEST: FakeEmailAdapter,
+         >>> # }
+
+      .. seealso::
+
+         - :meth:`is_registered` - Check if a port has an adapter
+         - :func:`adapter.for_` - Register adapters for ports
+
+
+
+   .. py:method:: debug(file = None)
+
+      Print a summary of all registered components.
+
+      Shows services, adapters (grouped by port), and active profile.
+      Useful for verifying what's actually registered in the container.
+
+      :param file: Optional file-like object to write to (default: returns string).
+                   If provided, also writes the output to the file.
+
+      :returns: Formatted debug string with container summary.
+
+      .. admonition:: Example
+
+         >>> container = Container()
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> print(container.debug())
+         === dioxide Container Debug ===
+         Active Profile: production
+
+         Services (2):
+           - UserService (SINGLETON)
+           - NotificationService (SINGLETON)
+
+         Adapters by Port:
+           EmailPort:
+             - SendGridAdapter (profiles: production)
+           DatabasePort:
+             - PostgresAdapter (profiles: production, lifecycle)
+
+
+
+   .. py:method:: explain(cls)
+
+      Explain how a type would be resolved.
+
+      Shows the resolution path, which adapter/service is selected,
+      and all transitive dependencies in a tree format.
+
+      :param cls: The type to explain resolution for. Can be a service,
+                  port (Protocol/ABC), or any registered type.
+
+      :returns: Formatted string showing the resolution tree.
+
+      .. admonition:: Example
+
+         >>> container = Container()
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> print(container.explain(UserService))
+         === Resolution: UserService ===
+
+         UserService (SINGLETON)
+         +-- db: DatabasePort
+         |   +-- PostgresAdapter (profile: production)
+         |       +-- config: AppConfig
+         +-- email: EmailPort
+             +-- SendGridAdapter (profile: production)
+                 +-- config: AppConfig
+
+
+
+   .. py:method:: graph(format = 'mermaid')
+
+      Generate a dependency graph visualization.
+
+      Creates a visual representation of the dependency graph that can be
+      rendered with Mermaid (default) or Graphviz DOT format.
+
+      :param format: Output format, either 'mermaid' (default) or 'dot'.
+
+      :returns: String containing the graph in the requested format.
+
+      .. admonition:: Example
+
+         >>> container = Container()
+         >>> container.scan(profile=Profile.PRODUCTION)
+         >>> print(container.graph())
+         graph TD
+             subgraph Services
+                 UserService[UserService<br/>SINGLETON]
+             end
+
+             subgraph Ports
+                 EmailPort{{EmailPort}}
+             end
+
+             subgraph Adapters
+                 SendGridAdapter[SendGridAdapter<br/>production]
+             end
+
+             UserService --> EmailPort
+             EmailPort -.-> SendGridAdapter
 
 
 
@@ -1033,9 +1321,9 @@ Package Contents
       :func:`dioxide.testing.fresh_container`: Creates isolated container instances
 
 
-.. py:exception:: AdapterNotFoundError
+.. py:exception:: AdapterNotFoundError(message = '', *, port = None, profile = None, available_adapters = None)
 
-   Bases: :py:obj:`Exception`
+   Bases: :py:obj:`ResolutionError`
 
 
    Raised when no adapter is registered for a port in the active profile.
@@ -1185,9 +1473,21 @@ Package Contents
       - :class:`dioxide.profile_enum.Profile` - Standard profile values
 
 
-.. py:exception:: CaptiveDependencyError
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Adapter Not Found'
 
-   Bases: :py:obj:`Exception`
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/adapter-not-found.html'
+
+
+
+.. py:exception:: CaptiveDependencyError(message = '', *, parent = None, parent_scope = None, child = None, child_scope = None)
+
+   Bases: :py:obj:`DioxideError`
 
 
    Raised when a longer-lived scope depends on a shorter-lived scope.
@@ -1319,9 +1619,341 @@ Package Contents
       - :class:`ScopeError` - For runtime scope errors
 
 
-.. py:exception:: ScopeError
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Captive Dependency'
+
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/captive-dependency.html'
+
+
+
+.. py:exception:: CircularDependencyError(message = '')
+
+   Bases: :py:obj:`DioxideError`
+
+
+   Raised when circular dependencies are detected among @lifecycle components.
+
+   This error occurs during ``container.start()`` when @lifecycle components have
+   circular dependencies that prevent topological sorting. The container needs to
+   determine initialization order (dependencies before dependents), but a cycle
+   makes this impossible.
+
+   This error ONLY applies to @lifecycle components during startup. Regular services
+   without @lifecycle can have circular dependencies (though not recommended) because
+   they're instantiated lazily on-demand, not in dependency order at startup.
+
+   A circular dependency exists when:
+       - Component A depends on B
+       - Component B depends on C
+       - Component C depends on A (cycle!)
+
+   The container cannot determine which component to initialize first because each
+   depends on another being already initialized.
+
+   The error message includes:
+       - **Unprocessed components**: Set of components involved in the cycle
+       - **Context**: Which lifecycle components couldn't be sorted
+
+   When This Occurs:
+       - ``await container.start()`` - During lifecycle initialization order calculation
+       - ``async with container:`` - When entering the context manager
+
+   Common Causes:
+       1. **Direct cycle**: A → B → A
+       2. **Indirect cycle**: A → B → C → D → A
+       3. **Self-dependency**: Component depends on itself (rare)
+       4. **Bidirectional deps**: Two components that need each other
+
+   .. admonition:: Examples
+
+      Direct circular dependency::
+
+          from dioxide import service, lifecycle, Container
+
+
+          @service
+          @lifecycle
+          class ServiceA:
+              def __init__(self, b: 'ServiceB'):  # Depends on B
+                  self.b = b
+
+              async def initialize(self) -> None:
+                  pass
+
+              async def dispose(self) -> None:
+                  pass
+
+
+          @service
+          @lifecycle
+          class ServiceB:
+              def __init__(self, a: ServiceA):  # Depends on A - CYCLE!
+                  self.a = a
+
+              async def initialize(self) -> None:
+                  pass
+
+              async def dispose(self) -> None:
+                  pass
+
+
+          container = Container()
+          container.scan()
+
+          try:
+              await container.start()
+          except CircularDependencyError as e:
+              print(e)
+              # Output:
+              # Circular dependency detected involving: {<ServiceA>, <ServiceB>}
+
+      Indirect circular dependency::
+
+          @service
+          @lifecycle
+          class CacheService:
+              def __init__(self, user_repo: UserRepository):
+                  self.user_repo = user_repo
+
+
+          @service
+          @lifecycle
+          class UserRepository:
+              def __init__(self, db: DatabaseAdapter):
+                  self.db = db
+
+
+          @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+          @lifecycle
+          class DatabaseAdapter:
+              def __init__(self, cache: CacheService):  # CYCLE!
+                  self.cache = cache
+
+
+          # Cycle: CacheService → UserRepository → DatabaseAdapter → CacheService
+          await container.start()  # CircularDependencyError
+
+   Solutions:
+       1. **Break dependency with interface**::
+
+           # Instead of depending on concrete class, depend on port
+           class CachePort(Protocol):
+               def get(self, key: str) -> Any: ...
+
+
+           @service
+           @lifecycle
+           class ServiceA:
+               def __init__(self, cache: CachePort):  # Depend on abstraction
+                   self.cache = cache
+
+       2. **Remove @lifecycle from one component**::
+
+           # If only one component truly needs lifecycle, remove from others
+           @service  # No @lifecycle - lazy initialization
+           class ServiceB:
+               def __init__(self, a: ServiceA):
+                   self.a = a
+
+
+           @service
+           @lifecycle  # Only this one has lifecycle
+           class ServiceA:
+               async def initialize(self) -> None:
+                   pass
+
+       3. **Lazy resolution**::
+
+           @service
+           @lifecycle
+           class ServiceA:
+               def __init__(self, container: Container):
+                   self.container = container
+                   self._b = None
+
+               @property
+               def b(self) -> ServiceB:
+                   if self._b is None:
+                       self._b = self.container.resolve(ServiceB)
+                   return self._b
+
+       4. **Redesign to remove cycle**::
+
+           # Extract shared logic to a third service
+           @service
+           class SharedLogic:
+               pass
+
+
+           @service
+           @lifecycle
+           class ServiceA:
+               def __init__(self, shared: SharedLogic):
+                   self.shared = shared
+
+
+           @service
+           @lifecycle
+           class ServiceB:
+               def __init__(self, shared: SharedLogic):
+                   self.shared = shared
+
+   Troubleshooting:
+       1. **Identify cycle**: Look at "involving" set in error message
+       2. **Map dependencies**: Draw dependency graph on paper
+       3. **Find weak link**: Identify which dependency is least essential
+       4. **Remove @lifecycle**: Not all components need lifecycle management
+       5. **Use abstractions**: Depend on ports instead of concrete classes
+       6. **Lazy initialization**: Defer resolution to first use
+
+   Best Practices:
+       - **Avoid circular dependencies**: Design for acyclic dependency graphs
+       - **Use hexagonal architecture**: Depend on abstractions (ports) at boundaries
+       - **Limit @lifecycle**: Only use for components that truly need init/dispose
+       - **Dependency injection**: Let container manage dependencies, avoid manual creation
+       - **Single Responsibility**: Components with clear responsibilities rarely cycle
+       - **Test initialization**: Integration test that calls ``container.start()``
+
+   .. note::
+
+      Non-lifecycle services CAN have circular dependencies (though not recommended).
+      The container resolves them lazily on-demand. This error ONLY applies to
+      @lifecycle components during ``start()`` because they need explicit ordering.
+
+   .. seealso::
+
+      - :class:`dioxide.lifecycle.lifecycle` - Lifecycle management decorator
+      - :class:`dioxide.container.Container.start` - Where this error is raised
+      - :class:`dioxide.services.service` - For marking services
+      - :class:`dioxide.adapter.adapter` - For marking adapters
+
+
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Circular Dependency'
+
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/circular-dependency.html'
+
+
+
+.. py:exception:: DioxideError(message = '')
 
    Bases: :py:obj:`Exception`
+
+
+   Base class for all dioxide errors with rich formatting.
+
+   DioxideError provides structured error information including:
+   - A clear title describing the error
+   - Context dict with relevant state at error time
+   - Suggestions for how to fix the issue
+   - Optional code example showing the fix
+   - Documentation URL for detailed troubleshooting
+
+   Subclasses should set appropriate defaults for title and docs_url,
+   and populate context, suggestions, and example based on the specific error.
+
+
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Dioxide Error'
+
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/'
+
+
+
+   .. py:attribute:: context
+      :type:  dict[str, object]
+
+
+   .. py:attribute:: suggestions
+      :type:  list[str]
+      :value: []
+
+
+
+   .. py:attribute:: example
+      :type:  str | None
+      :value: None
+
+
+
+   .. py:method:: __str__()
+
+      Format the error with title, context, suggestions, and example.
+
+
+
+   .. py:method:: with_context(**kwargs)
+
+      Add context information to the error.
+
+      :param \*\*kwargs: Key-value pairs to add to the context dict.
+
+      :returns: Self for method chaining.
+
+
+
+   .. py:method:: with_suggestion(suggestion)
+
+      Add a suggestion for how to fix the error.
+
+      :param suggestion: A suggestion string to add.
+
+      :returns: Self for method chaining.
+
+
+
+   .. py:method:: with_example(example)
+
+      Add an example code snippet showing how to fix the error.
+
+      :param example: Code example string.
+
+      :returns: Self for method chaining.
+
+
+
+.. py:exception:: ResolutionError(message = '')
+
+   Bases: :py:obj:`DioxideError`
+
+
+   Base class for dependency resolution failures.
+
+   ResolutionError is raised when the container cannot resolve a requested type.
+   This is the parent class for more specific resolution errors like
+   AdapterNotFoundError and ServiceNotFoundError.
+
+
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Resolution Failed'
+
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/'
+
+
+
+.. py:exception:: ScopeError(message = '', *, component = None, required_scope = None)
+
+   Bases: :py:obj:`DioxideError`
 
 
    Raised when scope-related operations fail.
@@ -1405,9 +2037,21 @@ Package Contents
       - :class:`dioxide.scope.Scope` - Scope enum including REQUEST
 
 
-.. py:exception:: ServiceNotFoundError
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Scope Error'
 
-   Bases: :py:obj:`Exception`
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/scope-error.html'
+
+
+
+.. py:exception:: ServiceNotFoundError(message = '', *, service = None, profile = None, dependencies = None, failed_dependency = None)
+
+   Bases: :py:obj:`ResolutionError`
 
 
    Raised when a service or component cannot be resolved.
@@ -1578,6 +2222,18 @@ Package Contents
       - :class:`AdapterNotFoundError` - For port resolution errors
 
 
+   .. py:attribute:: title
+      :type:  ClassVar[str]
+      :value: 'Service Not Found'
+
+
+
+   .. py:attribute:: docs_url
+      :type:  ClassVar[str | None]
+      :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/service-not-found.html'
+
+
+
 .. py:function:: lifecycle(cls)
 
    Mark a class for lifecycle management with initialization and cleanup.
@@ -1610,10 +2266,26 @@ Package Contents
 
    Decorator Composition:
        @lifecycle works with both @service and @adapter.for_() decorators.
-       Apply @lifecycle as the innermost decorator (closest to the class):
+       **Decorator order does not affect functionality** - both orderings work
+       identically because dioxide decorators only add metadata attributes.
+
+       For consistency, we **recommend** @lifecycle as the innermost decorator:
 
        - ``@service`` + ``@lifecycle`` - For stateful core logic (rare)
        - ``@adapter.for_()`` + ``@lifecycle`` - For infrastructure adapters (common)
+
+       Both orders work::
+
+           # Recommended (but both work identically)
+           @adapter.for_(Port, profile=Profile.PRODUCTION)
+           @lifecycle
+           class MyAdapter: ...
+
+
+           # Also works (not recommended for consistency)
+           @lifecycle
+           @adapter.for_(Port, profile=Profile.PRODUCTION)
+           class MyAdapter: ...
 
    :param cls: The class to mark for lifecycle management. Must implement both
                ``initialize()`` and ``dispose()`` methods as async coroutines.
@@ -1752,7 +2424,8 @@ Package Contents
        - **Don't raise in dispose()**: Log errors but continue cleanup (best-effort)
        - **Use for adapters**: Infrastructure components at the seams (databases, queues, etc.)
        - **Rare for services**: Core domain logic is usually stateless (no lifecycle needed)
-       - **Apply as innermost decorator**: ``@adapter.for_() @lifecycle class ...``
+       - **Consistent ordering**: For readability, use ``@adapter.for_() @lifecycle class ...``
+         (though both orders work identically)
 
    .. seealso::
 
@@ -1760,82 +2433,112 @@ Package Contents
       - :class:`dioxide.container.Container.stop` - Dispose all lifecycle components
       - :class:`dioxide.adapter.adapter` - For marking infrastructure adapters
       - :class:`dioxide.services.service` - For marking core domain services
+      - :doc:`/guides/lifecycle-async-patterns` - Async/sync patterns guide
 
 
 .. py:class:: Profile
 
-   Bases: :py:obj:`str`, :py:obj:`enum.Enum`
+   Bases: :py:obj:`str`
 
 
-   Profile specification for adapters.
+   Extensible, type-safe profile identifier for adapter selection.
 
-   Profiles determine which adapter implementations are active
-   for a given environment. The Profile enum provides standard
-   environment profiles used throughout dioxide for adapter selection.
+   Profile is a string subclass that provides type safety while remaining
+   fully extensible. Built-in profiles are available as class attributes,
+   and users can create custom profiles for their specific needs.
 
-   .. attribute:: PRODUCTION
+   **Built-in Profiles**:
 
-      Production environment profile
+   - ``Profile.PRODUCTION`` - Production environment
+   - ``Profile.TEST`` - Test environment
+   - ``Profile.DEVELOPMENT`` - Development environment
+   - ``Profile.STAGING`` - Staging environment
+   - ``Profile.CI`` - Continuous integration environment
+   - ``Profile.ALL`` - Universal profile (matches all environments)
 
-   .. attribute:: TEST
+   **Usage**:
 
-      Test environment profile
+   Use built-in profiles for common environments::
 
-   .. attribute:: DEVELOPMENT
+       @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+       @adapter.for_(CachePort, profile=[Profile.TEST, Profile.DEVELOPMENT])
+       @adapter.for_(LogPort, profile=Profile.ALL)
 
-      Development environment profile
+   Create custom profiles for specific needs::
 
-   .. attribute:: STAGING
+       # Define custom profiles (type-safe)
+       INTEGRATION = Profile('integration')
+       PREVIEW = Profile('preview')
+       LOAD_TEST = Profile('load-test')
 
-      Staging environment profile
+       @adapter.for_(Port, profile=INTEGRATION)
+       @adapter.for_(Port, profile=[PREVIEW, Profile.STAGING])
 
-   .. attribute:: CI
+   **Type Safety**:
 
-      Continuous integration environment profile
+   All profiles are instances of ``Profile``, providing static type checking::
 
-   .. attribute:: ALL
+       def configure(profile: Profile) -> None: ...
 
-      Universal profile - available in all environments
+
+       configure(Profile.PRODUCTION)  # OK
+       configure(Profile('custom'))  # OK
+       configure('raw-string')  # Type error (if strict)
+
+   **Backward Compatibility**:
+
+   Profile is a ``str`` subclass, so it works anywhere strings are expected.
+   Raw strings are still accepted at runtime for backward compatibility,
+   but using ``Profile(...)`` is recommended for type safety.
 
    .. admonition:: Examples
 
       >>> Profile.PRODUCTION
-      <Profile.PRODUCTION: 'production'>
-      >>> Profile.PRODUCTION.value
       'production'
-      >>> str(Profile.TEST)
-      'test'
-      >>> Profile('production') == Profile.PRODUCTION
+      >>> Profile.PRODUCTION == 'production'
       True
+      >>> isinstance(Profile.PRODUCTION, str)
+      True
+      >>> Profile('custom') == 'custom'
+      True
+      >>> type(Profile('custom'))
+      <class 'dioxide.profile_enum.Profile'>
 
 
    .. py:attribute:: PRODUCTION
-      :value: 'production'
-
+      :type:  ClassVar[Profile]
 
 
    .. py:attribute:: TEST
-      :value: 'test'
-
+      :type:  ClassVar[Profile]
 
 
    .. py:attribute:: DEVELOPMENT
-      :value: 'development'
-
+      :type:  ClassVar[Profile]
 
 
    .. py:attribute:: STAGING
-      :value: 'staging'
-
+      :type:  ClassVar[Profile]
 
 
    .. py:attribute:: CI
-      :value: 'ci'
-
+      :type:  ClassVar[Profile]
 
 
    .. py:attribute:: ALL
-      :value: '*'
+      :type:  ClassVar[Profile]
+
+
+   .. py:method:: __repr__()
+
+      Return a detailed string representation.
+
+      .. admonition:: Examples
+
+         >>> repr(Profile.PRODUCTION)
+         "Profile('production')"
+         >>> repr(Profile('custom'))
+         "Profile('custom')"
 
 
 
@@ -1949,8 +2652,9 @@ Package Contents
    They are available in all profiles (production, test, development) and
    support automatic dependency injection.
 
-   This is a specialized form of @component that:
+   Key characteristics:
    - Uses SINGLETON scope by default (one shared instance)
+   - Can use FACTORY scope for fresh instances per resolution
    - Can use REQUEST scope for per-request instances
    - Does not require profile specification (available everywhere)
    - Represents core domain logic in hexagonal architecture
@@ -1973,6 +2677,19 @@ Package Contents
            ... class NotificationService:
            ...     def __init__(self, email: EmailService):
            ...         self.email = email
+
+       Factory-scoped service (new instance each time):
+           >>> from dioxide import service, Scope
+           >>>
+           >>> @service(scope=Scope.FACTORY)
+           ... class TransactionContext:
+           ...     def __init__(self):
+           ...         self.transaction_id = str(uuid.uuid4())
+           >>>
+           >>> # Each resolve() returns a fresh instance:
+           >>> ctx1 = container.resolve(TransactionContext)
+           >>> ctx2 = container.resolve(TransactionContext)
+           >>> assert ctx1 is not ctx2
 
        Request-scoped service:
            >>> from dioxide import service, Scope
@@ -2014,6 +2731,8 @@ Package Contents
 
    This context manager creates a new Container instance, scans for components,
    manages lifecycle (start/stop), and ensures complete isolation between tests.
+
+   This function does NOT require pytest to be installed.
 
    :param profile: Profile to scan with (e.g., Profile.TEST). If None, scans all profiles.
    :param package: Optional package to scan. If None, scans all registered components.

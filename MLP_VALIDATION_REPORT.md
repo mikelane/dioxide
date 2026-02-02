@@ -1,5 +1,7 @@
 # dioxide MLP Validation Report
 
+> **Historical Document**: This report was created during the MLP (Minimum Lovable Product) development phase. References to `MLP_VISION.md` now point to `docs/design-principles.md`.
+
 **Version:** 1.0.0
 **Date:** 2025-11-23
 **Auditor:** Product-Technical Lead

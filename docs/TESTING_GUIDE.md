@@ -185,8 +185,7 @@ class UserService:
 # Test - clean and clear
 async def test_user_registration():
     # Arrange: Set up container with fakes
-    container = Container()
-    container.scan(profile=Profile.TEST)  # Activates fakes!
+    container = Container(profile=Profile.TEST)  # Activates fakes!
 
     # Act: Call REAL service with REAL fakes
     service = container.resolve(UserService)
@@ -541,9 +540,7 @@ from dioxide import Container, Profile
 @pytest.fixture
 def container():
     """Container with test fakes."""
-    c = Container()
-    c.scan(profile=Profile.TEST)
-    return c
+    return Container(profile=Profile.TEST)
 
 @pytest.fixture
 def fake_email(container) -> FakeEmailAdapter:
@@ -602,9 +599,7 @@ from dioxide import Container, Profile
 @pytest.fixture
 def container():
     """Container with test fakes for fast unit tests."""
-    c = Container()
-    c.scan(profile=Profile.TEST)  # Use fakes!
-    return c
+    return Container(profile=Profile.TEST)  # Use fakes!
 
 # test_user_service.py
 async def test_user_registration(container):
@@ -708,8 +703,7 @@ from dioxide import Container, Profile
 
 async def main():
     # Development mode: in-memory storage, console email
-    container = Container()
-    container.scan(profile=Profile.DEVELOPMENT)
+    container = Container(profile=Profile.DEVELOPMENT)
 
     # Seed with dev data
     users = container.resolve(UserRepository)
@@ -763,8 +757,7 @@ from dioxide import Container, Profile
 
 async def test_with_lifecycle():
     """Test with lifecycle components."""
-    container = Container()
-    container.scan(profile=Profile.TEST)
+    container = Container(profile=Profile.TEST)
 
     # Use async context manager
     async with container:
