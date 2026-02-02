@@ -198,8 +198,7 @@ Instead of mocks, use **fast, real implementations** for testing:
     # Test - clean and clear
     async def test_user_registration():
         # Arrange: Set up container with fakes
-        container = Container()
-        container.scan(profile=Profile.TEST)  # Activates fakes!
+        container = Container(profile=Profile.TEST)  # Activates fakes!
 
         # Act: Call REAL service with REAL fakes
         service = container.resolve(UserService)
@@ -742,8 +741,7 @@ Use the DEVELOPMENT profile for running the app locally without real services.
 
     async def main():
         # Development mode: in-memory storage, console email
-        container = Container()
-        container.scan(profile=Profile.DEVELOPMENT)
+        container = Container(profile=Profile.DEVELOPMENT)
 
         # Seed with dev data
         users = container.resolve(UserRepository)
@@ -802,8 +800,7 @@ Container Lifecycle
 
     async def test_with_lifecycle():
         """Test with lifecycle components."""
-        container = Container()
-        container.scan(profile=Profile.TEST)
+        container = Container(profile=Profile.TEST)
 
         # Use async context manager
         async with container:
@@ -1273,8 +1270,7 @@ Yes! dioxide fakes work with any testing framework:
     # unittest
     class TestUserService(unittest.TestCase):
         def setUp(self):
-            self.container = Container()
-            self.container.scan(profile=Profile.TEST)
+            self.container = Container(profile=Profile.TEST)
 
         async def test_registration(self):
             service = self.container.resolve(UserService)
@@ -1458,7 +1454,7 @@ References
 dioxide Documentation
 ~~~~~~~~~~~~~~~~~~~~~
 
-- :doc:`../MLP_VISION` - Canonical design philosophy
+- :doc:`../design-principles` - Canonical design philosophy
 - :doc:`../README` - Quick start and API overview
 - :doc:`../ROADMAP` - Development timeline
 

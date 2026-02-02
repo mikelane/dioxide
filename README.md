@@ -76,7 +76,7 @@ dioxide exists to make clean architecture (ports-and-adapters) the path of least
 | **Fast tests** | In-memory fakes, not slow mocks or external services |
 | **Competitive performance** | Rust-backed container with sub-microsecond resolution |
 
-See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy and [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for testing patterns.
+See [Design Principles](docs/design-principles.md) for the complete design philosophy and [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for testing patterns.
 
 ## Anti-goals
 
@@ -88,7 +88,7 @@ dioxide is intentionally focused. Here's what we're **not** building:
 - **Not configuration management** - Use Pydantic Settings or python-decouple for that
 - **Not trying to solve every DI pattern** - Constructor injection only, no property/method injection
 
-This focus keeps dioxide simple and predictable. See [MLP_VISION.md](docs/MLP_VISION.md) for the complete design philosophy.
+This focus keeps dioxide simple and predictable. See [Design Principles](docs/design-principles.md) for the complete design philosophy.
 
 ## Quick Start
 
@@ -132,16 +132,14 @@ class UserService:
             body=f"Hello {name}, thanks for signing up!"
         )
 
-# Production usage
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+# Production usage - simple one-liner
+container = Container(profile=Profile.PRODUCTION)
 user_service = container.resolve(UserService)
 await user_service.register_user("user@example.com", "Alice")
 # 📧 Sends real email via SendGrid
 
 # Testing - just change the profile!
-test_container = Container()
-test_container.scan(profile=Profile.TEST)
+test_container = Container(profile=Profile.TEST)
 test_service = test_container.resolve(UserService)
 await test_service.register_user("test@example.com", "Bob")
 
@@ -1169,7 +1167,7 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 **Resources:**
 - **[📖 Documentation](https://dioxide.readthedocs.io)** - Full documentation with tutorials and API reference
 - **[🗺️ Roadmap](ROADMAP.md)** - Complete product roadmap
-- **[💡 Design Philosophy](docs/MLP_VISION.md)** - MLP vision and architectural decisions
+- **[💡 Design Philosophy](docs/design-principles.md)** - Design principles and architectural decisions
 - **[🧪 Testing Guide](docs/TESTING_GUIDE.md)** - Comprehensive testing patterns (fakes > mocks)
 
 ## License

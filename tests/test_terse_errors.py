@@ -1,9 +1,15 @@
-"""Tests for terse error messages (1-3 lines max at runtime).
+"""Tests for terse error messages (1-4 lines max at runtime).
 
 This module tests that all dioxide exceptions produce terse, actionable
 error messages at runtime. Verbose explanations remain in docstrings only.
 
 Issue #312: Runtime errors should be 1-3 lines max, with key diagnostic info preserved.
+Issue #396: Added documentation URLs - error messages can now have 1 extra line for the URL.
+
+Format:
+  Line 1: Error title and context
+  Lines 2-3: Diagnostic info (what went wrong, what's available)
+  Line 4 (optional): Documentation URL (-> See: https://...)
 """
 
 from __future__ import annotations
@@ -82,8 +88,8 @@ class DatabasePort(Protocol):
 class DescribeTerseAdapterNotFoundError:
     """Tests for terse AdapterNotFoundError messages."""
 
-    def it_produces_message_under_4_lines(self) -> None:
-        """Error message is 1-3 lines maximum."""
+    def it_produces_message_under_5_lines(self) -> None:
+        """Error message is 1-4 lines maximum (3 diagnostic + 1 doc URL)."""
 
         @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
         class SendGridAdapter:
@@ -98,7 +104,8 @@ class DescribeTerseAdapterNotFoundError:
 
         error_msg = str(exc_info.value)
         line_count = len(error_msg.strip().split('\n'))
-        assert line_count <= 3, f'Error message has {line_count} lines, expected <= 3:\n{error_msg}'
+        # 3 lines for diagnostics + 1 optional line for doc URL
+        assert line_count <= 4, f'Error message has {line_count} lines, expected <= 4:\n{error_msg}'
 
     def it_includes_port_name_and_profile(self) -> None:
         """Error message includes port name and active profile on first line."""
@@ -162,8 +169,8 @@ class DescribeTerseAdapterNotFoundError:
 class DescribeTerseServiceNotFoundError:
     """Tests for terse ServiceNotFoundError messages."""
 
-    def it_produces_message_under_4_lines(self) -> None:
-        """Error message is 1-3 lines maximum."""
+    def it_produces_message_under_5_lines(self) -> None:
+        """Error message is 1-4 lines maximum (3 diagnostic + 1 doc URL)."""
 
         @service
         class UserService:
@@ -178,7 +185,8 @@ class DescribeTerseServiceNotFoundError:
 
         error_msg = str(exc_info.value)
         line_count = len(error_msg.strip().split('\n'))
-        assert line_count <= 3, f'Error message has {line_count} lines, expected <= 3:\n{error_msg}'
+        # 3 lines for diagnostics + 1 optional line for doc URL
+        assert line_count <= 4, f'Error message has {line_count} lines, expected <= 4:\n{error_msg}'
 
     def it_includes_service_name_and_missing_dependency(self) -> None:
         """Error message includes service name and what dependency is missing."""
@@ -249,7 +257,7 @@ class DescribeTerseCircularDependencyError:
     """
 
     def it_produces_terse_message_for_circular_dependency(self) -> None:
-        """Error message for circular dependency is terse (1-3 lines)."""
+        """Error message for circular dependency is terse (1-4 lines)."""
         # Module-level classes: _TerseTestCircularA <-> _TerseTestCircularB
         container = Container()
         container.scan()
@@ -260,7 +268,8 @@ class DescribeTerseCircularDependencyError:
 
         error_msg = str(exc_info.value)
         line_count = len(error_msg.strip().split('\n'))
-        assert line_count <= 3, f'Error message has {line_count} lines, expected <= 3:\n{error_msg}'
+        # 3 lines for diagnostics + 1 optional line for doc URL
+        assert line_count <= 4, f'Error message has {line_count} lines, expected <= 4:\n{error_msg}'
 
     def it_mentions_component_in_cycle(self) -> None:
         """Error message mentions the component that couldn't be resolved."""
@@ -277,8 +286,8 @@ class DescribeTerseCircularDependencyError:
 class DescribeTerseScopeError:
     """Tests for terse ScopeError messages."""
 
-    def it_produces_message_under_4_lines_for_request_scope(self) -> None:
-        """Error message is 1-3 lines maximum for REQUEST scope violations."""
+    def it_produces_message_under_5_lines_for_request_scope(self) -> None:
+        """Error message is 1-4 lines maximum for REQUEST scope violations."""
 
         @service(scope=Scope.REQUEST)
         class RequestContext:
@@ -292,7 +301,8 @@ class DescribeTerseScopeError:
 
         error_msg = str(exc_info.value)
         line_count = len(error_msg.strip().split('\n'))
-        assert line_count <= 3, f'Error message has {line_count} lines, expected <= 3:\n{error_msg}'
+        # 3 lines for diagnostics + 1 optional line for doc URL
+        assert line_count <= 4, f'Error message has {line_count} lines, expected <= 4:\n{error_msg}'
 
     def it_mentions_component_and_scope_requirement(self) -> None:
         """Error message mentions the component and that it requires a scope."""
@@ -341,14 +351,15 @@ class DescribeTerseScopeError:
 
             error_msg = str(exc_info.value)
             line_count = len(error_msg.strip().split('\n'))
-            assert line_count <= 3, f'Error message has {line_count} lines, expected <= 3:\n{error_msg}'
+            # 3 lines for diagnostics + 1 optional line for doc URL
+            assert line_count <= 4, f'Error message has {line_count} lines, expected <= 4:\n{error_msg}'
 
 
 class DescribeTerseCaptiveDependencyError:
     """Tests for terse CaptiveDependencyError messages."""
 
-    def it_produces_message_under_4_lines(self) -> None:
-        """Error message is 1-3 lines maximum."""
+    def it_produces_message_under_5_lines(self) -> None:
+        """Error message is 1-4 lines maximum (3 diagnostic + 1 doc URL)."""
 
         @service(scope=Scope.REQUEST)
         class RequestCtx:
@@ -366,7 +377,8 @@ class DescribeTerseCaptiveDependencyError:
 
         error_msg = str(exc_info.value)
         line_count = len(error_msg.strip().split('\n'))
-        assert line_count <= 3, f'Error message has {line_count} lines, expected <= 3:\n{error_msg}'
+        # 3 lines for diagnostics + 1 optional line for doc URL
+        assert line_count <= 4, f'Error message has {line_count} lines, expected <= 4:\n{error_msg}'
 
     def it_names_both_components_and_their_scopes(self) -> None:
         """Error message names parent (SINGLETON) and child (REQUEST) components."""

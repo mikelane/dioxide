@@ -172,11 +172,16 @@ from __future__ import annotations
 
 from typing import (
     TYPE_CHECKING,
+    ClassVar,
     Self,
 )
 
 if TYPE_CHECKING:
     from dioxide.scope import Scope
+
+
+# Base URL for documentation links
+DOCS_BASE_URL = 'https://dioxide.readthedocs.io/en/stable'
 
 
 class DioxideError(Exception):
@@ -187,12 +192,14 @@ class DioxideError(Exception):
     - Context dict with relevant state at error time
     - Suggestions for how to fix the issue
     - Optional code example showing the fix
+    - Documentation URL for detailed troubleshooting
 
-    Subclasses should set appropriate defaults for title and populate
-    context, suggestions, and example based on the specific error.
+    Subclasses should set appropriate defaults for title and docs_url,
+    and populate context, suggestions, and example based on the specific error.
     """
 
-    title: str = 'Dioxide Error'
+    title: ClassVar[str] = 'Dioxide Error'
+    docs_url: ClassVar[str | None] = f'{DOCS_BASE_URL}/troubleshooting/'
 
     def __init__(self, message: str = '') -> None:
         super().__init__(message)
@@ -228,6 +235,11 @@ class DioxideError(Exception):
             lines.append('Example fix:')
             for line in self.example.split('\n'):
                 lines.append(f'    {line}')
+
+        # Documentation URL
+        if self.docs_url:
+            lines.append('')
+            lines.append(f'-> See: {self.docs_url}')
 
         return '\n'.join(lines)
 
@@ -276,7 +288,8 @@ class ResolutionError(DioxideError):
     AdapterNotFoundError and ServiceNotFoundError.
     """
 
-    title: str = 'Resolution Failed'
+    title: ClassVar[str] = 'Resolution Failed'
+    docs_url: ClassVar[str | None] = f'{DOCS_BASE_URL}/troubleshooting/'
 
 
 class AdapterNotFoundError(ResolutionError):
@@ -425,7 +438,8 @@ class AdapterNotFoundError(ResolutionError):
         - :class:`dioxide.profile_enum.Profile` - Standard profile values
     """
 
-    title: str = 'Adapter Not Found'
+    title: ClassVar[str] = 'Adapter Not Found'
+    docs_url: ClassVar[str | None] = f'{DOCS_BASE_URL}/troubleshooting/adapter-not-found.html'
 
     def __init__(
         self,
@@ -637,7 +651,8 @@ class ServiceNotFoundError(ResolutionError):
         - :class:`AdapterNotFoundError` - For port resolution errors
     """
 
-    title: str = 'Service Not Found'
+    title: ClassVar[str] = 'Service Not Found'
+    docs_url: ClassVar[str | None] = f'{DOCS_BASE_URL}/troubleshooting/service-not-found.html'
 
     def __init__(
         self,
@@ -778,7 +793,8 @@ class ScopeError(DioxideError):
         - :class:`dioxide.scope.Scope` - Scope enum including REQUEST
     """
 
-    title: str = 'Scope Error'
+    title: ClassVar[str] = 'Scope Error'
+    docs_url: ClassVar[str | None] = f'{DOCS_BASE_URL}/troubleshooting/scope-error.html'
 
     def __init__(
         self,
@@ -938,7 +954,8 @@ class CaptiveDependencyError(DioxideError):
         - :class:`ScopeError` - For runtime scope errors
     """
 
-    title: str = 'Captive Dependency'
+    title: ClassVar[str] = 'Captive Dependency'
+    docs_url: ClassVar[str | None] = f'{DOCS_BASE_URL}/troubleshooting/captive-dependency.html'
 
     def __init__(
         self,
@@ -1178,4 +1195,5 @@ class CircularDependencyError(DioxideError):
         - :class:`dioxide.adapter.adapter` - For marking adapters
     """
 
-    title: str = 'Circular Dependency'
+    title: ClassVar[str] = 'Circular Dependency'
+    docs_url: ClassVar[str | None] = f'{DOCS_BASE_URL}/troubleshooting/circular-dependency.html'

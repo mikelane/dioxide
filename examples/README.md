@@ -369,7 +369,7 @@ class UserService:
 
 ## Further Reading
 
-- **MLP Vision**: `docs/MLP_VISION.md` - dioxide's design philosophy
+- **Design Principles**: `docs/design-principles.md` - dioxide's design philosophy
 - **Main README**: `README.md` - Quick start and overview
 - **CLAUDE.md**: Developer guide for working on dioxide
 

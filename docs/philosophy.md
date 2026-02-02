@@ -201,6 +201,6 @@ That is all there is to it. That is why dioxide exists.
 
 - {doc}`user_guide/getting_started` - Hands-on tutorial to start using dioxide
 - {doc}`why-dioxide` - Feature comparison with other DI frameworks
-- {doc}`MLP_VISION` - Complete design specification and roadmap
-- {doc}`TESTING_GUIDE` - Testing philosophy: fakes over mocks
+- {doc}`design-principles` - Complete design specification and roadmap
+- {doc}`testing/index` - Testing philosophy: fakes over mocks
 - {doc}`user_guide/hexagonal_architecture` - Ports and adapters pattern explained
