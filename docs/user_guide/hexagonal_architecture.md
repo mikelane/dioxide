@@ -435,31 +435,10 @@ This pattern ensures:
 
 dioxide makes hexagonal architecture explicit through distinct decorator roles:
 
-```{mermaid}
-flowchart TB
-    subgraph services["@service (Core Domain Logic)"]
-        direction TB
-        US[UserService]
-        OS[OrderService]
-        NS[NotificationService]
-    end
-
-    subgraph ports["Ports (Protocols/ABCs)"]
-        direction TB
-        EP[EmailPort]
-        UR[UserRepository]
-        PG[PaymentGateway]
-    end
-
-    subgraph adapters["@adapter.for_(Port, profile=...)"]
-        direction TB
-        SG["SendGridAdapter<br/>(PRODUCTION)"]
-        FE["FakeEmailAdapter<br/>(TEST)"]
-        CE["ConsoleEmailAdapter<br/>(DEVELOPMENT)"]
-    end
-
-    services -->|"depends on<br/>(constructor injection)"| ports
-    ports -->|"implemented by"| adapters
+```{image} ../_static/images/diagrams/user_guide-hexagonal_architecture-0--service-core-domain.svg
+:alt: @service (Core Domain Logic)
+:align: center
+:class: diagram
 ```
 
 **Layer descriptions:**

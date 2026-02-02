@@ -42,155 +42,22 @@ dl.py dt {
 }
 
 /* ============================================
-   Mermaid diagram styling - Catppuccin Mocha inspired
-   Professional, high-contrast diagram appearance
+   Architecture diagram styling
+   Pre-rendered SVG diagrams using beautiful-mermaid
    ============================================ */
 
-/* Main diagram container */
-.mermaid {
-    background-color: #1e1e2e !important;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    border: 1px solid #45475a;
-    margin: 1rem 0;
+/* Diagram container styling */
+.diagram {
+    margin: 1.5rem 0;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
-/* Subgraph/cluster backgrounds */
-.mermaid .cluster rect {
-    fill: #313244 !important;
-    stroke: #6c7086 !important;
-    stroke-width: 2px !important;
-    rx: 8px !important;
-    ry: 8px !important;
-}
-
-/* Subgraph labels */
-.mermaid .cluster-label .nodeLabel,
-.mermaid .cluster text {
-    fill: #cdd6f4 !important;
-    color: #cdd6f4 !important;
-    font-weight: 600 !important;
-}
-
-/* Node backgrounds - warm peach color */
-.mermaid .node rect,
-.mermaid .node circle,
-.mermaid .node ellipse,
-.mermaid .node polygon {
-    fill: #fab387 !important;
-    stroke: #f5c2e7 !important;
-    stroke-width: 2px !important;
-}
-
-/* Diamond/rhombus nodes (decisions) */
-.mermaid .node polygon {
-    fill: #f9e2af !important;
-}
-
-/* Database cylinder nodes */
-.mermaid .node .label-container,
-.mermaid .node path {
-    fill: #89b4fa !important;
-    stroke: #74c7ec !important;
-}
-
-/* Node text - dark for contrast on light nodes */
-.mermaid .node .nodeLabel,
-.mermaid .nodeLabel {
-    fill: #1e1e2e !important;
-    color: #1e1e2e !important;
-    font-weight: 500 !important;
-}
-
-/* Edge/arrow lines - BRIGHT BLUE for visibility */
-.mermaid .edgePath path.path {
-    stroke: #89b4fa !important;
-    stroke-width: 2.5px !important;
-}
-
-/* Arrow markers/heads */
-.mermaid .marker,
-.mermaid marker path {
-    fill: #89b4fa !important;
-    stroke: #89b4fa !important;
-}
-
-/* Edge labels */
-.mermaid .edgeLabel {
-    background-color: #45475a !important;
-    color: #cdd6f4 !important;
-    padding: 4px 8px !important;
-    border-radius: 4px !important;
-}
-
-.mermaid .edgeLabel rect {
-    fill: #45475a !important;
-    stroke: none !important;
-}
-
-.mermaid .edgeLabel span {
-    color: #cdd6f4 !important;
-    font-size: 0.85rem !important;
-}
-
-/* Sequence diagram actors */
-.mermaid .actor {
-    fill: #fab387 !important;
-    stroke: #f5c2e7 !important;
-    stroke-width: 2px !important;
-}
-
-.mermaid .actor-line {
-    stroke: #6c7086 !important;
-    stroke-dasharray: 4, 4 !important;
-}
-
-.mermaid text.actor {
-    fill: #1e1e2e !important;
-    font-weight: 500 !important;
-}
-
-/* Sequence diagram messages */
-.mermaid .messageLine0,
-.mermaid .messageLine1 {
-    stroke: #89b4fa !important;
-    stroke-width: 2px !important;
-}
-
-.mermaid .messageText {
-    fill: #cdd6f4 !important;
-}
-
-/* Notes in diagrams */
-.mermaid .note {
-    fill: #313244 !important;
-    stroke: #6c7086 !important;
-}
-
-.mermaid .noteText {
-    fill: #cdd6f4 !important;
-}
-
-/* Activation boxes in sequence diagrams */
-.mermaid .activation0,
-.mermaid .activation1,
-.mermaid .activation2 {
-    fill: #45475a !important;
-    stroke: #6c7086 !important;
-}
-
-/* Loop/alt boxes */
-.mermaid .loopLine {
-    stroke: #6c7086 !important;
-}
-
-.mermaid .loopText,
-.mermaid .loopText tspan {
-    fill: #a6adc8 !important;
-}
-
-/* Generic rectangles */
-.mermaid rect.rect {
-    fill: #313244 !important;
-    stroke: #6c7086 !important;
+/* SVG diagrams scale nicely */
+.diagram img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: 0.5rem;
 }

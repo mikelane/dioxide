@@ -49,7 +49,6 @@ extensions = [
     'sphinx_design',
     'sphinx_tippy',
     'sphinx_togglebutton',
-    'sphinxcontrib.mermaid',
     'autoapi.extension',
     'myst_parser',
 ]
@@ -244,69 +243,6 @@ tippy_props = {
 # Reduces cognitive load by hiding advanced content until needed
 togglebutton_hint = 'Click to show'
 togglebutton_hint_hide = 'Click to hide'
-
-# -- Options for sphinxcontrib-mermaid extension -----------------------------
-# Use a specific mermaid.js version from CDN for consistent rendering
-mermaid_version = '11.4.1'
-# Configure mermaid to work with Furo dark theme (dioxide color scheme)
-# dioxide brand colors: orange #e67e22, dark background #1a1a1a
-# Improved styling for better arrow visibility and professional appearance
-mermaid_init_js = '''
-mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    themeVariables: {
-        // Background colors
-        background: '#1e1e2e',
-        mainBkg: '#313244',
-
-        // Primary colors (nodes)
-        primaryColor: '#fab387',
-        primaryTextColor: '#1e1e2e',
-        primaryBorderColor: '#f5c2e7',
-
-        // Secondary colors (clusters/subgraphs)
-        secondaryColor: '#45475a',
-        secondaryTextColor: '#cdd6f4',
-        secondaryBorderColor: '#6c7086',
-
-        // Tertiary colors
-        tertiaryColor: '#313244',
-        tertiaryTextColor: '#cdd6f4',
-        tertiaryBorderColor: '#585b70',
-
-        // Lines and arrows - HIGH CONTRAST for visibility
-        lineColor: '#89b4fa',
-        arrowheadColor: '#89b4fa',
-
-        // Text colors
-        textColor: '#cdd6f4',
-        titleColor: '#cdd6f4',
-
-        // Node styling
-        nodeBorder: '#f5c2e7',
-        nodeTextColor: '#1e1e2e',
-
-        // Cluster (subgraph) styling
-        clusterBkg: '#313244',
-        clusterBorder: '#6c7086',
-
-        // Edge labels
-        edgeLabelBackground: '#45475a',
-
-        // Flowchart specific
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
-    },
-    flowchart: {
-        curve: 'basis',
-        padding: 20,
-        nodeSpacing: 50,
-        rankSpacing: 50,
-        htmlLabels: true,
-        useMaxWidth: true
-    }
-});
-'''
 
 # -- Options for linkcheck builder --------------------------------------------
 # Patterns to ignore when checking links

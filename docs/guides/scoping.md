@@ -12,34 +12,10 @@ This guide explains dioxide's scoping system, a powerful primitive for isolating
 
 Think of a scope as a "mini-container" that inherits from the parent container but has its own instances for scoped components.
 
-```{mermaid}
-flowchart TB
-    subgraph Container["Container (Application Lifetime)"]
-        S1[("UserService<br/>(singleton)")]
-        S2[("EmailService<br/>(singleton)")]
-
-        subgraph Scope1["Scope 1 (e.g., Request A)"]
-            R1A["RequestContext<br/>(scoped)"]
-            R1B["AuditLogger<br/>(scoped)"]
-        end
-
-        subgraph Scope2["Scope 2 (e.g., Request B)"]
-            R2A["RequestContext<br/>(scoped)"]
-            R2B["AuditLogger<br/>(scoped)"]
-        end
-
-        S1 --> R1A
-        S1 --> R2A
-        S2 --> R1A
-        S2 --> R2A
-    end
-
-    style S1 fill:#e1f5fe
-    style S2 fill:#e1f5fe
-    style R1A fill:#fff3e0
-    style R1B fill:#fff3e0
-    style R2A fill:#fff3e0
-    style R2B fill:#fff3e0
+```{image} ../_static/images/diagrams/guides-scoping-0-container-applicatio.svg
+:alt: Container (Application Lifetime)
+:align: center
+:class: diagram
 ```
 
 **Key insight**: Singletons are shared; scoped instances are isolated per scope.
@@ -111,28 +87,10 @@ async with container.create_scope() as scope:
 
 ### How `create_scope()` Works
 
-```{mermaid}
-sequenceDiagram
-    participant App as Application
-    participant Container as Container
-    participant Scope as ScopedContainer
-    participant Scoped as Scoped Instance
-
-    App->>Container: create_scope()
-    Container->>Scope: Create child scope
-    Scope-->>App: ScopedContainer
-
-    App->>Scope: resolve(RequestContext)
-    Scope->>Scoped: Create new instance
-    Scoped-->>Scope: Instance
-    Scope-->>App: RequestContext
-
-    Note over App,Scoped: Do work within scope...
-
-    App->>Scope: Exit scope (async with ends)
-    Scope->>Scoped: dispose()
-    Scoped-->>Scope: Cleanup complete
-    Scope-->>App: Scope closed
+```{image} ../_static/images/diagrams/guides-scoping-1-sequence.svg
+:alt: Sequence diagram
+:align: center
+:class: diagram
 ```
 
 **Key behaviors:**
@@ -196,28 +154,10 @@ class UserService:
 
 **Why?** Services contain business logic that doesn't change per request. They should be singletons that receive request-scoped adapters via dependency injection.
 
-```{mermaid}
-flowchart LR
-    subgraph Singleton["Singleton (Shared)"]
-        US["UserService"]
-        ES["EmailService"]
-    end
-
-    subgraph Scoped["Request-Scoped (Per Request)"]
-        RC["RequestContext"]
-        DB["DatabaseSession"]
-        AL["AuditLogger"]
-    end
-
-    US --> RC
-    US --> DB
-    US --> AL
-
-    style US fill:#e1f5fe
-    style ES fill:#e1f5fe
-    style RC fill:#fff3e0
-    style DB fill:#fff3e0
-    style AL fill:#fff3e0
+```{image} ../_static/images/diagrams/guides-scoping-2-singleton-shared-.svg
+:alt: Singleton (Shared)
+:align: center
+:class: diagram
 ```
 
 **Rule of thumb:**
@@ -361,28 +301,10 @@ Understanding how scopes interact with the dependency graph is crucial.
 
 Scopes inherit from their parent container:
 
-```{mermaid}
-flowchart TB
-    subgraph Parent["Parent Container"]
-        direction TB
-        PS1["ConfigService<br/>(singleton)"]
-        PS2["UserService<br/>(singleton)"]
-    end
-
-    subgraph Child["Scoped Container"]
-        direction TB
-        CS1["DatabaseSession<br/>(scoped)"]
-        CS2["RequestContext<br/>(scoped)"]
-    end
-
-    Child -->|inherits from| Parent
-    CS1 -->|depends on| PS1
-    PS2 -->|injected with| CS1
-
-    style PS1 fill:#e1f5fe
-    style PS2 fill:#e1f5fe
-    style CS1 fill:#fff3e0
-    style CS2 fill:#fff3e0
+```{image} ../_static/images/diagrams/guides-scoping-3-parent-container.svg
+:alt: Parent Container
+:align: center
+:class: diagram
 ```
 
 **Resolution rules:**
@@ -477,31 +399,10 @@ class PostgresSession:
 
 ### Lifecycle Order in Scopes
 
-```{mermaid}
-sequenceDiagram
-    participant Scope as ScopedContainer
-    participant A as Component A
-    participant B as Component B (depends on A)
-
-    Note over Scope,B: Scope Creation
-
-    Scope->>A: Create instance
-    Scope->>A: initialize()
-    A-->>Scope: Ready
-
-    Scope->>B: Create instance (receives A)
-    Scope->>B: initialize()
-    B-->>Scope: Ready
-
-    Note over Scope,B: Work happens...
-
-    Note over Scope,B: Scope Exit (Reverse Order)
-
-    Scope->>B: dispose()
-    B-->>Scope: Cleaned up
-
-    Scope->>A: dispose()
-    A-->>Scope: Cleaned up
+```{image} ../_static/images/diagrams/guides-scoping-4-sequence.svg
+:alt: Sequence diagram
+:align: center
+:class: diagram
 ```
 
 **Guarantees:**
@@ -686,19 +587,10 @@ async def get_user(
 
 **Decision flowchart:**
 
-```{mermaid}
-flowchart TD
-    A[New Component] --> B{Is it core business logic?}
-    B -->|Yes| C[Use @service<br/>SINGLETON]
-    B -->|No| D{Does it hold per-request state?}
-    D -->|No| E{Does it need per-request resources?}
-    D -->|Yes| F[Use Scope.REQUEST]
-    E -->|No| G[Use SINGLETON<br/>default]
-    E -->|Yes| F
-
-    style C fill:#e1f5fe
-    style G fill:#e1f5fe
-    style F fill:#fff3e0
+```{image} ../_static/images/diagrams/guides-scoping-5-flowchart.svg
+:alt: Flowchart diagram
+:align: center
+:class: diagram
 ```
 
 Scoping in dioxide enables clean, isolated execution contexts while maintaining the simplicity of the dependency injection model. Use it whenever you need bounded, isolated dependencies - whether that's web requests, background tasks, CLI commands, or test cases.

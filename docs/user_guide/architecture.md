@@ -1,37 +1,17 @@
 # Architecture Diagrams
 
-This page provides visual explanations of dioxide's hexagonal architecture patterns through
-comprehensive Mermaid diagrams. These diagrams illustrate how dioxide enables clean
-architecture through ports, adapters, profiles, and lifecycle management.
+This page provides visual explanations of dioxide's hexagonal architecture patterns.
+These diagrams illustrate how dioxide enables clean architecture through ports, adapters,
+profiles, and lifecycle management.
 
 ## The Golden Path
 
 Before diving into detailed diagrams, here's the core mental model in one picture:
 
-```
-                    ┌─────────────────┐
-                    │    @service     │
-                    │   UserService   │
-                    │  (business      │
-                    │   logic)        │
-                    └────────┬────────┘
-                             │
-                             │ depends on
-                             ▼
-                    ┌─────────────────┐
-                    │   Port          │
-                    │   (Protocol)    │
-                    │   EmailPort     │
-                    └────────┬────────┘
-                             │
-            ┌────────────────┼────────────────┐
-            │                │                │
-            ▼                ▼                ▼
-    ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-    │  @adapter     │ │  @adapter     │ │  @adapter     │
-    │  PRODUCTION   │ │  TEST         │ │  DEVELOPMENT  │
-    │  SendGrid     │ │  FakeEmail    │ │  ConsoleEmail │
-    └───────────────┘ └───────────────┘ └───────────────┘
+```{image} ../_static/images/diagrams/golden-path.svg
+:alt: The Golden Path - Service depends on Port, implemented by Adapters
+:align: center
+:class: diagram
 ```
 
 This is the Dependency Inversion Principle in action: your business logic (`@service`) depends
@@ -47,36 +27,10 @@ The hexagonal architecture (also known as ports-and-adapters) places your core b
 at the center, surrounded by ports that define interfaces, with adapters plugging into those
 ports from the outside. This creates natural seams for testing and implementation swapping.
 
-```{mermaid}
-flowchart TB
-    subgraph CORE["Core Domain (@service)"]
-        US[UserService]
-        NS[NotificationService]
-        OS[OrderService]
-    end
-
-    subgraph PORTS["Ports Layer (Protocol)"]
-        UP{{UserRepository}}
-        EP{{EmailPort}}
-        SP{{StoragePort}}
-    end
-
-    subgraph ADAPTERS["Adapters Layer (@adapter.for_)"]
-        subgraph PROD["Production"]
-            PGA[PostgresUserRepository]
-            SGA[SendGridEmailAdapter]
-            FSA[S3StorageAdapter]
-        end
-        subgraph TEST["Test"]
-            FUR[FakeUserRepository]
-            FEA[FakeEmailAdapter]
-            FFS[FakeStorageAdapter]
-        end
-    end
-
-    CORE -->|"depends on"| PORTS
-    PROD -->|"implements"| PORTS
-    TEST -->|"implements"| PORTS
+```{image} ../_static/images/diagrams/user_guide-architecture-0-core-domain-service-.svg
+:alt: Core Domain (@service)
+:align: center
+:class: diagram
 ```
 
 **Key Concepts:**
@@ -96,62 +50,10 @@ This enables testing with fast fakes and easy implementation swapping.
 dioxide uses profiles to determine which adapter implementation is active for each port.
 When you scan with a specific profile, only adapters matching that profile are activated.
 
-```{mermaid}
-flowchart TB
-    subgraph REGISTRATION["Adapter Registration (Decoration Time)"]
-        direction LR
-        A1["@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
-        class SendGridAdapter"]
-        A2["@adapter.for_(EmailPort, profile=Profile.TEST)
-        class FakeEmailAdapter"]
-        A3["@adapter.for_(EmailPort, profile=Profile.DEVELOPMENT)
-        class ConsoleEmailAdapter"]
-    end
-
-    subgraph REGISTRY["Global Registry"]
-        direction TB
-        REG[("Adapter Registry
-        EmailPort:
-          - PRODUCTION: SendGridAdapter
-          - TEST: FakeEmailAdapter
-          - DEVELOPMENT: ConsoleEmailAdapter")]
-    end
-
-    subgraph SCANNING["Container Creation (Auto-Scans)"]
-        direction TB
-        SCAN_PROD["Container(profile=Profile.PRODUCTION)"]
-        SCAN_TEST["Container(profile=Profile.TEST)"]
-        SCAN_DEV["Container(profile=Profile.DEVELOPMENT)"]
-    end
-
-    subgraph ACTIVATION["Active Adapters"]
-        direction TB
-        ACT_PROD["EmailPort -> SendGridAdapter"]
-        ACT_TEST["EmailPort -> FakeEmailAdapter"]
-        ACT_DEV["EmailPort -> ConsoleEmailAdapter"]
-    end
-
-    subgraph RESOLUTION["Resolution"]
-        direction TB
-        RES["container.resolve(EmailPort)
-        Returns active adapter for current profile"]
-    end
-
-    A1 --> REG
-    A2 --> REG
-    A3 --> REG
-
-    REG --> SCAN_PROD
-    REG --> SCAN_TEST
-    REG --> SCAN_DEV
-
-    SCAN_PROD --> ACT_PROD
-    SCAN_TEST --> ACT_TEST
-    SCAN_DEV --> ACT_DEV
-
-    ACT_PROD --> RES
-    ACT_TEST --> RES
-    ACT_DEV --> RES
+```{image} ../_static/images/diagrams/user_guide-architecture-1-adapter-registration.svg
+:alt: Adapter Registration (Decoration Time)
+:align: center
+:class: diagram
 ```
 
 **How Profile Selection Works:**
@@ -183,47 +85,10 @@ class SimpleEmailAdapter:
 When you call `container.resolve(UserService)`, dioxide performs dependency resolution
 by inspecting constructor type hints and recursively resolving dependencies.
 
-```{mermaid}
-sequenceDiagram
-    participant App as Application
-    participant Container as Container
-    participant Registry as Provider Registry
-    participant Cache as Singleton Cache
-
-    App->>Container: resolve(UserService)
-
-    Container->>Registry: lookup(UserService)
-    Registry-->>Container: ServiceProvider(UserService)
-
-    Container->>Container: inspect __init__ type hints
-    Note over Container: UserService.__init__(self, db: UserRepository, email: EmailPort)
-
-    Container->>Container: resolve(UserRepository)
-    Container->>Registry: lookup(UserRepository)
-    Registry-->>Container: AdapterProvider(PostgresUserRepository)
-
-    Container->>Cache: check cache(PostgresUserRepository)
-    Cache-->>Container: not cached
-
-    Container->>Container: create PostgresUserRepository()
-    Container->>Cache: store(PostgresUserRepository, instance)
-    Container-->>Container: PostgresUserRepository instance
-
-    Container->>Container: resolve(EmailPort)
-    Container->>Registry: lookup(EmailPort)
-    Registry-->>Container: AdapterProvider(SendGridAdapter)
-
-    Container->>Cache: check cache(SendGridAdapter)
-    Cache-->>Container: not cached
-
-    Container->>Container: create SendGridAdapter()
-    Container->>Cache: store(SendGridAdapter, instance)
-    Container-->>Container: SendGridAdapter instance
-
-    Container->>Container: create UserService(db, email)
-    Container->>Cache: store(UserService, instance)
-
-    Container-->>App: UserService instance
+```{image} ../_static/images/diagrams/user_guide-architecture-2-sequence.svg
+:alt: Sequence diagram
+:align: center
+:class: diagram
 ```
 
 **Resolution Steps:**
@@ -251,67 +116,10 @@ When using `@lifecycle` decorated components, dioxide initializes them in depend
 and disposes them in reverse order. This ensures dependencies are ready before dependents
 and cleaned up after dependents.
 
-```{mermaid}
-sequenceDiagram
-    participant App as Application
-    participant Container as Container
-    participant Graph as Dependency Graph
-    participant Config as AppConfig
-    participant DB as Database
-    participant Cache as CacheService
-    participant User as UserService
-
-    Note over App,User: Dependency Order: AppConfig -> Database -> CacheService -> UserService
-
-    App->>Container: async with container:
-
-    Container->>Graph: topological_sort(lifecycle_components)
-    Graph-->>Container: [AppConfig, Database, CacheService, UserService]
-
-    rect rgb(230, 245, 230)
-        Note over Container,User: Initialization Phase (dependency order)
-        Container->>Config: initialize()
-        Config-->>Container: ready
-
-        Container->>DB: initialize()
-        Note over DB: Connects to PostgreSQL
-        DB-->>Container: ready
-
-        Container->>Cache: initialize()
-        Note over Cache: Connects to Redis
-        Cache-->>Container: ready
-
-        Container->>User: initialize()
-        Note over User: All dependencies ready
-        User-->>Container: ready
-    end
-
-    Container-->>App: context entered
-
-    Note over App: Application runs...
-    App->>Container: resolve(UserService)
-    Container-->>App: UserService (already initialized)
-
-    App->>Container: exit context
-
-    rect rgb(245, 230, 230)
-        Note over Container,User: Disposal Phase (reverse dependency order)
-        Container->>User: dispose()
-        User-->>Container: disposed
-
-        Container->>Cache: dispose()
-        Note over Cache: Disconnects from Redis
-        Cache-->>Container: disposed
-
-        Container->>DB: dispose()
-        Note over DB: Closes PostgreSQL connection
-        DB-->>Container: disposed
-
-        Container->>Config: dispose()
-        Config-->>Container: disposed
-    end
-
-    Container-->>App: context exited
+```{image} ../_static/images/diagrams/user_guide-architecture-3-sequence.svg
+:alt: Sequence diagram
+:align: center
+:class: diagram
 ```
 
 **Lifecycle Management:**
@@ -352,68 +160,10 @@ and automatically triggers scanning when created.
 dioxide's architecture enables testing with fast, deterministic fakes instead of mocks.
 The profile system makes swapping between production and test implementations trivial.
 
-```{mermaid}
-flowchart TB
-    subgraph PRODUCTION["Production Environment"]
-        direction TB
-        subgraph PROD_CONTAINER["Container(profile=PRODUCTION)"]
-            PUS[UserService]
-            PNS[NotificationService]
-        end
-        subgraph PROD_ADAPTERS["Production Adapters"]
-            PPG[(PostgreSQL)]
-            PSG[SendGrid API]
-            PRC[(Redis)]
-        end
-        PUS --> PPG
-        PUS --> PSG
-        PNS --> PSG
-        PNS --> PRC
-    end
-
-    subgraph TESTING["Test Environment"]
-        direction TB
-        subgraph TEST_CONTAINER["Container(profile=TEST)"]
-            TUS[UserService]
-            TNS[NotificationService]
-        end
-        subgraph TEST_FAKES["Fast Fakes (In-Memory)"]
-            TFU["FakeUserRepository
-            users: dict[int, User]
-            + seed(*users)
-            + clear()"]
-            TFE["FakeEmailAdapter
-            sent_emails: list[dict]
-            + verify_sent_to(email)
-            + clear()"]
-            TFC["FakeCacheAdapter
-            cache: dict[str, Any]
-            + clear()"]
-        end
-        TUS --> TFU
-        TUS --> TFE
-        TNS --> TFE
-        TNS --> TFC
-    end
-
-    subgraph TEST_CODE["Test Code"]
-        direction TB
-        ARRANGE["Arrange:
-        fake_users.seed(User(id=1, email='alice@example.com'))
-        fake_clock.set_time(datetime(2024, 1, 1))"]
-
-        ACT["Act:
-        result = await service.register_user('Alice', 'alice@example.com')"]
-
-        ASSERT["Assert:
-        assert result['email'] == 'alice@example.com'
-        assert fake_email.verify_sent_to('alice@example.com')
-        assert len(fake_email.sent_emails) == 1"]
-    end
-
-    TEST_CONTAINER --> TEST_CODE
-    ARRANGE --> ACT
-    ACT --> ASSERT
+```{image} ../_static/images/diagrams/user_guide-architecture-4-production-environme.svg
+:alt: Production Environment
+:align: center
+:class: diagram
 ```
 
 **Testing Philosophy:**

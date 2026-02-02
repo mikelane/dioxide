@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1097.2350000000001 1136" width="1097.2350000000001" height="1136" style="--bg:#1e1e2e;--fg:#cdd6f4;--line:#89b4fa;--accent:#89b4fa;--muted:#a6adc8;--surface:#313244;--border:#f5c2e7;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="seq-arrow" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="seq-arrow-open" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.4, 0 4.8" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<rect x="177.66499999999996" y="198" width="883.975" height="340" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="177.66499999999996" y="198" width="175.5" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="183.66499999999996" y="207" dy="0.35em" font-size="11" font-weight="600" fill="var(--_text-sec)">rect [rgb(230, 245, 230)]</text>
+<rect x="177.66499999999996" y="706" width="883.975" height="340" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="177.66499999999996" y="706" width="175.5" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="183.66499999999996" y="715" dy="0.35em" font-size="11" font-weight="600" fill="var(--_text-sec)">rect [rgb(245, 230, 230)]</text>
+<line x1="92.34" y1="70" x2="92.34" y2="1106" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="235.83999999999997" y1="70" x2="235.83999999999997" y2="1106" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="397.215" y1="70" x2="397.215" y2="1106" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="558.59" y1="70" x2="558.59" y2="1106" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="698.59" y1="70" x2="698.59" y2="1106" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="842.09" y1="70" x2="842.09" y2="1106" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="996.315" y1="70" x2="996.315" y2="1106" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="92.34" y1="90" x2="235.83999999999997" y2="90" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="164.08999999999997" y="84" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">async with container:</text>
+<line x1="235.83999999999997" y1="130" x2="397.215" y2="130" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="316.5275" y="124" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">topological_sort(lifecycle_components)</text>
+<line x1="397.215" y1="170" x2="235.83999999999997" y2="170" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="316.5275" y="164" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">[AppConfig, Database, CacheService, UserService]</text>
+<line x1="235.83999999999997" y1="238" x2="558.59" y2="238" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="397.21500000000003" y="232" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">initialize()</text>
+<line x1="558.59" y1="278" x2="235.83999999999997" y2="278" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="397.21500000000003" y="272" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">ready</text>
+<line x1="235.83999999999997" y1="318" x2="698.59" y2="318" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="467.21500000000003" y="312" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">initialize()</text>
+<line x1="698.59" y1="358" x2="235.83999999999997" y2="358" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="467.21500000000003" y="352" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">ready</text>
+<line x1="235.83999999999997" y1="398" x2="842.09" y2="398" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="538.965" y="392" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">initialize()</text>
+<line x1="842.09" y1="438" x2="235.83999999999997" y2="438" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="538.965" y="432" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">ready</text>
+<line x1="235.83999999999997" y1="478" x2="996.315" y2="478" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="616.0775" y="472" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">initialize()</text>
+<line x1="996.315" y1="518" x2="235.83999999999997" y2="518" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="616.0775" y="512" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">ready</text>
+<line x1="235.83999999999997" y1="558" x2="92.34" y2="558" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="164.08999999999997" y="552" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">context entered</text>
+<line x1="92.34" y1="598" x2="235.83999999999997" y2="598" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="164.08999999999997" y="592" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">resolve(UserService)</text>
+<line x1="235.83999999999997" y1="638" x2="92.34" y2="638" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="164.08999999999997" y="632" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">UserService (already initialized)</text>
+<line x1="92.34" y1="678" x2="235.83999999999997" y2="678" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="164.08999999999997" y="672" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">exit context</text>
+<line x1="235.83999999999997" y1="746" x2="996.315" y2="746" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="616.0775" y="740" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">dispose()</text>
+<line x1="996.315" y1="786" x2="235.83999999999997" y2="786" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="616.0775" y="780" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">disposed</text>
+<line x1="235.83999999999997" y1="826" x2="842.09" y2="826" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="538.965" y="820" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">dispose()</text>
+<line x1="842.09" y1="866" x2="235.83999999999997" y2="866" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="538.965" y="860" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">disposed</text>
+<line x1="235.83999999999997" y1="906" x2="698.59" y2="906" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="467.21500000000003" y="900" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">dispose()</text>
+<line x1="698.59" y1="946" x2="235.83999999999997" y2="946" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="467.21500000000003" y="940" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">disposed</text>
+<line x1="235.83999999999997" y1="986" x2="558.59" y2="986" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="397.21500000000003" y="980" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">dispose()</text>
+<line x1="558.59" y1="1026" x2="235.83999999999997" y2="1026" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="397.21500000000003" y="1020" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">disposed</text>
+<line x1="235.83999999999997" y1="1066" x2="92.34" y2="1066" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="164.08999999999997" y="1060" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">context exited</text>
+<rect x="336.12749999999994" y="74" width="416.40000000000003" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="746.5274999999999,74 752.5274999999999,80 746.5274999999999,80" fill="var(--_inner-stroke)" />
+<text x="544.3275" y="87.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Dependency Order: AppConfig -&gt; Database -&gt; CacheService -&gt; UserService</text>
+<rect x="496.53749999999997" y="174" width="239.08" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="729.6175,174 735.6175,180 729.6175,180" fill="var(--_inner-stroke)" />
+<text x="616.0775" y="187.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Initialization Phase (dependency order)</text>
+<rect x="627.6700000000001" y="322" width="141.84" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="763.5100000000001,322 769.5100000000001,328 763.5100000000001,328" fill="var(--_inner-stroke)" />
+<text x="698.59" y="335.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Connects to PostgreSQL</text>
+<rect x="782.09" y="402" width="120" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="896.09,402 902.09,408 896.09,408" fill="var(--_inner-stroke)" />
+<text x="842.09" y="415.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Connects to Redis</text>
+<rect x="925.3950000000001" y="482" width="141.84" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="1061.2350000000001,482 1067.2350000000001,488 1061.2350000000001,488" fill="var(--_inner-stroke)" />
+<text x="996.315" y="495.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">All dependencies ready</text>
+<rect x="30" y="562" width="124.68" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="148.68,562 154.68,568 148.68,568" fill="var(--_inner-stroke)" />
+<text x="92.34" y="575.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Application runs...</text>
+<rect x="490.8175" y="682" width="250.52" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="735.3375,682 741.3375,688 735.3375,688" fill="var(--_inner-stroke)" />
+<text x="616.0775" y="695.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Disposal Phase (reverse dependency order)</text>
+<rect x="771.1700000000001" y="830" width="141.84" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="907.0100000000001,830 913.0100000000001,836 907.0100000000001,836" fill="var(--_inner-stroke)" />
+<text x="842.09" y="843.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Disconnects from Redis</text>
+<rect x="610.51" y="910" width="176.16" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="780.67,910 786.67,916 780.67,916" fill="var(--_inner-stroke)" />
+<text x="698.59" y="923.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Closes PostgreSQL connection</text>
+<rect x="37.015" y="30" width="110.65" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="92.34" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Application</text>
+<rect x="187.66499999999996" y="30" width="96.35000000000001" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="235.83999999999997" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Container</text>
+<rect x="324.015" y="30" width="146.4" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="397.215" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Dependency Graph</text>
+<rect x="510.415" y="30" width="96.35000000000001" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="558.59" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">AppConfig</text>
+<rect x="653.99" y="30" width="89.2" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="698.59" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Database</text>
+<rect x="783.19" y="30" width="117.80000000000001" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="842.09" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">CacheService</text>
+<rect x="940.99" y="30" width="110.65" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="996.315" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">UserService</text>
+</svg>

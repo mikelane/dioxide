@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1832.6625000000004 967" width="1832.6625000000004" height="967" style="--bg:#1e1e2e;--fg:#cdd6f4;--line:#89b4fa;--accent:#89b4fa;--muted:#a6adc8;--surface:#313244;--border:#f5c2e7;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<rect x="1344.8000000000002" y="40" width="447.8625000000002" height="415" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1344.8000000000002" y="40" width="447.8625000000002" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1356.8000000000002" y="54" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Production Environment&quot;</text>
+<rect x="1381.6750000000002" y="76" width="380.6750000000002" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1381.6750000000002" y="76" width="380.6750000000002" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1393.6750000000002" y="90" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Container(profile=PRODUCTION)&quot;</text>
+<rect x="1366.5875000000003" y="312" width="381.0500000000002" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1366.5875000000003" y="312" width="381.0500000000002" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1378.5875000000003" y="326" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Production Adapters&quot;</text>
+<rect x="40" y="40" width="693.1000000000001" height="415" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="40" width="693.1000000000001" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="52" y="54" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Test Environment&quot;</text>
+<rect x="60" y="76" width="653.1000000000001" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="60" y="76" width="653.1000000000001" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="72" y="90" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Container(profile=TEST)&quot;</text>
+<rect x="75.32500000000005" y="312" width="597.7750000000001" height="123" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="75.32500000000005" y="312" width="597.7750000000001" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="87.32500000000005" y="326" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Fast Fakes (In-Memory)&quot;</text>
+<rect x="753.1000000000003" y="292" width="571.7" height="635" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="753.1000000000003" y="292" width="571.7" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="765.1000000000003" y="306" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Test Code&quot;</text>
+<polyline points="1459.0000000000002,168 1459.0000000000002,188 1440.3375000000003,188 1440.3375000000003,368" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1459.0000000000002,168 1459.0000000000002,188 1526.3250000000003,188 1526.3250000000003,391.5 1516.0875000000003,391.5" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1656.4250000000004,168 1656.4250000000004,188 1590.4125000000004,188 1590.4125000000004,391.5 1633.8875000000005,391.5" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1656.4250000000004,168 1656.4250000000004,188 1691.7625000000005,188 1691.7625000000005,368" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="137.32500000000005,168 137.32500000000005,188 127.32500000000005,188 127.32500000000005,373.5" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="137.32500000000005,168 137.32500000000005,188 179.32500000000005,188 179.32500000000005,391.5 181.32500000000005,391.5" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="323.8125,168 323.8125,188 243.32500000000005,188 243.32500000000005,391.5 241.32500000000005,391.5" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="323.8125,168 323.8125,188 302.95000000000005,188 302.95000000000005,373.5" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="323.8125,168 323.8125,188 693.1000000000001,188 693.1000000000001,391.5 1125.425,391.5" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1166.45,409.5 1166.45,615" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1166.45,651 1166.45,851" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="1403.6750000000002" y="132" width="110.65" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1388.5875000000003" y="375" width="103.5" height="33" fill="var(--_node-fill)" stroke="none" />
+<line x1="1388.5875000000003" y1="375" x2="1388.5875000000003" y2="408" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<line x1="1492.0875000000003" y1="375" x2="1492.0875000000003" y2="408" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<ellipse cx="1440.3375000000003" cy="408" rx="51.75" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<ellipse cx="1440.3375000000003" cy="375" rx="51.75" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1516.0875000000003" y="373.5" width="117.80000000000001" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1572.5000000000005" y="132" width="167.85000000000002" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1657.8875000000005" y="375" width="67.75" height="33" fill="var(--_node-fill)" stroke="none" />
+<line x1="1657.8875000000005" y1="375" x2="1657.8875000000005" y2="408" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<line x1="1725.6375000000005" y1="375" x2="1725.6375000000005" y2="408" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<ellipse cx="1691.7625000000005" cy="408" rx="33.875" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<ellipse cx="1691.7625000000005" cy="375" rx="33.875" ry="7" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="82.00000000000004" y="132" width="110.65" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="97.32500000000005" y="373.5" width="60" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="181.32500000000005" y="373.5" width="60" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="239.8875" y="132" width="167.85000000000002" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="272.95000000000005" y="373.5" width="60" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="356.95000000000005" y="373.5" width="67.75" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="448.7000000000001" y="373.5" width="110.65" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="583.3500000000001" y="373.5" width="67.75" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1125.425" y="373.5" width="82.05000000000001" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="775.1000000000001" y="851" width="103.5" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="902.6000000000001" y="851" width="103.5" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1136.45" y="615" width="60" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1030.1000000000001" y="851" width="74.9" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1129" y="851" width="74.9" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="1227.9" y="851" width="74.9" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="1459.0000000000002" y="150" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">UserService</text>
+<text x="1440.3375000000003" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">PostgreSQL</text>
+<text x="1574.9875000000004" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">SendGrid API</text>
+<text x="1656.4250000000004" y="150" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">NotificationService</text>
+<text x="1691.7625000000005" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Redis</text>
+<text x="137.32500000000005" y="150" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">UserService</text>
+<text x="127.32500000000005" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">TFU</text>
+<text x="211.32500000000005" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">TFE</text>
+<text x="323.8125" y="150" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">NotificationService</text>
+<text x="302.95000000000005" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">TFC</text>
+<text x="390.82500000000005" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">users</text>
+<text x="504.0250000000001" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">sent_emails</text>
+<text x="617.2250000000001" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">cache</text>
+<text x="1166.45" y="391.5" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">ARRANGE</text>
+<text x="826.8500000000001" y="869" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">fake_users</text>
+<text x="954.3500000000001" y="869" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">fake_clock</text>
+<text x="1166.45" y="633" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">ACT</text>
+<text x="1067.5500000000002" y="869" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">result</text>
+<text x="1166.45" y="869" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">ASSERT</text>
+<text x="1265.3500000000001" y="869" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">assert</text>
+</svg>

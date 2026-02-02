@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640.575 1188.8" width="640.575" height="1188.8" style="--bg:#1e1e2e;--fg:#cdd6f4;--line:#89b4fa;--accent:#89b4fa;--muted:#a6adc8;--surface:#313244;--border:#f5c2e7;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<polyline points="284.8375,76 284.8375,115.99999999999999" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="227.23696335479912,300.2994633547991 227.23696335479912,386.4 148.95,386.4 148.95,535.7249999999999" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="342.43803664520084,300.2994633547991 342.43803664520084,386.4 420.72499999999997,386.4 420.72499999999997,414.8999999999999" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="370.83910511050914,642.664105110509 370.83910511050914,721.05 326.87249999999995,721.05 326.87249999999995,749.55" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="478.5255724824723,634.7494275175276 478.5255724824723,721.05 540.0899999999999,721.05 540.0899999999999,1130.8 600.5749999999999,1130.8" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="310.9011339538897,1039.8286339538897 310.9011339538897,1084.3 305.72249999999997,1084.3 305.72249999999997,1112.8" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="382.31106471724615,1000.3614352827537 382.31106471724615,1084.3 429.9475,1084.3 429.9475,1130.8 447.025,1130.8" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="132.37" y="372.9" width="33.16" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="148.95" y="386.4" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Yes</text>
+<rect x="407.00499999999994" y="372.9" width="27.44" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="420.72499999999997" y="386.4" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">No</text>
+<rect x="313.1524999999999" y="707.55" width="27.44" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="326.87249999999995" y="721.05" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">No</text>
+<rect x="523.5099999999999" y="889.175" width="33.16" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="540.0899999999999" y="902.675" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Yes</text>
+<rect x="292.00249999999994" y="1070.8" width="27.44" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="305.72249999999997" y="1084.3" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">No</text>
+<rect x="413.3675" y="1070.8" width="33.16" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="429.9475" y="1084.3" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Yes</text>
+<rect x="222.36249999999998" y="40" width="124.95" height="36" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="284.8375,115.99999999999999 405.78749999999997,236.95 284.8375,357.9 163.8875,236.95" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="39.999999999999986" y="535.7249999999999" width="217.9" height="36" rx="0" ry="0" fill="#e1f5fe" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="420.72499999999997,414.8999999999999 559.55,553.7249999999999 420.72499999999997,692.55 281.9,553.7249999999999" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="326.87249999999995,749.55 479.99749999999995,902.675 326.87249999999995,1055.8 173.74749999999995,902.675" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="447.025" y="1112.8" width="153.55" height="36" rx="0" ry="0" fill="#fff3e0" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<rect x="200.34749999999997" y="1112.8" width="210.75000000000003" height="36" rx="0" ry="0" fill="#e1f5fe" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<text x="284.8375" y="58" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">New Component</text>
+<text x="284.8375" y="236.95" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Is it core business logic?</text>
+<text x="148.95" y="553.7249999999999" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Use @service&lt;br/&gt;SINGLETON</text>
+<text x="420.72499999999997" y="553.7249999999999" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Does it hold per-request state?</text>
+<text x="326.87249999999995" y="902.675" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Does it need per-request resources?</text>
+<text x="523.8" y="1130.8" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Use Scope.REQUEST</text>
+<text x="305.72249999999997" y="1130.8" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Use SINGLETON&lt;br/&gt;default</text>
+</svg>
