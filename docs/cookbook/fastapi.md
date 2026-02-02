@@ -452,7 +452,8 @@ async def create_user(
 
 ## See Also
 
-- [Lifecycle Async Patterns](../guides/lifecycle-async-patterns.md) - Understanding async/sync relationship
-- [Testing Patterns](testing.md) - More testing recipes
-- [Configuration](configuration.md) - Environment-specific config
-- [examples/fastapi/](https://github.com/mikelane/dioxide/tree/main/examples/fastapi) - Complete working example
+- {doc}`/guides/lifecycle-async-patterns` - Understanding async lifecycle with sync resolution
+- {doc}`/guides/scoping` - Request scoping for per-request isolation
+- {doc}`testing` - More testing recipes
+- {doc}`configuration` - Environment-specific config with Pydantic Settings
+- {doc}`/user_guide/getting_started` - dioxide fundamentals

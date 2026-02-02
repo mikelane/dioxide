@@ -615,11 +615,11 @@ Now that you understand the basics, explore:
 .. seealso::
 
    - :doc:`hexagonal_architecture` - Complete guide to ports-and-adapters
-   - :doc:`profiles` - Profile system in depth
-   - :doc:`lifecycle` - Resource management and cleanup
+   - :doc:`services-vs-adapters` - Understanding when to use each decorator
    - :doc:`/guides/scoping` - Request scoping and bounded contexts
+   - :doc:`/guides/lifecycle-async-patterns` - Async resource management
    - :doc:`testing_with_fakes` - Testing philosophy and patterns
-   - :doc:`framework_integration` - FastAPI, Flask, Django integration
+   - :doc:`/cookbook/fastapi` - FastAPI integration example
 
 Getting Help
 ------------
@@ -657,4 +657,4 @@ Yes! Each ``Container()`` instance is independent with its own singletons and ac
 
 **Q: Is dioxide production-ready?**
 
-dioxide is in **beta** (v0.1.0-beta.2 as of Nov 2025). The API is now frozen. Use with caution in production until v1.0.0 stable.
+dioxide is **stable** (v2.0.1 as of Jan 2025). The API is frozen and production-ready.
