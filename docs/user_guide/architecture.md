@@ -49,71 +49,34 @@ ports from the outside. This creates natural seams for testing and implementatio
 
 ```{mermaid}
 flowchart TB
-    subgraph EXTERNAL["External Systems"]
-        direction TB
-        DB[(PostgreSQL)]
-        API[SendGrid API]
-        FS[File System]
-        CACHE[(Redis)]
-    end
-
-    subgraph ADAPTERS["Adapters Layer"]
-        direction TB
-        subgraph PROD_ADAPTERS["Production Adapters"]
-            PGA[PostgresUserRepository]
-            SGA[SendGridEmailAdapter]
-            FSA[S3StorageAdapter]
-            RCA[RedisCacheAdapter]
-        end
-        subgraph TEST_ADAPTERS["Test Adapters"]
-            FUR[FakeUserRepository]
-            FEA[FakeEmailAdapter]
-            FFS[FakeStorageAdapter]
-            FCA[FakeCacheAdapter]
-        end
-    end
-
-    subgraph PORTS["Ports Layer"]
-        direction TB
-        UP{{UserRepository}}
-        EP{{EmailPort}}
-        SP{{StoragePort}}
-        CP{{CachePort}}
-    end
-
-    subgraph CORE["Core Domain"]
-        direction TB
+    subgraph CORE["Core Domain (@service)"]
         US[UserService]
         NS[NotificationService]
         OS[OrderService]
     end
 
-    %% External to Production Adapters
-    DB --- PGA
-    API --- SGA
-    FS --- FSA
-    CACHE --- RCA
+    subgraph PORTS["Ports Layer (Protocol)"]
+        UP{{UserRepository}}
+        EP{{EmailPort}}
+        SP{{StoragePort}}
+    end
 
-    %% Production Adapters to Ports
-    PGA --> UP
-    SGA --> EP
-    FSA --> SP
-    RCA --> CP
+    subgraph ADAPTERS["Adapters Layer (@adapter.for_)"]
+        subgraph PROD["Production"]
+            PGA[PostgresUserRepository]
+            SGA[SendGridEmailAdapter]
+            FSA[S3StorageAdapter]
+        end
+        subgraph TEST["Test"]
+            FUR[FakeUserRepository]
+            FEA[FakeEmailAdapter]
+            FFS[FakeStorageAdapter]
+        end
+    end
 
-    %% Test Adapters to Ports
-    FUR --> UP
-    FEA --> EP
-    FFS --> SP
-    FCA --> CP
-
-    %% Core depends on Ports
-    US --> UP
-    US --> EP
-    NS --> EP
-    NS --> UP
-    OS --> UP
-    OS --> SP
-    OS --> CP
+    CORE -->|"depends on"| PORTS
+    PROD -->|"implements"| PORTS
+    TEST -->|"implements"| PORTS
 ```
 
 **Key Concepts:**
