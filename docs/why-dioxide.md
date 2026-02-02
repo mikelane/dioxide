@@ -424,7 +424,7 @@ dioxide uses Rust for performance. Installing from source requires a Rust toolch
 
 ## What dioxide is NOT
 
-These are not limitations to be fixed later. They are intentional design decisions.
+These are not limitations to be fixed later. They are intentional design decisions for the current major version and are unlikely to change.
 
 ### NOT a Framework
 
