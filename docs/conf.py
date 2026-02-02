@@ -250,32 +250,60 @@ togglebutton_hint_hide = 'Click to hide'
 mermaid_version = '11.4.1'
 # Configure mermaid to work with Furo dark theme (dioxide color scheme)
 # dioxide brand colors: orange #e67e22, dark background #1a1a1a
+# Improved styling for better arrow visibility and professional appearance
 mermaid_init_js = '''
 mermaid.initialize({
     startOnLoad: true,
-    theme: 'dark',
+    theme: 'base',
     themeVariables: {
-        primaryColor: '#d35400',
-        primaryTextColor: '#ffffff',
-        primaryBorderColor: '#e67e22',
-        lineColor: '#e67e22',
-        secondaryColor: '#2c3e50',
-        tertiaryColor: '#1a252f',
-        background: '#1a1a1a',
-        mainBkg: '#2c3e50',
-        nodeBorder: '#e67e22',
-        clusterBkg: '#2c3e50',
-        clusterBorder: '#e67e22',
-        titleColor: '#ffffff',
-        edgeLabelBackground: '#2c3e50',
-        actorBkg: '#d35400',
-        actorBorder: '#e67e22',
-        actorTextColor: '#ffffff',
-        signalColor: '#e67e22',
-        signalTextColor: '#ffffff',
-        noteBkgColor: '#2c3e50',
-        noteTextColor: '#ffffff',
-        noteBorderColor: '#e67e22'
+        // Background colors
+        background: '#1e1e2e',
+        mainBkg: '#313244',
+
+        // Primary colors (nodes)
+        primaryColor: '#fab387',
+        primaryTextColor: '#1e1e2e',
+        primaryBorderColor: '#f5c2e7',
+
+        // Secondary colors (clusters/subgraphs)
+        secondaryColor: '#45475a',
+        secondaryTextColor: '#cdd6f4',
+        secondaryBorderColor: '#6c7086',
+
+        // Tertiary colors
+        tertiaryColor: '#313244',
+        tertiaryTextColor: '#cdd6f4',
+        tertiaryBorderColor: '#585b70',
+
+        // Lines and arrows - HIGH CONTRAST for visibility
+        lineColor: '#89b4fa',
+        arrowheadColor: '#89b4fa',
+
+        // Text colors
+        textColor: '#cdd6f4',
+        titleColor: '#cdd6f4',
+
+        // Node styling
+        nodeBorder: '#f5c2e7',
+        nodeTextColor: '#1e1e2e',
+
+        // Cluster (subgraph) styling
+        clusterBkg: '#313244',
+        clusterBorder: '#6c7086',
+
+        // Edge labels
+        edgeLabelBackground: '#45475a',
+
+        // Flowchart specific
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+    },
+    flowchart: {
+        curve: 'basis',
+        padding: 20,
+        nodeSpacing: 50,
+        rankSpacing: 50,
+        htmlLabels: true,
+        useMaxWidth: true
     }
 });
 '''
