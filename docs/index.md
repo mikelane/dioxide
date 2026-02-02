@@ -322,6 +322,7 @@ examples/04-lifecycle-management
 :hidden:
 :caption: Guides
 
+guides/choosing-decorators
 guides/scoping
 guides/lifecycle-async-patterns
 guides/decorator-order
