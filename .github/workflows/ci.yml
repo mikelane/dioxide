@@ -104,7 +104,7 @@ jobs:
         run: uv run maturin develop
 
       - name: Run BDD Regression Suite
-        run: uv run behave --tags="not @wip" --format=progress
+        run: uv run behave --tags="not @wip" --format=plain
 
   bdd-feature-acceptance:
     name: BDD Feature Acceptance
@@ -180,7 +180,7 @@ jobs:
             echo "::error::Found @wip tag on tests for issue #${ISSUE_NUM}. Remove @wip before merging."
             echo ""
             echo "Tests still marked as @wip:"
-            uv run behave --dry-run --tags="${ISSUE_TAG}" --tags="@wip" --format=progress 2>&1 || true
+            uv run behave --dry-run --tags="${ISSUE_TAG}" --tags="@wip" --format=plain 2>&1 || true
             exit 1
           fi
 
@@ -196,7 +196,7 @@ jobs:
           # Check if any tests exist for this issue
           if uv run behave --dry-run --tags="${ISSUE_TAG}" --format=json 2>/dev/null | grep -q '"status": "untested"'; then
             echo "Running acceptance tests for issue #${ISSUE_NUM}"
-            uv run behave --tags="${ISSUE_TAG}" --format=progress
+            uv run behave --tags="${ISSUE_TAG}" --format=plain
           else
             echo "No tests tagged with $ISSUE_TAG - skipping (this is OK for non-feature work)"
           fi
@@ -242,7 +242,7 @@ jobs:
       - name: Run BDD Pending Features
         run: |
           echo "Running @wip tests (informational - failures expected)"
-          uv run behave --tags="@wip" --format=progress || true
+          uv run behave --tags="@wip" --format=plain || true
           echo ""
           echo "::notice::Pending features shown above are work-in-progress and expected to fail"
 

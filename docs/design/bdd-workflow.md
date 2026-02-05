@@ -132,7 +132,7 @@ uv run behave --tags="@wip"
 uv run behave --tags="@issue-123" --tags="@wip"
 
 # Dry run to see what would execute
-uv run behave --dry-run --tags="@issue-123" --format=progress
+uv run behave --dry-run --tags="@issue-123" --format=plain
 
 # Verbose output with scenario names
 uv run behave --tags="not @wip" --format=pretty
