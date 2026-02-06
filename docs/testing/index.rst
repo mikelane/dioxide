@@ -73,6 +73,7 @@ Documentation Sections
    :maxdepth: 2
 
    philosophy
+   mock-vs-fake
    patterns
    fixtures
    integration
