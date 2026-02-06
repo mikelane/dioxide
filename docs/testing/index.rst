@@ -76,6 +76,7 @@ Documentation Sections
    patterns
    fixtures
    integration
+   faq
    troubleshooting
 
 API Reference
