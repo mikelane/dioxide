@@ -51,4 +51,9 @@ def after_all(context: Context) -> None:
 
     Final cleanup and reporting.
     """
-    pass
+    try:
+        from features.steps.scan_performance_steps import _cleanup_temp_dir
+
+        _cleanup_temp_dir()
+    except ImportError:
+        pass

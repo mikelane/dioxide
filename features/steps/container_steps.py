@@ -98,9 +98,9 @@ def step_raises_dependency_not_found(context: Context) -> None:
     from dioxide.exceptions import ServiceNotFoundError
 
     assert context.exception is not None, 'No exception was raised'
-    assert isinstance(
-        context.exception, ServiceNotFoundError
-    ), f'Expected ServiceNotFoundError, got {type(context.exception).__name__}: {context.exception}'
+    assert isinstance(context.exception, ServiceNotFoundError), (
+        f'Expected ServiceNotFoundError, got {type(context.exception).__name__}: {context.exception}'
+    )
 
 
 @then('the error message indicates "{dependency_name}" is not registered')
