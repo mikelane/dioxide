@@ -1289,6 +1289,31 @@ class Container:
         """
         return len(self._rust_core)
 
+    def __repr__(self) -> str:
+        """Return an informative string representation for debugging.
+
+        Shows the active profile, port count, and service count so agents
+        and developers can inspect container state in a REPL or debugger.
+
+        Returns:
+            A string like ``Container(profile=Profile('production'), ports=5, services=3)``
+            or ``Container(profile=None, ports=0, services=0)`` when no profile is set.
+
+        Example:
+            >>> from dioxide import Container, Profile
+            >>> container = Container(profile=Profile.PRODUCTION)
+            >>> repr(container)
+            "Container(profile=Profile('production'), ports=..., services=...)"
+        """
+        profile = self.active_profile
+        profile_str = repr(profile) if profile is not None else 'None'
+
+        registered_types = self.list_registered()
+        port_count = sum(1 for t in registered_types if self._is_port(t))
+        service_count = len(registered_types) - port_count
+
+        return f'Container(profile={profile_str}, ports={port_count}, services={service_count})'
+
     # =========================================================================
     # Introspection API (for debugging)
     # =========================================================================
@@ -2803,6 +2828,26 @@ class ScopedContainer:
     def parent(self) -> Container:
         """Get the parent container."""
         return self._parent
+
+    def __repr__(self) -> str:
+        """Return an informative string representation for debugging.
+
+        Shows the active profile from the parent container and the parent type
+        so agents and developers can inspect scoped container state.
+
+        Returns:
+            A string like ``ScopedContainer(profile=Profile('test'), parent=Container)``.
+
+        Example:
+            >>> async with container.create_scope() as scope:
+            ...     repr(scope)
+            "ScopedContainer(profile=Profile('test'), parent=Container)"
+        """
+        profile = self._parent.active_profile
+        profile_str = repr(profile) if profile is not None else 'None'
+        parent_type = type(self._parent).__name__
+
+        return f'ScopedContainer(profile={profile_str}, parent={parent_type})'
 
     def resolve(self, component_type: type[T]) -> T:
         """Resolve a component instance within this scope.
