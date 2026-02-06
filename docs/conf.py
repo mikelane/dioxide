@@ -14,10 +14,8 @@ if TYPE_CHECKING:
 sys.path.insert(0, str(Path('..').resolve()))
 
 # Import version from package
-# Version is synchronized across:
-# - python/dioxide/__init__.py (__version__ variable)
-# - Cargo.toml (package.version field)
-# - ReadTheDocs (builds for each git tag matching v*.*.*)
+# Version source of truth: Cargo.toml (package.version field)
+# dioxide.__version__ reads this via importlib.metadata at runtime
 import dioxide
 
 _version = dioxide.__version__

@@ -50,6 +50,8 @@ Testing (fresh container per test - recommended):
 For more information, see the README and documentation.
 """
 
+from importlib.metadata import version as _metadata_version
+
 from ._registry import (
     _clear_registry,
     _get_registered_components,
@@ -76,7 +78,7 @@ from .scope import Scope
 from .services import service
 from .testing import fresh_container
 
-__version__ = '1.0.1'
+__version__ = _metadata_version('dioxide')
 __all__ = [
     'AdapterNotFoundError',
     'CaptiveDependencyError',
