@@ -93,22 +93,65 @@ class DescribeProfile:
             def accepts_profile(p: Profile) -> str:
                 return str(p)
 
-            # These should work at runtime (type checker validates statically)
-            assert accepts_profile(Profile.PRODUCTION) == 'production'
+            assert accepts_profile(Profile.PRODUCTION) == 'PRODUCTION'
             assert accepts_profile(Profile('custom')) == 'custom'
 
     class DescribeRepr:
         """String representation."""
 
-        def it_has_informative_repr(self) -> None:
-            """repr shows it's a Profile."""
-            assert repr(Profile.PRODUCTION) == "Profile('production')"
+        def it_shows_constant_name_for_builtin_profiles(self) -> None:
+            assert repr(Profile.PRODUCTION) == 'Profile.PRODUCTION'
+            assert repr(Profile.ALL) == 'Profile.ALL'
+
+        def it_shows_constructor_form_for_custom_profiles(self) -> None:
             assert repr(Profile('custom')) == "Profile('custom')"
 
-        def it_has_value_as_str(self) -> None:
-            """str returns the profile value."""
-            assert str(Profile.PRODUCTION) == 'production'
+        def it_returns_display_name_for_builtin_str(self) -> None:
+            assert str(Profile.PRODUCTION) == 'PRODUCTION'
+            assert str(Profile.ALL) == 'ALL'
+
+        def it_returns_value_for_custom_str(self) -> None:
             assert str(Profile('custom')) == 'custom'
+
+    class DescribeStringRepresentation:
+        """String representation hides implementation details (#387)."""
+
+        def it_returns_all_for_str_of_profile_all(self) -> None:
+            assert str(Profile.ALL) == 'ALL'
+
+        def it_hides_wildcard_in_f_string_formatting(self) -> None:
+            assert f'Profile is {Profile.ALL}' == 'Profile is ALL'
+
+        def it_shows_profile_all_in_repr(self) -> None:
+            assert repr(Profile.ALL) == 'Profile.ALL'
+
+        def it_shows_display_names_for_all_builtin_profiles_in_str(self) -> None:
+            assert str(Profile.PRODUCTION) == 'PRODUCTION'
+            assert str(Profile.TEST) == 'TEST'
+            assert str(Profile.DEVELOPMENT) == 'DEVELOPMENT'
+            assert str(Profile.STAGING) == 'STAGING'
+            assert str(Profile.CI) == 'CI'
+            assert str(Profile.ALL) == 'ALL'
+
+        def it_shows_constant_names_for_all_builtin_profiles_in_repr(self) -> None:
+            assert repr(Profile.PRODUCTION) == 'Profile.PRODUCTION'
+            assert repr(Profile.TEST) == 'Profile.TEST'
+            assert repr(Profile.DEVELOPMENT) == 'Profile.DEVELOPMENT'
+            assert repr(Profile.STAGING) == 'Profile.STAGING'
+            assert repr(Profile.CI) == 'Profile.CI'
+            assert repr(Profile.ALL) == 'Profile.ALL'
+
+        def it_preserves_custom_profile_str_value(self) -> None:
+            assert str(Profile('my-env')) == 'my-env'
+
+        def it_preserves_custom_profile_repr_value(self) -> None:
+            assert repr(Profile('my-env')) == "Profile('my-env')"
+
+        def it_still_matches_wildcard_internally(self) -> None:
+            assert Profile.ALL == '*'
+
+        def it_uses_display_name_in_format_spec(self) -> None:
+            assert f'{Profile.ALL:>10}' == '       ALL'
 
     class DescribeEquality:
         """Equality comparisons."""
