@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import (
-    dataclass,
-    field,
-)
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -17,11 +14,9 @@ class ScanStats:
         adapters_registered: Number of @adapter components registered.
         modules_imported: Number of modules imported during package scanning.
         duration_ms: Wall-clock time of the scan in milliseconds.
-        warnings: Any warnings generated during scanning.
     """
 
     services_registered: int
     adapters_registered: int
     modules_imported: int
     duration_ms: float
-    warnings: tuple[str, ...] = field(default_factory=tuple)

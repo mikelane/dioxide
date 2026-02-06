@@ -1,5 +1,7 @@
 """Tests for scan statistics reporting (#384)."""
 
+import pytest
+
 from dioxide import (
     Container,
     Profile,
@@ -58,27 +60,14 @@ class DescribeScanStats:
             stats=True,
         )
         assert result is not None
-        assert result.modules_imported >= 1
-
-    def it_has_empty_warnings_when_scan_succeeds(self) -> None:
-        container = Container()
-        result = container.scan(
-            package='tests.fixtures.scan_stats_pkg',
-            profile=Profile.PRODUCTION,
-            stats=True,
-        )
-        assert result is not None
-        assert result.warnings == ()
+        assert result.modules_imported == 3
 
     def it_is_frozen_dataclass(self) -> None:
         container = Container()
         result = container.scan(stats=True)
         assert result is not None
-        try:
+        with pytest.raises(AttributeError):
             result.services_registered = 99  # type: ignore[misc]
-            raise AssertionError('Expected FrozenInstanceError')
-        except AttributeError:
-            pass
 
 
 class DescribeScanStatsBackwardCompatibility:
