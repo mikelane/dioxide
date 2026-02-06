@@ -1,0 +1,443 @@
+# dioxide
+
+> Fast, Rust-backed dependency injection for Python. Declarative hexagonal architecture with `@adapter.for_()`, `@service`, and `@lifecycle` decorators, profile-based environment switching, and type-safe resolution.
+
+- Version: stable (2.x)
+- Python: 3.11, 3.12, 3.13, 3.14
+- License: MIT
+
+## Installation
+
+```
+pip install dioxide
+```
+
+## Core API
+
+Three decorators and a container:
+
+### @service
+
+Marks core business logic. Singleton by default, available in all profiles.
+
+```python
+from dioxide import service
+
+@service
+class UserService:
+    def __init__(self, email: EmailPort, users: UserRepository):
+        self.email = email
+        self.users = users
+```
+
+With factory scope (new instance per resolution):
+
+```python
+from dioxide import service, Scope
+
+@service(scope=Scope.FACTORY)
+class TransactionContext:
+    pass
+```
+
+Scope options: `Scope.SINGLETON` (default), `Scope.FACTORY`, `Scope.REQUEST`.
+
+### @adapter.for_()
+
+Marks boundary implementations for ports (Protocol/ABC). Profile-specific.
+
+```python
+from dioxide import adapter, Profile
+
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    async def send(self, to: str, subject: str, body: str) -> None: ...
+
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    def __init__(self):
+        self.sent_emails = []
+
+    async def send(self, to: str, subject: str, body: str) -> None:
+        self.sent_emails.append({'to': to, 'subject': subject, 'body': body})
+```
+
+Parameters:
+- `port`: The Protocol/ABC this adapter implements (required)
+- `profile`: `Profile` value or list of profiles (default: `Profile.ALL`)
+- `scope`: `Scope.SINGLETON` (default) or `Scope.FACTORY`
+- `multi`: `True` for multi-binding (plugin patterns), default `False`
+- `priority`: Ordering for multi-bindings (lower = first), default `0`
+
+Multi-binding example:
+
+```python
+@adapter.for_(PluginPort, multi=True, priority=10)
+class ValidationPlugin:
+    def process(self, data: str) -> str: ...
+
+@adapter.for_(PluginPort, multi=True, priority=20)
+class TransformPlugin:
+    def process(self, data: str) -> str: ...
+
+@service
+class Processor:
+    def __init__(self, plugins: list[PluginPort]):
+        self.plugins = plugins  # ordered by priority
+```
+
+### @lifecycle
+
+Opt-in async init/dispose for components needing setup/teardown. Requires `async def initialize(self) -> None` and `async def dispose(self) -> None`.
+
+```python
+from dioxide import adapter, lifecycle, Profile
+
+@adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
+@lifecycle
+class PostgresAdapter:
+    async def initialize(self) -> None:
+        self.engine = create_async_engine(...)
+
+    async def dispose(self) -> None:
+        if self.engine:
+            await self.engine.dispose()
+```
+
+Initialization follows dependency order. Disposal is reverse order.
+
+### Container
+
+```python
+from dioxide import Container, Profile
+
+container = Container()
+container.scan(profile=Profile.PRODUCTION)
+
+# Resolve by type
+service = container.resolve(UserService)
+# Or bracket syntax
+service = container[UserService]
+```
+
+Key methods:
+- `container.scan(profile=..., package=...)` - discover decorated components
+- `container.resolve(Type)` or `container[Type]` - get instance
+- `container.register_instance(Type, instance)` - manual registration
+- `container.is_registered(Type)` - check registration
+- `container.create_scope()` - create request-scoped `ScopedContainer`
+- `await container.start()` - initialize @lifecycle components
+- `await container.stop()` - dispose @lifecycle components
+- `async with container:` - context manager for lifecycle
+
+Global container (simple scripts):
+
+```python
+from dioxide import container, Profile
+
+container.scan(profile=Profile.PRODUCTION)
+service = container.resolve(UserService)
+```
+
+To reset the global container (useful in tests): `reset_global_container()`.
+
+## Decision Tree
+
+Which decorator should I use?
+
+1. Does it talk to external systems (DB, API, file, network)? -> `@adapter.for_()`
+2. Should different profiles use different implementations? -> `@adapter.for_()`
+3. Is it pure business logic, same across all environments? -> `@service`
+4. Does it need async setup/teardown? -> add `@lifecycle`
+
+## Profile System
+
+Profile is a `str` subclass (not an enum). Built-in constants:
+
+- `Profile.PRODUCTION` - production environment
+- `Profile.TEST` - test environment
+- `Profile.DEVELOPMENT` - development environment
+- `Profile.STAGING` - staging environment
+- `Profile.CI` - continuous integration
+- `Profile.ALL` - matches all profiles (value: `'*'`)
+
+Custom profiles are first-class:
+
+```python
+INTEGRATION = Profile('integration')
+LOAD_TEST = Profile('load-test')
+
+@adapter.for_(Port, profile=INTEGRATION)
+class IntegrationAdapter: ...
+
+@adapter.for_(Port, profile=[LOAD_TEST, Profile.STAGING])
+class SharedAdapter: ...
+```
+
+Profile names are case-insensitive (normalized to lowercase).
+
+## Scope
+
+`Scope` is a `str` enum with three values:
+
+- `Scope.SINGLETON` - one shared instance per container (default)
+- `Scope.FACTORY` - new instance on every resolve()
+- `Scope.REQUEST` - one instance per request scope (via `container.create_scope()`)
+
+Captive dependency rule: SINGLETON cannot depend on REQUEST (raises `CaptiveDependencyError` at scan time).
+
+## Testing
+
+Use `fresh_container` for isolated tests with fakes (not mocks):
+
+```python
+from dioxide.testing import fresh_container
+from dioxide import Profile
+
+async with fresh_container(profile=Profile.TEST) as container:
+    service = container.resolve(UserService)
+    email = container.resolve(EmailPort)  # returns FakeEmailAdapter
+    await service.register('alice@example.com', 'Alice')
+    assert len(email.sent_emails) == 1
+```
+
+Pytest fixtures (add `pytest_plugins = ['dioxide.testing']` to conftest.py):
+
+- `dioxide_container` - fresh Container per test (function-scoped)
+- `fresh_container_fixture` - alias for dioxide_container
+- `dioxide_container_session` - shared Container (session-scoped)
+
+```python
+async def test_registration(dioxide_container):
+    dioxide_container.scan(profile=Profile.TEST)
+    service = dioxide_container.resolve(UserService)
+    # test with isolated container
+```
+
+Testing pattern: define fake adapters with `profile=Profile.TEST`, use `Profile.PRODUCTION` for real infrastructure. Fakes are simple in-memory implementations, not mocks.
+
+## Framework Integrations
+
+### FastAPI
+
+```python
+from dioxide.fastapi import DioxideMiddleware, Inject
+
+app = FastAPI()
+app.add_middleware(DioxideMiddleware, profile=Profile.PRODUCTION)
+
+@app.get('/users')
+async def list_users(service: UserService = Inject(UserService)):
+    return await service.list_all()
+```
+
+- `DioxideMiddleware` - ASGI middleware, handles lifecycle and per-request scoping
+- `Inject(Type)` - wraps FastAPI `Depends()` to resolve from dioxide
+
+### Flask
+
+```python
+from dioxide.flask import configure_dioxide, inject
+
+app = Flask(__name__)
+configure_dioxide(app, profile=Profile.PRODUCTION)
+
+@app.route('/users')
+def list_users():
+    service = inject(UserService)
+    return service.list_all()
+```
+
+- `configure_dioxide(app, profile=...)` - setup function
+- `inject(Type)` - resolve from current request scope
+
+### Celery
+
+```python
+from dioxide.celery import configure_dioxide, scoped_task
+
+app = Celery('tasks')
+configure_dioxide(app, profile=Profile.PRODUCTION)
+
+@scoped_task(app)
+def process_order(scope, order_id: str) -> dict:
+    service = scope.resolve(OrderService)
+    return service.process(order_id)
+```
+
+- `configure_dioxide(app, profile=...)` - setup function
+- `scoped_task(app)` - decorator, injects scope as first argument
+
+### Click
+
+```python
+from dioxide.click import configure_dioxide, with_scope
+
+container = configure_dioxide(profile=Profile.PRODUCTION)
+
+@click.command()
+@with_scope(container)
+def my_command(scope):
+    service = scope.resolve(MyService)
+    click.echo(service.do_something())
+```
+
+- `configure_dioxide(profile=...)` - returns configured Container
+- `with_scope(container)` - decorator, injects scope as first argument
+
+## Common Errors
+
+### AdapterNotFoundError
+
+No adapter registered for a port in the active profile.
+
+Fix: Register an adapter for the active profile, or use `Profile.ALL` for universal adapters.
+
+```python
+# Error: scanning TEST but only PRODUCTION adapter exists
+container.scan(profile=Profile.TEST)
+container.resolve(EmailPort)  # AdapterNotFoundError
+
+# Fix: add TEST adapter
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter: ...
+```
+
+### ServiceNotFoundError
+
+Service not registered or has unresolvable dependencies.
+
+Fix: Add `@service` decorator, or register missing dependency adapters.
+
+```python
+# Error: missing @service decorator
+class UserService:
+    pass
+container.resolve(UserService)  # ServiceNotFoundError
+
+# Fix
+@service
+class UserService:
+    pass
+```
+
+### CircularDependencyError
+
+Circular dependencies among `@lifecycle` components (detected at `container.start()`).
+
+Fix: Break the cycle by depending on a port instead of a concrete class, or remove `@lifecycle` from one component.
+
+### CaptiveDependencyError
+
+SINGLETON depends on REQUEST-scoped component (detected at `container.scan()`).
+
+Fix: Change parent to REQUEST scope, or change child to SINGLETON.
+
+### ScopeError
+
+REQUEST-scoped component resolved outside of a scope context.
+
+Fix: Use `async with container.create_scope() as scope:` then `scope.resolve(Type)`.
+
+## Not in Scope
+
+dioxide deliberately excludes these features. Use the suggested alternatives instead.
+
+- **Configuration management** - Use Pydantic Settings or python-decouple. Wrap config classes with `@service` to inject them.
+- **Property/method injection** - Constructor injection only. All dependencies go in `__init__`.
+- **Circular dependency resolution** - No `Provider[T]` or lazy injection. Circular deps are design flaws; extract shared logic into a new service.
+- **XML/YAML configuration** - Python is configuration. Use decorators and type hints.
+- **AOP/interceptors** - No aspect-oriented programming or middleware chains on individual components.
+
+## Anti-patterns
+
+Common mistakes agents make when generating dioxide code:
+
+- **Don't use `unittest.mock`** - Define fake adapters with `profile=Profile.TEST` instead. Fakes are real implementations with in-memory storage.
+- **Don't resolve concrete classes when a port exists** - Resolve the port (Protocol/ABC), not the adapter class. The container returns the active adapter for the current profile.
+- **Don't create singletons manually** - `Scope.SINGLETON` is the default. No need for module-level globals or `__new__` overrides.
+- **Don't import adapters in business logic** - Services depend on ports (abstractions). Import the port, not the adapter.
+- **Don't use `container.resolve()` inside `__init__`** - Declare dependencies as constructor parameters. The container injects them automatically.
+
+## Complete Example
+
+```python
+from typing import Protocol
+from dioxide import Container, Profile, adapter, service, lifecycle
+
+class EmailPort(Protocol):
+    async def send(self, to: str, subject: str, body: str) -> None: ...
+
+class UserRepository(Protocol):
+    async def save(self, user: dict) -> None: ...
+    async def find_by_email(self, email: str) -> dict | None: ...
+
+@adapter.for_(EmailPort, profile=Profile.PRODUCTION)
+class SendGridAdapter:
+    async def send(self, to: str, subject: str, body: str) -> None:
+        ...  # real implementation
+
+@adapter.for_(EmailPort, profile=Profile.TEST)
+class FakeEmailAdapter:
+    def __init__(self):
+        self.sent_emails = []
+    async def send(self, to: str, subject: str, body: str) -> None:
+        self.sent_emails.append({'to': to, 'subject': subject, 'body': body})
+
+@adapter.for_(UserRepository, profile=Profile.PRODUCTION)
+@lifecycle
+class PostgresUserRepo:
+    async def initialize(self) -> None:
+        self.engine = create_async_engine(...)
+    async def dispose(self) -> None:
+        await self.engine.dispose()
+    async def save(self, user: dict) -> None: ...
+    async def find_by_email(self, email: str) -> dict | None: ...
+
+@adapter.for_(UserRepository, profile=Profile.TEST)
+class InMemoryUserRepo:
+    def __init__(self):
+        self.users = {}
+    async def save(self, user: dict) -> None:
+        self.users[user['email']] = user
+    async def find_by_email(self, email: str) -> dict | None:
+        return self.users.get(email)
+
+@service
+class UserService:
+    def __init__(self, email: EmailPort, users: UserRepository):
+        self.email = email
+        self.users = users
+
+    async def register(self, email_addr: str, name: str) -> dict:
+        existing = await self.users.find_by_email(email_addr)
+        if existing:
+            raise ValueError(f'{email_addr} already exists')
+        user = {'email': email_addr, 'name': name}
+        await self.users.save(user)
+        await self.email.send(email_addr, 'Welcome!', f'Hello {name}!')
+        return user
+
+# Production
+async with Container() as c:
+    c.scan(profile=Profile.PRODUCTION)
+    svc = c.resolve(UserService)
+
+# Testing
+from dioxide.testing import fresh_container
+async with fresh_container(profile=Profile.TEST) as c:
+    svc = c.resolve(UserService)
+    await svc.register('alice@example.com', 'Alice')
+    email = c.resolve(EmailPort)
+    assert len(email.sent_emails) == 1
+```
+
+## Links
+
+- [PyPI](https://pypi.org/project/dioxide/)
+- [GitHub](https://github.com/mikelane/dioxide)
+- [Documentation](https://dioxide.readthedocs.io)
+- [API Reference](https://dioxide.readthedocs.io/en/latest/api/dioxide/)
+- [Design Principles](https://github.com/mikelane/dioxide/blob/main/docs/design-principles.md)
+- [Testing Guide](https://github.com/mikelane/dioxide/blob/main/docs/TESTING_GUIDE.md)
+- [README](https://github.com/mikelane/dioxide/blob/main/README.md)
