@@ -16,6 +16,7 @@ from dioxide import (
     Container,
     Profile,
 )
+from dioxide.exceptions import SideEffectWarning
 
 
 class DescribeScanStrictParameter:
@@ -140,6 +141,17 @@ class DescribeDetectModuleLevelCalls:
         findings = detect_side_effects(source, 'test_module.py')
         assert len(findings) == 0
 
+    def it_detects_annotated_assignment_with_side_effect(self) -> None:
+        from dioxide._strict import detect_side_effects
+
+        source = textwrap.dedent("""\
+            import psycopg2
+            connection: psycopg2.Connection = psycopg2.connect("postgresql://localhost/mydb")
+        """)
+        findings = detect_side_effects(source, 'test_module.py')
+        assert len(findings) == 1
+        assert 'psycopg2.connect' in findings[0].description
+
     def it_detects_open_at_module_level(self) -> None:
         from dioxide._strict import detect_side_effects
 
@@ -172,6 +184,49 @@ class DescribeFindingDetails:
 
 class DescribeScanStrictWithPackage:
     """scan() with strict=True emits warnings for side-effect modules."""
+
+    def it_emits_side_effect_warnings_with_custom_category(self, tmp_path: Path) -> None:
+        pkg_dir = tmp_path / 'warning_category_pkg'
+        pkg_dir.mkdir()
+        (pkg_dir / '__init__.py').write_text('')
+        (pkg_dir / 'bad_module.py').write_text("print('side effect')\n")
+
+        sys.path.insert(0, str(tmp_path))
+        try:
+            container = Container()
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
+                container.scan(package='warning_category_pkg', profile=Profile.TEST, strict=True)
+
+            side_effect_warnings = [w for w in caught if issubclass(w.category, SideEffectWarning)]
+            assert len(side_effect_warnings) >= 1
+        finally:
+            sys.path.remove(str(tmp_path))
+            for key in list(sys.modules.keys()):
+                if key.startswith('warning_category_pkg'):
+                    del sys.modules[key]
+
+    def it_allows_filtering_side_effect_warnings(self, tmp_path: Path) -> None:
+        pkg_dir = tmp_path / 'filter_warning_pkg'
+        pkg_dir.mkdir()
+        (pkg_dir / '__init__.py').write_text('')
+        (pkg_dir / 'bad_module.py').write_text("print('side effect')\n")
+
+        sys.path.insert(0, str(tmp_path))
+        try:
+            container = Container()
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
+                warnings.filterwarnings('ignore', category=SideEffectWarning)
+                container.scan(package='filter_warning_pkg', profile=Profile.TEST, strict=True)
+
+            side_effect_warnings = [w for w in caught if issubclass(w.category, SideEffectWarning)]
+            assert len(side_effect_warnings) == 0
+        finally:
+            sys.path.remove(str(tmp_path))
+            for key in list(sys.modules.keys()):
+                if key.startswith('filter_warning_pkg'):
+                    del sys.modules[key]
 
     def it_emits_warnings_for_side_effect_modules(self, tmp_path: Path) -> None:
         pkg_dir = tmp_path / 'strict_test_pkg'
@@ -225,6 +280,28 @@ class DescribeScanStrictWithPackage:
             sys.path.remove(str(tmp_path))
             for key in list(sys.modules.keys()):
                 if key.startswith('clean_test_pkg'):
+                    del sys.modules[key]
+
+    def it_checks_init_py_for_side_effects_before_importing(self, tmp_path: Path) -> None:
+        pkg_dir = tmp_path / 'init_side_effect_pkg'
+        pkg_dir.mkdir()
+        (pkg_dir / '__init__.py').write_text("print('init side effect')\n")
+        (pkg_dir / 'clean_module.py').write_text('MY_CONSTANT = 42\n')
+
+        sys.path.insert(0, str(tmp_path))
+        try:
+            container = Container()
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
+                container.scan(package='init_side_effect_pkg', profile=Profile.TEST, strict=True)
+
+            side_effect_warnings = [w for w in caught if issubclass(w.category, SideEffectWarning)]
+            assert len(side_effect_warnings) >= 1
+            assert 'init_side_effect_pkg' in str(side_effect_warnings[0].message)
+        finally:
+            sys.path.remove(str(tmp_path))
+            for key in list(sys.modules.keys()):
+                if key.startswith('init_side_effect_pkg'):
                     del sys.modules[key]
 
     def it_does_not_emit_warnings_when_strict_is_false(self, tmp_path: Path) -> None:

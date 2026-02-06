@@ -124,8 +124,9 @@ def detect_side_effects(source: str, filename: str) -> list[SideEffectFinding]:
         if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
             # Bare function call: print("hello")
             calls_to_check = _find_calls_in_node(node.value)
-        elif isinstance(node, ast.Assign):
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
             # Assignment from function call: conn = db.connect(...)
+            # Also handles annotated: conn: Connection = db.connect(...)
             calls_to_check = _find_calls_in_node(node.value)
 
         for call in calls_to_check:

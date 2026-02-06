@@ -2029,6 +2029,7 @@ class Container:
 
         Args:
             package_name: The fully-qualified package name to import (e.g. "app.services").
+            strict: If True, run AST-based side-effect detection before importing each module.
 
         Raises:
             ImportError: If the package name is invalid or cannot be imported.
@@ -2052,6 +2053,10 @@ class Container:
                     f'Allowed prefixes: {self._allowed_packages}'
                 )
                 raise ValueError(msg)
+
+        # Strict mode: check package __init__.py before importing it
+        if strict:
+            self._check_module_side_effects(package_name)
 
         try:
             # Import the package itself
@@ -2113,10 +2118,14 @@ class Container:
 
         findings = detect_side_effects(source, spec.origin)
         for finding in findings:
+            from dioxide.exceptions import SideEffectWarning
+
             warnings.warn(
                 f'Potential side effect in {module_name} '
                 f'(line {finding.line}): {finding.description}\n'
                 f'  Suggestion: {finding.suggestion}',
+                category=SideEffectWarning,
+                # stacklevel=4: warn -> _check_module_side_effects -> _import_package -> scan
                 stacklevel=4,
             )
 
@@ -2149,6 +2158,11 @@ class Container:
                 matching profile in their __dioxide_profiles__ attribute. Components/
                 adapters decorated with Profile.ALL ("*") are registered in all profiles.
                 Profile names are normalized to lowercase for matching.
+            strict: If True, analyze module source code for potential side effects
+                using AST analysis before importing. Emits SideEffectWarning for
+                module-level function calls that may cause side effects (database
+                connections, file I/O, network requests). Safe patterns like
+                logging.getLogger() are allowlisted. Defaults to False.
 
         Registration behavior:
             - SINGLETON scope (default): Creates singleton factory with caching
