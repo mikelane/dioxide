@@ -404,6 +404,7 @@ guides/choosing-decorators
 guides/scoping
 guides/lifecycle-async-patterns
 guides/decorator-order
+guides/scan-performance
 ```
 
 ```{toctree}
