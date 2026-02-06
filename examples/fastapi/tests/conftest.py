@@ -72,12 +72,12 @@ from fastapi.testclient import TestClient
 # Set TEST profile BEFORE importing app
 os.environ["PROFILE"] = "test"
 
-from app.domain.ports import DatabasePort, EmailPort  # noqa: E402
-from app.main import app  # noqa: E402
-
 # Import the global container - DioxideMiddleware uses this when no explicit
 # container is provided. The middleware scans and manages this container.
 from dioxide import container  # noqa: E402
+
+from app.domain.ports import DatabasePort, EmailPort  # noqa: E402
+from app.main import app  # noqa: E402
 
 if TYPE_CHECKING:
     from app.adapters.fakes import FakeDatabaseAdapter, FakeEmailAdapter
@@ -213,14 +213,17 @@ def clear_fakes(client) -> None:
     db_adapter = container.resolve(DatabasePort)
     email_adapter = container.resolve(EmailPort)
 
-    # Clear database fake
-    if hasattr(db_adapter, "users"):
+    # Reset fakes to clean state (clears data AND error injection)
+    if hasattr(db_adapter, "reset"):
+        db_adapter.reset()
+    elif hasattr(db_adapter, "users"):
         db_adapter.users.clear()
         if hasattr(db_adapter, "_next_id"):
             db_adapter._next_id = 1
 
-    # Clear email fake
-    if hasattr(email_adapter, "sent_emails"):
+    if hasattr(email_adapter, "reset"):
+        email_adapter.reset()
+    elif hasattr(email_adapter, "sent_emails"):
         email_adapter.sent_emails.clear()
 
 
