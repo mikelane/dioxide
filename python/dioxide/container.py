@@ -421,6 +421,7 @@ import importlib
 import inspect
 import logging
 import pkgutil
+import time
 from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
@@ -436,6 +437,7 @@ from dioxide.exceptions import (
     ScopeError,
     ServiceNotFoundError,
 )
+from dioxide.scan_stats import ScanStats
 from dioxide.scope import Scope
 
 logger = logging.getLogger(__name__)
@@ -1960,7 +1962,7 @@ class Container:
         lines.append('}')
         return '\n'.join(lines)
 
-    def _import_package(self, package_name: str) -> None:
+    def _import_package(self, package_name: str) -> int:
         """Import all modules in a package to trigger decorator execution.
 
         Recursively walks through the package and all sub-packages, importing
@@ -2002,9 +2004,10 @@ class Container:
         # If the package doesn't have a __path__, it's a module not a package
         # Just importing it above was sufficient
         if not hasattr(package, '__path__'):
-            return
+            return 1
 
         # Walk all modules in the package (including sub-packages)
+        count = 1  # Count the package itself
         for _importer, modname, _ispkg in pkgutil.walk_packages(
             path=package.__path__,
             prefix=package.__name__ + '.',
@@ -2012,13 +2015,21 @@ class Container:
         ):
             try:
                 importlib.import_module(modname)
+                count += 1
             except Exception as e:
                 # Log import failures for debugging
                 logging.warning(f'Failed to import module {modname}: {e}')
                 # Skip modules that fail to import (missing dependencies, etc.)
                 pass
 
-    def scan(self, package: str | None = None, profile: str | Profile | None = None) -> None:
+        return count
+
+    def scan(
+        self,
+        package: str | None = None,
+        profile: str | Profile | None = None,
+        stats: bool = False,
+    ) -> ScanStats | None:
         """Discover and register all @component and @adapter decorated classes.
 
         Scans the global registries for all classes decorated with @component
@@ -2097,9 +2108,14 @@ class Container:
         from dioxide.adapter import _adapter_registry
         from dioxide.scope import Scope
 
+        start_time = time.perf_counter() if stats else None
+        adapters_registered_count = 0
+        services_registered_count = 0
+        modules_imported_count = 0
+
         # Import package modules if package parameter provided
         if package is not None:
-            self._import_package(package)
+            modules_imported_count = self._import_package(package)
 
         # Normalize profile to lowercase if provided
         # Profile is a str subclass, so we can call .lower() directly on any str
@@ -2197,6 +2213,7 @@ class Container:
                     self.register_singleton_factory(port_class, factory)
                 else:
                     self.register_transient_factory(port_class, factory)
+                adapters_registered_count += 1
             except KeyError:
                 # Already registered manually - skip it (manual takes precedence)
                 pass
@@ -2244,6 +2261,7 @@ class Container:
                 else:
                     # Register as transient factory (Rust creates new instance each time)
                     self.register_transient_factory(component_class, factory)
+                services_registered_count += 1
             except KeyError:
                 # Already registered manually - skip it (manual takes precedence)
                 pass
@@ -2277,6 +2295,17 @@ class Container:
                 "Profile '%s' matched zero components. Verify @adapter.for_() decorators are correctly applied.",
                 normalized_profile,
             )
+
+        if stats and start_time is not None:
+            elapsed_ms = (time.perf_counter() - start_time) * 1000
+            return ScanStats(
+                services_registered=services_registered_count,
+                adapters_registered=adapters_registered_count,
+                modules_imported=modules_imported_count,
+                duration_ms=round(elapsed_ms, 3),
+            )
+
+        return None
 
     def _create_auto_injecting_factory(self, cls: type[T]) -> Callable[[], T]:
         """Create a factory function that auto-injects dependencies from type hints.
