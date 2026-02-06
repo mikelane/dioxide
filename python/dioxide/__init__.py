@@ -74,6 +74,7 @@ from .exceptions import (
 )
 from .lifecycle import lifecycle
 from .profile_enum import Profile
+from .scan_stats import ScanStats
 from .scope import Scope
 from .services import service
 from .testing import fresh_container
@@ -87,6 +88,7 @@ __all__ = [
     'DioxideError',
     'Profile',
     'ResolutionError',
+    'ScanStats',
     'Scope',
     'ScopeError',
     'ScopedContainer',
