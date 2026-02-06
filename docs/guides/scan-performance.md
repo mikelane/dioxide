@@ -350,17 +350,16 @@ def main():
 ### Celery: Scan in Worker Init
 
 ```python
+from celery import Celery
 from dioxide import Container, Profile
-from dioxide.celery import DioxideCelery
+from dioxide.celery import configure_dioxide
 
-container = Container()
-
-app = DioxideCelery("myapp", container=container)
-
-@app.on_after_configure.connect
-def setup_container(sender, **kwargs):
-    container.scan(package="myapp.adapters", profile=Profile.PRODUCTION)
-    container.scan(package="myapp.services")
+app = Celery("myapp")
+configure_dioxide(
+    app,
+    profile=Profile.PRODUCTION,
+    packages=["myapp.adapters", "myapp.services"],
+)
 ```
 
 ## Using `allowed_packages` for Security
@@ -384,9 +383,12 @@ container = Container(allowed_packages=["myapp", "tests"])
 container.scan(package=scan_target)  # Safe: ValueError if not in list
 ```
 
-`allowed_packages` uses prefix matching: `"myapp"` allows `"myapp"`,
-`"myapp.adapters"`, `"myapp.adapters.email"`, but blocks `"myapplication"`
-or `"other.myapp"`.
+`allowed_packages` uses simple string prefix matching: `"myapp"` allows
+`"myapp"`, `"myapp.adapters"`, and `"myapp.adapters.email"`, but blocks
+`"other.myapp"`. Note that `"myapp"` also allows `"myapplication"` because
+it is a string prefix. For precise package boundaries, include the dot:
+`"myapp."` (though this excludes the `"myapp"` package itself, so use
+`["myapp", "myapp."]` or simply `["myapp."]` if you only scan sub-packages).
 
 ## Scan Without a Package Parameter
 
