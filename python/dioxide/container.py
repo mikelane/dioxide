@@ -2020,7 +2020,7 @@ class Container:
 
         return build_scan_plan(package)
 
-    def _import_package(self, package_name: str) -> int:
+    def _import_package(self, package_name: str, *, strict: bool = False) -> int:
         """Import all modules in a package to trigger decorator execution.
 
         Recursively walks through the package and all sub-packages, importing
@@ -2071,6 +2071,10 @@ class Container:
             prefix=package.__name__ + '.',
             onerror=lambda x: None,  # Silently skip modules that fail to import
         ):
+            # Strict mode: analyze source for side effects before importing
+            if strict:
+                self._check_module_side_effects(modname)
+
             try:
                 importlib.import_module(modname)
                 count += 1
@@ -2082,11 +2086,47 @@ class Container:
 
         return count
 
+    def _check_module_side_effects(self, module_name: str) -> None:
+        """Analyze a module's source for potential side effects before importing.
+
+        Uses AST analysis to detect function calls at module level that may
+        cause side effects. Emits warnings for each finding.
+
+        Args:
+            module_name: Fully-qualified module name to analyze.
+        """
+        import importlib.util
+        import warnings
+
+        from dioxide._strict import detect_side_effects
+
+        spec = importlib.util.find_spec(module_name)
+        if spec is None or spec.origin is None:
+            return
+
+        from pathlib import Path
+
+        try:
+            source = Path(spec.origin).read_text(encoding='utf-8')
+        except (OSError, UnicodeDecodeError):
+            return
+
+        findings = detect_side_effects(source, spec.origin)
+        for finding in findings:
+            warnings.warn(
+                f'Potential side effect in {module_name} '
+                f'(line {finding.line}): {finding.description}\n'
+                f'  Suggestion: {finding.suggestion}',
+                stacklevel=4,
+            )
+
     def scan(
         self,
         package: str | None = None,
         profile: str | Profile | None = None,
         stats: bool = False,
+        *,
+        strict: bool = False,
     ) -> ScanStats | None:
         """Discover and register all @component and @adapter decorated classes.
 
@@ -2173,7 +2213,7 @@ class Container:
 
         # Import package modules if package parameter provided
         if package is not None:
-            modules_imported_count = self._import_package(package)
+            modules_imported_count = self._import_package(package, strict=strict)
 
         # Normalize profile to lowercase if provided
         # Profile is a str subclass, so we can call .lower() directly on any str
