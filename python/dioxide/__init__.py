@@ -76,6 +76,11 @@ from .exceptions import (
 )
 from .lifecycle import lifecycle
 from .profile_enum import Profile
+from .scan_plan import (
+    AdapterInfo,
+    ScanPlan,
+    ServiceInfo,
+)
 from .scan_stats import ScanStats
 from .scope import Scope
 from .services import service
@@ -83,6 +88,7 @@ from .testing import fresh_container
 
 __version__ = _metadata_version('dioxide')
 __all__ = [
+    'AdapterInfo',
     'AdapterNotFoundError',
     'CaptiveDependencyError',
     'CircularDependencyError',
@@ -91,10 +97,12 @@ __all__ = [
     'DioxideError',
     'Profile',
     'ResolutionError',
+    'ScanPlan',
     'ScanStats',
     'Scope',
     'ScopeError',
     'ScopedContainer',
+    'ServiceInfo',
     'ServiceNotFoundError',
     '_clear_registry',
     '_get_registered_components',

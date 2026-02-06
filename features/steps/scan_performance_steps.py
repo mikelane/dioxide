@@ -228,10 +228,17 @@ def step_call_scan_plan(context: Context, pkg_name: str) -> None:
 def step_verify_module_count(context: Context, count: int) -> None:
     if not getattr(context, 'scan_plan_supported', False):
         raise AssertionError('container.scan_plan() method does not exist yet. The scan_plan API is not implemented.')
-    assert isinstance(context.scan_plan_result, list), (
-        f'scan_plan should return a list, got {type(context.scan_plan_result)}'
+    result = context.scan_plan_result
+    # ScanPlan object exposes modules as a list attribute
+    modules = getattr(result, 'modules', result) if not isinstance(result, list) else result
+    assert isinstance(modules, list), (
+        f'scan_plan should return an object with a modules list, got {type(result)}'
     )
-    assert len(context.scan_plan_result) == count, f'Expected {count} module paths, got {len(context.scan_plan_result)}'
+    # Filter to only child modules (exclude the package root itself)
+    child_modules = [m for m in modules if m != context.pkg_name]
+    assert len(child_modules) == count, (
+        f'Expected {count} child module paths, got {len(child_modules)}: {child_modules}'
+    )
 
 
 @then('no adapters are registered yet')
