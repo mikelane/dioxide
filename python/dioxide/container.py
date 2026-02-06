@@ -444,6 +444,7 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from dioxide.profile_enum import Profile
+    from dioxide.scan_plan import ScanPlan
 
 T = TypeVar('T')
 
@@ -1986,6 +1987,38 @@ class Container:
 
         lines.append('}')
         return '\n'.join(lines)
+
+    def scan_plan(self, package: str) -> ScanPlan:
+        """Preview what scan() would discover without importing any modules.
+
+        Walks the package tree and uses AST parsing to find @service and
+        @adapter.for_() decorators. No modules are imported and nothing is
+        registered with the container.
+
+        Args:
+            package: The package name to analyze (e.g. "myapp.adapters").
+
+        Returns:
+            A ScanPlan object with discovered modules, services, and adapters.
+
+        Raises:
+            ImportError: If the package cannot be found.
+            ValueError: If the package is not in allowed_packages (if configured).
+
+        Example:
+            >>> container = Container()
+            >>> plan = container.scan_plan(package='myapp')
+            >>> print(plan.modules)  # ['myapp', 'myapp.services', ...]
+            >>> print(plan.services)  # [ServiceInfo(class_name='UserService', ...)]
+        """
+        from dioxide.scan_plan import build_scan_plan
+
+        if self._allowed_packages is not None:
+            if not any(package.startswith(prefix) for prefix in self._allowed_packages):
+                msg = f"Package '{package}' is not in allowed_packages list. Allowed prefixes: {self._allowed_packages}"
+                raise ValueError(msg)
+
+        return build_scan_plan(package)
 
     def _import_package(self, package_name: str) -> int:
         """Import all modules in a package to trigger decorator execution.

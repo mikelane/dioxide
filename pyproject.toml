@@ -110,7 +110,7 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 strict_concatenate = true
-exclude = ["features/", "tests/type_checking/invalid/", "docs/"]
+exclude = ["features/", "tests/type_checking/invalid/", "tests/fixtures/test_package_with_errors/syntax_error_module.py", "docs/"]
 
 [[tool.mypy.overrides]]
 module = ["behave", "behave.*", "dioxide._dioxide_core", "docs", "docs.*", "sphinx", "sphinx.*", "fastapi", "fastapi.*", "starlette", "starlette.*", "flask", "flask.*", "werkzeug", "werkzeug.*", "celery", "celery.*", "kombu", "kombu.*", "amqp", "amqp.*", "billiard", "billiard.*", "vine", "vine.*", "click", "click.*", "typer", "typer.*", "django", "django.*", "rest_framework", "rest_framework.*", "ninja", "ninja.*"]
@@ -181,6 +181,7 @@ disable_error_code = ["attr-defined", "type-abstract", "type-var", "misc", "comp
 [tool.ruff]
 target-version = "py311"
 line-length = 120
+extend-exclude = ["tests/fixtures/test_package_with_errors/syntax_error_module.py"]
 
 [tool.ruff.lint]
 select = [
