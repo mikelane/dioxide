@@ -8,10 +8,6 @@ from dioxide import Container
 class DescribeLazyScan:
     """Tests for lazy=True parameter in Container.scan()."""
 
-    def it_accepts_lazy_parameter(self) -> None:
-        container = Container()
-        container.scan(package='tests.fixtures.test_package_a', lazy=True)
-
     def it_does_not_import_modules_during_lazy_scan(self) -> None:
         # Ensure the module is not already imported
         sys.modules.pop('tests.fixtures.lazy_pkg.expensive_module', None)
@@ -107,7 +103,27 @@ class DescribeLazyScan:
         with pytest.raises(AdapterNotFoundError):
             container.resolve(CheapPort)
 
-    def it_falls_back_to_eager_when_package_is_none(self) -> None:
+    def it_uses_correct_profile_per_package_when_multiple_lazy_scans_registered(self) -> None:
+        from dioxide import Profile
+
+        sys.modules.pop('tests.fixtures.lazy_pkg.cheap_module', None)
+        sys.modules.pop('tests.fixtures.lazy_pkg.expensive_module', None)
+        sys.modules.pop('tests.fixtures.lazy_pkg_test.test_adapter_module', None)
+
+        container = Container()
+        container.scan(package='tests.fixtures.lazy_pkg', profile=Profile.PRODUCTION, lazy=True)
+        container.scan(package='tests.fixtures.lazy_pkg_test', profile=Profile.TEST, lazy=True)
+
+        from tests.fixtures.lazy_pkg.cheap_module import CheapPort
+        from tests.fixtures.lazy_pkg_test.test_adapter_module import TestPort
+
+        production_result = container.resolve(CheapPort)
+        assert production_result.do_work() == 'cheap'
+
+        test_result = container.resolve(TestPort)
+        assert test_result.do_work() == 'test'
+
+    def it_ignores_lazy_flag_when_package_is_none(self) -> None:
         import tests.fixtures.test_package_a  # noqa: F401
 
         container = Container()
@@ -173,8 +189,13 @@ class DescribeLazyScan:
             try:
                 container = Container()
                 container.scan(package='bad_pkg', profile=Profile.PRODUCTION, lazy=True)
-                # The broken module should be skipped, but good module's port discovered
-                assert 'GoodPort' in container._lazy_port_to_modules
+
+                # Import the good module's port and verify it resolves
+                from importlib import import_module
+
+                good_mod = import_module('bad_pkg.good')
+                result = container.resolve(good_mod.GoodPort)
+                assert result.work() == 'good'
             finally:
                 sys.path.remove(tmpdir)
                 sys.modules.pop('bad_pkg', None)

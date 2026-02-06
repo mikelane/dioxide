@@ -7,8 +7,6 @@ from dioxide import (
     adapter,
 )
 
-IMPORTED = True
-
 
 class ExpensivePort(Protocol):
     def do_work(self) -> str: ...

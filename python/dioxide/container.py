@@ -580,9 +580,8 @@ class Container:
         self._allowed_packages = allowed_packages  # Security: restrict scannable packages
         self._lifecycle_instances: list[Any] | None = None  # Cache lifecycle instances during start()
         self._multi_bindings: dict[type[Any], list[type[Any]]] = {}  # Port -> list of multi adapter classes
-        self._lazy_packages: list[str] = []  # Packages registered for lazy import
-        self._lazy_profile: str | Profile | None = None  # Profile to use for lazy resolution
-        self._lazy_port_to_modules: dict[str, list[str]] = {}  # Port name -> module paths (AST-discovered)
+        self._lazy_packages: list[tuple[str, str | Profile | None]] = []
+        self._lazy_port_to_modules: dict[str, list[tuple[str, str | Profile | None]]] = {}
 
         # Auto-scan if profile is provided
         if profile is not None:
@@ -2040,7 +2039,7 @@ class Container:
 
         return build_scan_plan(package)
 
-    def _discover_lazy_adapters(self, package_name: str) -> None:
+    def _discover_lazy_adapters(self, package_name: str, profile: str | Profile | None = None) -> None:
         """Walk a package tree and parse AST to find adapter registrations.
 
         Builds a mapping from port class names to module paths without
@@ -2049,6 +2048,7 @@ class Container:
 
         Args:
             package_name: The package to scan for adapter decorators.
+            profile: The profile associated with this package's lazy scan.
         """
         import importlib.util
         import os
@@ -2079,7 +2079,7 @@ class Container:
                     for name in discovered:
                         if name not in self._lazy_port_to_modules:
                             self._lazy_port_to_modules[name] = []
-                        self._lazy_port_to_modules[name].append(module_name)
+                        self._lazy_port_to_modules[name].append((module_name, profile))
 
     @staticmethod
     def _parse_decorators_from_ast(filepath: str) -> list[str]:
@@ -2131,17 +2131,13 @@ class Container:
         Returns:
             True if a module was imported, False if no mapping found.
         """
-        module_paths = self._lazy_port_to_modules.pop(type_name, None)
-        if not module_paths:
+        module_entries = self._lazy_port_to_modules.pop(type_name, None)
+        if not module_entries:
             return False
 
-        profile = self._lazy_profile
-        for module_path in module_paths:
+        for module_path, profile in module_entries:
             importlib.import_module(module_path)
-
-        # Now do an eager scan to pick up the newly imported adapters
-        # We pass package=None because the modules are already imported
-        self.scan(profile=profile, lazy=False)
+            self.scan(package=module_path, profile=profile, lazy=False)
         return True
 
     def _materialize_all_lazy_packages(self) -> None:
@@ -2151,12 +2147,10 @@ class Container:
         materialization, the lazy state is cleared.
         """
         packages = list(self._lazy_packages)
-        profile = self._lazy_profile
         self._lazy_packages.clear()
-        self._lazy_profile = None
         self._lazy_port_to_modules.clear()
 
-        for pkg in packages:
+        for pkg, profile in packages:
             self.scan(package=pkg, profile=profile, lazy=False)
 
     def _validate_package_allowed(self, package_name: str) -> None:
@@ -2313,6 +2307,12 @@ class Container:
                 module-level function calls that may cause side effects (database
                 connections, file I/O, network requests). Safe patterns like
                 logging.getLogger() are allowlisted. Defaults to False.
+            lazy: If True and package is provided, defer module imports until
+                resolution time. Uses AST parsing to discover adapter-to-port
+                mappings without importing, then imports only the specific module
+                needed when resolve() is called. Each package retains its own
+                profile, so multiple lazy scans with different profiles work
+                correctly. Ignored when package is None (falls back to eager scan).
 
         Registration behavior:
             - SINGLETON scope (default): Creates singleton factory with caching
@@ -2351,17 +2351,26 @@ class Container:
             >>> # Or with string profile (also supported)
             >>> container2 = Container()
             >>> container2.scan(profile='production')  # Same as above
+            >>>
+            >>> # Lazy scan - defer module imports until needed
+            >>> container3 = Container()
+            >>> container3.scan(package='myapp.adapters', profile=Profile.PRODUCTION, lazy=True)
+            >>> # No modules imported yet; they load on first resolve()
 
         Raises:
             ValueError: If multiple adapters are registered for the same port
                 and profile combination (ambiguous registration)
 
         Note:
-            - Ensure all component/adapter classes are imported before calling scan()
+            - For eager mode (default): ensure all component/adapter classes are
+              imported before calling scan(). With lazy=True, pre-importing is
+              not required - modules are imported on demand at resolve time.
             - Constructor dependencies must have type hints
             - Circular dependencies will cause infinite recursion
             - Manual registrations (register_*) take precedence over scan()
             - Profile names are case-insensitive (normalized to lowercase)
+            - AST-based lazy discovery only detects ``@adapter.for_(PortName)``
+              when ``adapter`` is imported directly (not aliased imports).
         """
         from dioxide._registry import (
             PROFILE_ATTRIBUTE,
@@ -2382,9 +2391,8 @@ class Container:
         # For lazy mode, discover adapters via AST without importing
         if lazy and package is not None:
             self._validate_package_allowed(package)
-            self._lazy_packages.append(package)
-            self._lazy_profile = profile
-            self._discover_lazy_adapters(package)
+            self._lazy_packages.append((package, profile))
+            self._discover_lazy_adapters(package, profile)
             return None
 
         # Normalize profile to lowercase if provided
