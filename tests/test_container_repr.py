@@ -28,7 +28,7 @@ class DescribeContainerRepr:
 
         result = repr(container)
 
-        assert result == "Container(profile=Profile('test'), ports=0, services=0)"
+        assert result == 'Container(profile=Profile.TEST, ports=0, services=0)'
 
     def it_counts_adapters_registered_via_scan(self) -> None:
         class NotificationPort(Protocol):
@@ -82,7 +82,7 @@ class DescribeContainerRepr:
 
         result = repr(container)
 
-        assert "profile=Profile('production')" in result
+        assert 'profile=Profile.PRODUCTION' in result
 
     def it_shows_string_profile_as_profile_instance(self) -> None:
         container = Container()
@@ -90,7 +90,7 @@ class DescribeContainerRepr:
 
         result = repr(container)
 
-        assert "profile=Profile('staging')" in result
+        assert 'profile=Profile.STAGING' in result
 
     def it_shows_profile_all_wildcard(self) -> None:
         container = Container()
@@ -98,7 +98,7 @@ class DescribeContainerRepr:
 
         result = repr(container)
 
-        assert "profile=Profile('*')" in result
+        assert 'profile=Profile.ALL' in result
 
 
 class DescribeScopedContainerRepr:
@@ -110,7 +110,7 @@ class DescribeScopedContainerRepr:
 
         result = repr(scoped)
 
-        assert result == "ScopedContainer(profile=Profile('test'), parent=Container)"
+        assert result == 'ScopedContainer(profile=Profile.TEST, parent=Container)'
 
     def it_shows_no_profile_when_parent_has_none(self) -> None:
         container = Container()

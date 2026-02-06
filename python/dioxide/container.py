@@ -1296,14 +1296,14 @@ class Container:
         and developers can inspect container state in a REPL or debugger.
 
         Returns:
-            A string like ``Container(profile=Profile('production'), ports=5, services=3)``
+            A string like ``Container(profile=Profile.PRODUCTION, ports=5, services=3)``
             or ``Container(profile=None, ports=0, services=0)`` when no profile is set.
 
         Example:
             >>> from dioxide import Container, Profile
             >>> container = Container(profile=Profile.PRODUCTION)
             >>> repr(container)
-            "Container(profile=Profile('production'), ports=..., services=...)"
+            'Container(profile=Profile.PRODUCTION, ports=..., services=...)'
         """
         profile = self.active_profile
         profile_str = repr(profile) if profile is not None else 'None'
@@ -2836,12 +2836,12 @@ class ScopedContainer:
         so agents and developers can inspect scoped container state.
 
         Returns:
-            A string like ``ScopedContainer(profile=Profile('test'), parent=Container)``.
+            A string like ``ScopedContainer(profile=Profile.TEST, parent=Container)``.
 
         Example:
             >>> async with container.create_scope() as scope:
             ...     repr(scope)
-            "ScopedContainer(profile=Profile('test'), parent=Container)"
+            'ScopedContainer(profile=Profile.TEST, parent=Container)'
         """
         profile = self._parent.active_profile
         profile_str = repr(profile) if profile is not None else 'None'

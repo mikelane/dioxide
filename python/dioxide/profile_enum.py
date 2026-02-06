@@ -64,8 +64,10 @@ class Profile(str):
     but using ``Profile(...)`` is recommended for type safety.
 
     Examples:
-        >>> Profile.PRODUCTION
-        'production'
+        >>> repr(Profile.PRODUCTION)
+        'Profile.PRODUCTION'
+        >>> str(Profile.ALL)
+        'ALL'
         >>> Profile.PRODUCTION == 'production'
         True
         >>> isinstance(Profile.PRODUCTION, str)
@@ -84,6 +86,15 @@ class Profile(str):
     CI: ClassVar[Profile]
     ALL: ClassVar[Profile]
 
+    _BUILTIN_DISPLAY_NAMES: ClassVar[dict[str, str]] = {
+        '*': 'ALL',
+        'production': 'PRODUCTION',
+        'test': 'TEST',
+        'development': 'DEVELOPMENT',
+        'staging': 'STAGING',
+        'ci': 'CI',
+    }
+
     def __new__(cls, value: str) -> Profile:
         """Create a new Profile instance.
 
@@ -95,24 +106,59 @@ class Profile(str):
             A new Profile instance.
 
         Examples:
-            >>> Profile('integration')
-            'integration'
-            >>> Profile('PREVIEW')  # Lowercased
-            'preview'
+            >>> Profile('integration') == 'integration'
+            True
+            >>> Profile('PREVIEW') == 'preview'
+            True
         """
         # Lowercase for consistent matching
         return super().__new__(cls, value.lower())
 
+    def __str__(self) -> str:
+        """Return the display name, hiding implementation details.
+
+        Built-in profiles return their constant name (e.g., 'ALL' instead
+        of '*'). Custom profiles return their string value unchanged.
+
+        Examples:
+            >>> str(Profile.ALL)
+            'ALL'
+            >>> str(Profile.PRODUCTION)
+            'PRODUCTION'
+            >>> str(Profile('custom'))
+            'custom'
+        """
+        return self._BUILTIN_DISPLAY_NAMES.get(str.__str__(self), str.__str__(self))
+
+    def __format__(self, format_spec: str) -> str:
+        """Format using the display name rather than the raw value.
+
+        Examples:
+            >>> f'{Profile.ALL:>10}'
+            '       ALL'
+            >>> f'{Profile.PRODUCTION:>15}'
+            '     PRODUCTION'
+        """
+        return format(str(self), format_spec)
+
     def __repr__(self) -> str:
         """Return a detailed string representation.
 
+        Built-in profiles show their constant name (e.g., Profile.ALL).
+        Custom profiles show the constructor form (e.g., Profile('custom')).
+
         Examples:
+            >>> repr(Profile.ALL)
+            'Profile.ALL'
             >>> repr(Profile.PRODUCTION)
-            "Profile('production')"
+            'Profile.PRODUCTION'
             >>> repr(Profile('custom'))
             "Profile('custom')"
         """
-        return f'Profile({super().__repr__()})'
+        display_name = self._BUILTIN_DISPLAY_NAMES.get(str.__str__(self))
+        if display_name is not None:
+            return f'Profile.{display_name}'
+        return f'Profile({str.__repr__(self)})'
 
 
 # Initialize built-in profile constants
