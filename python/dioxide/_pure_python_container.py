@@ -14,7 +14,10 @@ from enum import (
     Enum,
     auto,
 )
-from typing import Any
+from typing import (
+    Any,
+    assert_never,
+)
 
 
 class _ProviderKind(Enum):
@@ -32,12 +35,16 @@ class _Provider:
         self.value = value
 
 
-class PythonContainer:
+class PurePythonContainer:
     """Pure Python dependency injection container for benchmarking."""
 
     def __init__(self) -> None:
         self._providers: dict[type, _Provider] = {}
         self._singletons: dict[type, object] = {}
+
+    def _check_not_registered(self, component_type: type) -> None:
+        if component_type in self._providers:
+            raise KeyError(f'Duplicate provider registration: {component_type.__name__}')
 
     def is_empty(self) -> bool:
         return len(self._providers) == 0
@@ -46,23 +53,19 @@ class PythonContainer:
         return len(self._providers)
 
     def register_instance(self, component_type: type, instance: object) -> None:
-        if component_type in self._providers:
-            raise KeyError(f'Duplicate provider registration: {component_type.__name__}')
+        self._check_not_registered(component_type)
         self._providers[component_type] = _Provider(_ProviderKind.INSTANCE, instance)
 
     def register_class(self, component_type: type, implementation: type) -> None:
-        if component_type in self._providers:
-            raise KeyError(f'Duplicate provider registration: {component_type.__name__}')
+        self._check_not_registered(component_type)
         self._providers[component_type] = _Provider(_ProviderKind.CLASS, implementation)
 
     def register_singleton_factory(self, component_type: type, factory: Callable[[], Any]) -> None:
-        if component_type in self._providers:
-            raise KeyError(f'Duplicate provider registration: {component_type.__name__}')
+        self._check_not_registered(component_type)
         self._providers[component_type] = _Provider(_ProviderKind.SINGLETON_FACTORY, factory)
 
     def register_transient_factory(self, component_type: type, factory: Callable[[], Any]) -> None:
-        if component_type in self._providers:
-            raise KeyError(f'Duplicate provider registration: {component_type.__name__}')
+        self._check_not_registered(component_type)
         self._providers[component_type] = _Provider(_ProviderKind.TRANSIENT_FACTORY, factory)
 
     def resolve(self, component_type: type) -> Any:
@@ -75,19 +78,16 @@ class PythonContainer:
 
         if provider.kind == _ProviderKind.INSTANCE:
             return provider.value
-
-        if provider.kind == _ProviderKind.SINGLETON_FACTORY:
+        elif provider.kind == _ProviderKind.SINGLETON_FACTORY:
             instance = provider.value()
             self._singletons[component_type] = instance
             return instance
-
-        if provider.kind == _ProviderKind.TRANSIENT_FACTORY:
+        elif provider.kind == _ProviderKind.TRANSIENT_FACTORY:
             return provider.value()
-
-        if provider.kind == _ProviderKind.CLASS:
+        elif provider.kind == _ProviderKind.CLASS:
             return provider.value()
-
-        raise KeyError(f'Dependency not registered: {component_type.__name__}')
+        else:
+            assert_never(provider.kind)
 
     def reset(self) -> None:
         self._singletons.clear()
