@@ -455,11 +455,19 @@ troubleshooting/index
 ```{toctree}
 :maxdepth: 1
 :hidden:
+:caption: Migration & Versioning
+
+migration-v1-to-v2
+migration-from-dependency-injector
+versioning
+```
+
+```{toctree}
+:maxdepth: 1
+:hidden:
 :caption: Contributing
 
-versioning
 navigation
-migration-from-dependency-injector
 design-principles
 design/ADR-001-container-architecture
 design/ADR-002-pyo3-binding-strategy

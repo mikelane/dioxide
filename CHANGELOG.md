@@ -57,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Broken:** `for p in Profile:` → use explicit list `[Profile.PRODUCTION, Profile.TEST, ...]`
   - **Broken:** `Profile['PRODUCTION']` → use `Profile.PRODUCTION` directly
   - **New:** Custom profiles are now first-class: `MY_PROFILE = Profile('custom')`
+  - See the **[v1.x to v2.0 Migration Guide](https://dioxide.readthedocs.io/en/latest/migration-v1-to-v2.html)** for step-by-step migration instructions, find-replace patterns, and codemod tooling
 
 ### Added
 
