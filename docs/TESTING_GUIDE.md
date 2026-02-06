@@ -267,7 +267,7 @@ Concerned about shipping fakes to production? See {doc}`testing/fakes-in-product
 
 ## Writing Effective Fakes
 
-Fakes should be simple, fast, and deterministic. Here are patterns for writing effective fakes. For more examples, see {doc}`user_guide/testing_with_fakes`.
+Fakes should be simple, fast, and deterministic. Here are patterns for writing effective fakes. For a comprehensive guide with patterns, anti-patterns, and rules of thumb, see {doc}`testing/writing-fakes`. For additional examples, see {doc}`user_guide/testing_with_fakes`.
 
 ### 3.1 Simple In-Memory Fakes
 
