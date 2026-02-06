@@ -1,3 +1,4 @@
+@wip
 Feature: Component Decorator Registration
   As a Python developer
   I want to mark classes as components with a decorator

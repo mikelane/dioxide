@@ -95,9 +95,12 @@ def step_attempt_resolve(context: Context, dependency_name: str) -> None:
 @then('the Container raises a DependencyNotFoundError')
 def step_raises_dependency_not_found(context: Context) -> None:
     """Verify a DependencyNotFoundError was raised."""
+    from dioxide.exceptions import ServiceNotFoundError
+
     assert context.exception is not None, 'No exception was raised'
-    # Check for KeyError (as per ADR-002, we map to Python KeyError)
-    assert isinstance(context.exception, KeyError), f'Expected KeyError, got {type(context.exception).__name__}'
+    assert isinstance(
+        context.exception, ServiceNotFoundError
+    ), f'Expected ServiceNotFoundError, got {type(context.exception).__name__}: {context.exception}'
 
 
 @then('the error message indicates "{dependency_name}" is not registered')

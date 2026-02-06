@@ -1,3 +1,4 @@
+@wip
 Feature: Singleton Scope Caching
   As a Python developer
   I want SINGLETON-scoped components to be cached

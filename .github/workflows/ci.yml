@@ -63,6 +63,189 @@ jobs:
           name: dioxide
           fail_ci_if_error: false
 
+  # =============================================================================
+  # BDD Test Suite (Behave/Gherkin)
+  # =============================================================================
+  # Three-tier BDD testing strategy:
+  # 1. Regression Suite: All completed features (excludes @wip)
+  # 2. Feature Acceptance: Current issue's tests (fails if @wip present)
+  # 3. Pending Features: WIP tests (informational, non-blocking)
+  # =============================================================================
+
+  bdd-regression:
+    name: BDD Regression Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b  # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2.8.2
+        with:
+          workspaces: rust
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548  # v6.1.0
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244  # v7.1.4
+
+      - name: Install dependencies
+        run: uv sync --all-extras --all-groups
+
+      - name: Build Rust extension
+        run: uv run maturin develop
+
+      - name: Run BDD Regression Suite
+        run: uv run behave --tags="not @wip" --format=plain
+
+  bdd-feature-acceptance:
+    name: BDD Feature Acceptance
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Extract issue number from branch
+        id: extract-issue
+        env:
+          # Use environment variables for branch names (security best practice)
+          HEAD_REF: ${{ github.head_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          BRANCH_NAME="${HEAD_REF:-$REF_NAME}"
+          echo "Branch: $BRANCH_NAME"
+
+          # Extract issue number from branch name (e.g., issue-42-description, feat/issue-42-desc)
+          # Only digits are captured, preventing injection
+          if [[ "$BRANCH_NAME" =~ issue-([0-9]+) ]]; then
+            ISSUE_NUM="${BASH_REMATCH[1]}"
+            echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+            echo "has_issue=true" >> $GITHUB_OUTPUT
+            echo "Extracted issue number: $ISSUE_NUM"
+          else
+            echo "has_issue=false" >> $GITHUB_OUTPUT
+            echo "No issue number found in branch name - skipping feature acceptance"
+          fi
+
+      - name: Setup Rust
+        if: steps.extract-issue.outputs.has_issue == 'true'
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b  # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        if: steps.extract-issue.outputs.has_issue == 'true'
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2.8.2
+        with:
+          workspaces: rust
+
+      - name: Setup Python
+        if: steps.extract-issue.outputs.has_issue == 'true'
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548  # v6.1.0
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        if: steps.extract-issue.outputs.has_issue == 'true'
+        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244  # v7.1.4
+
+      - name: Install dependencies
+        if: steps.extract-issue.outputs.has_issue == 'true'
+        run: uv sync --all-extras --all-groups
+
+      - name: Build Rust extension
+        if: steps.extract-issue.outputs.has_issue == 'true'
+        run: uv run maturin develop
+
+      - name: Check for @wip tag on issue tests
+        if: steps.extract-issue.outputs.has_issue == 'true'
+        env:
+          ISSUE_NUM: ${{ steps.extract-issue.outputs.issue_number }}
+        run: |
+          ISSUE_TAG="@issue-${ISSUE_NUM}"
+
+          echo "Checking for @wip tag on tests tagged with $ISSUE_TAG"
+
+          # Find feature files with both @issue-XX and @wip tags
+          # This uses behave's dry-run to check what would match
+          if uv run behave --dry-run --tags="${ISSUE_TAG}" --tags="@wip" --format=json 2>/dev/null | grep -q '"status": "untested"'; then
+            echo "::error::Found @wip tag on tests for issue #${ISSUE_NUM}. Remove @wip before merging."
+            echo ""
+            echo "Tests still marked as @wip:"
+            uv run behave --dry-run --tags="${ISSUE_TAG}" --tags="@wip" --format=plain 2>&1 || true
+            exit 1
+          fi
+
+          echo "No @wip tags found on issue #${ISSUE_NUM} tests - checking if tests exist and pass"
+
+      - name: Run Feature Acceptance tests
+        if: steps.extract-issue.outputs.has_issue == 'true'
+        env:
+          ISSUE_NUM: ${{ steps.extract-issue.outputs.issue_number }}
+        run: |
+          ISSUE_TAG="@issue-${ISSUE_NUM}"
+
+          # Check if any tests exist for this issue
+          if uv run behave --dry-run --tags="${ISSUE_TAG}" --format=json 2>/dev/null | grep -q '"status": "untested"'; then
+            echo "Running acceptance tests for issue #${ISSUE_NUM}"
+            uv run behave --tags="${ISSUE_TAG}" --format=plain
+          else
+            echo "No tests tagged with $ISSUE_TAG - skipping (this is OK for non-feature work)"
+          fi
+
+      - name: Skip notice for non-issue branches
+        if: steps.extract-issue.outputs.has_issue != 'true'
+        run: |
+          echo "::notice::Skipped BDD Feature Acceptance - branch name does not contain issue number"
+          echo "Branch naming convention: issue-XX-description (e.g., issue-42-add-caching)"
+
+  bdd-pending:
+    name: BDD Pending Features
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Informational only - does not block merge
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@6d9817901c499d6b02debbb57edb38d33daa680b  # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2.8.2
+        with:
+          workspaces: rust
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548  # v6.1.0
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244  # v7.1.4
+
+      - name: Install dependencies
+        run: uv sync --all-extras --all-groups
+
+      - name: Build Rust extension
+        run: uv run maturin develop
+
+      - name: Run BDD Pending Features
+        run: |
+          echo "Running @wip tests (informational - failures expected)"
+          uv run behave --tags="@wip" --format=plain || true
+          echo ""
+          echo "::notice::Pending features shown above are work-in-progress and expected to fail"
+
   lint-python:
     name: Lint Python
     runs-on: ubuntu-latest

@@ -37,12 +37,21 @@ maturin develop
 pre-commit install
 ```
 
-### Testing
+### Testing (pytest)
 ```bash
 uv run pytest tests/                                    # All tests
 uv run pytest tests/ --cov=dioxide --cov-report=term-missing --cov-branch  # With coverage
 uv run pytest tests/ -k "lifecycle"                     # Pattern match
 uv run pytest tests/benchmarks/ --benchmark-only        # Benchmarks
+```
+
+### Testing (BDD/Behave)
+```bash
+uv run behave --tags="not @wip"                         # Regression suite (CI default)
+uv run behave --tags="@issue-123"                       # Tests for specific issue
+uv run behave --tags="@wip"                             # WIP tests (expected to fail)
+uv run behave --tags="@issue-123" --tags="@wip"         # WIP tests for specific issue
+uv run behave --dry-run --tags="@issue-123"             # Preview what would run
 ```
 
 ### Code Quality
@@ -137,6 +146,8 @@ For detailed guidelines, see `.claude/rules/`:
 | Documentation | `documentation.md` | Docs are NOT optional |
 | Git Commits | `git-commits.md` | Conventional commits with issue reference |
 | Design Principles | `mlp-vision-summary.md` | 7 guiding principles summary |
+
+**BDD Workflow**: See `docs/design/bdd-workflow.md` for Gherkin tags, @wip enforcement, and CI jobs.
 
 ## Configuration Files
 
