@@ -580,6 +580,8 @@ class Container:
         self._allowed_packages = allowed_packages  # Security: restrict scannable packages
         self._lifecycle_instances: list[Any] | None = None  # Cache lifecycle instances during start()
         self._multi_bindings: dict[type[Any], list[type[Any]]] = {}  # Port -> list of multi adapter classes
+        self._lazy_packages: list[tuple[str, str | Profile | None]] = []
+        self._lazy_port_to_modules: dict[str, list[tuple[str, str | Profile | None]]] = {}
 
         # Auto-scan if profile is provided
         if profile is not None:
@@ -934,6 +936,23 @@ class Container:
         try:
             return self._rust_core.resolve(component_type)
         except KeyError as e:
+            # If lazy packages are pending, try per-module lazy import first
+            if self._lazy_port_to_modules:
+                type_name = getattr(component_type, '__name__', '')
+                if self._materialize_lazy_module(type_name):
+                    try:
+                        return self._rust_core.resolve(component_type)
+                    except KeyError:
+                        pass  # Fall through to full materialization
+
+            # If per-module didn't work, try materializing all remaining lazy packages
+            if self._lazy_packages:
+                self._materialize_all_lazy_packages()
+                try:
+                    return self._rust_core.resolve(component_type)
+                except KeyError:
+                    pass  # Fall through to error handling below
+
             # Determine if this is a port (Protocol/ABC) or a service/component
             is_port = self._is_port(component_type)
 
@@ -2020,6 +2039,137 @@ class Container:
 
         return build_scan_plan(package)
 
+    def _discover_lazy_adapters(self, package_name: str, profile: str | Profile | None = None) -> None:
+        """Walk a package tree and parse AST to find adapter registrations.
+
+        Builds a mapping from port class names to module paths without
+        importing any modules. This enables per-module lazy loading: only
+        the module containing the needed adapter is imported on resolve.
+
+        Args:
+            package_name: The package to scan for adapter decorators.
+            profile: The profile associated with this package's lazy scan.
+        """
+        import importlib.util
+        import os
+
+        # Find the package on disk
+        spec = importlib.util.find_spec(package_name)
+        if spec is None or spec.submodule_search_locations is None:
+            return
+
+        for search_path in spec.submodule_search_locations:
+            for root, _dirs, files in os.walk(search_path):
+                for filename in files:
+                    if not filename.endswith('.py'):
+                        continue
+
+                    filepath = os.path.join(root, filename)
+                    rel_path = os.path.relpath(filepath, search_path)
+                    # Convert file path to module name
+                    module_parts = rel_path.replace(os.sep, '.').removesuffix('.py')
+                    if module_parts == '__init__':
+                        module_name = package_name
+                    elif module_parts.endswith('.__init__'):
+                        module_name = package_name + '.' + module_parts.removesuffix('.__init__')
+                    else:
+                        module_name = package_name + '.' + module_parts
+
+                    discovered = self._parse_decorators_from_ast(filepath)
+                    for name in discovered:
+                        if name not in self._lazy_port_to_modules:
+                            self._lazy_port_to_modules[name] = []
+                        self._lazy_port_to_modules[name].append((module_name, profile))
+
+    @staticmethod
+    def _parse_decorators_from_ast(filepath: str) -> list[str]:
+        """Parse a Python file's AST to find dioxide decorator usage.
+
+        Detects both @adapter.for_(PortName, ...) and @service decorated classes.
+        For adapters, returns the port name. For services, returns the class name.
+
+        Returns:
+            List of discoverable names (port names for adapters, class names for services).
+        """
+        import ast
+
+        try:
+            with open(filepath) as f:
+                tree = ast.parse(f.read(), filename=filepath)
+        except SyntaxError:
+            return []
+
+        names: list[str] = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            for decorator in node.decorator_list:
+                # Detect @adapter.for_(PortName, ...) pattern
+                if isinstance(decorator, ast.Call):
+                    func = decorator.func
+                    if isinstance(func, ast.Attribute) and func.attr == 'for_':
+                        if isinstance(func.value, ast.Name) and func.value.id == 'adapter':
+                            if decorator.args:
+                                first_arg = decorator.args[0]
+                                if isinstance(first_arg, ast.Name):
+                                    names.append(first_arg.id)
+
+                # Detect @service or @service(...) pattern
+                if isinstance(decorator, ast.Name) and decorator.id == 'service':
+                    names.append(node.name)
+                elif isinstance(decorator, ast.Call):
+                    if isinstance(decorator.func, ast.Name) and decorator.func.id == 'service':
+                        names.append(node.name)
+        return names
+
+    def _materialize_lazy_module(self, type_name: str) -> bool:
+        """Import the specific module containing an adapter for the given port name.
+
+        Args:
+            type_name: The class name to look up in lazy port mappings.
+
+        Returns:
+            True if a module was imported, False if no mapping found.
+        """
+        module_entries = self._lazy_port_to_modules.pop(type_name, None)
+        if not module_entries:
+            return False
+
+        for module_path, profile in module_entries:
+            importlib.import_module(module_path)
+            self.scan(package=module_path, profile=profile, lazy=False)
+        return True
+
+    def _materialize_all_lazy_packages(self) -> None:
+        """Import all pending lazy packages and perform eager scan registration.
+
+        Called as a fallback when per-module lazy lookup fails. After
+        materialization, the lazy state is cleared.
+        """
+        packages = list(self._lazy_packages)
+        self._lazy_packages.clear()
+        self._lazy_port_to_modules.clear()
+
+        for pkg, profile in packages:
+            self.scan(package=pkg, profile=profile, lazy=False)
+
+    def _validate_package_allowed(self, package_name: str) -> None:
+        """Validate that a package is in the allowed_packages list.
+
+        Args:
+            package_name: The package name to validate.
+
+        Raises:
+            ValueError: If the package is not in the allowed list.
+        """
+        if self._allowed_packages is not None:
+            if not any(package_name.startswith(prefix) for prefix in self._allowed_packages):
+                msg = (
+                    f"Package '{package_name}' is not in allowed_packages list. "
+                    f'Allowed prefixes: {self._allowed_packages}'
+                )
+                raise ValueError(msg)
+
     def _import_package(self, package_name: str, *, strict: bool = False) -> int:
         """Import all modules in a package to trigger decorator execution.
 
@@ -2045,14 +2195,7 @@ class Container:
         """
         import logging
 
-        # Security: Validate package is in allowed list (if configured)
-        if self._allowed_packages is not None:
-            if not any(package_name.startswith(prefix) for prefix in self._allowed_packages):
-                msg = (
-                    f"Package '{package_name}' is not in allowed_packages list. "
-                    f'Allowed prefixes: {self._allowed_packages}'
-                )
-                raise ValueError(msg)
+        self._validate_package_allowed(package_name)
 
         # Strict mode: check package __init__.py before importing it
         if strict:
@@ -2136,6 +2279,7 @@ class Container:
         stats: bool = False,
         *,
         strict: bool = False,
+        lazy: bool = False,
     ) -> ScanStats | None:
         """Discover and register all @component and @adapter decorated classes.
 
@@ -2163,6 +2307,12 @@ class Container:
                 module-level function calls that may cause side effects (database
                 connections, file I/O, network requests). Safe patterns like
                 logging.getLogger() are allowlisted. Defaults to False.
+            lazy: If True and package is provided, defer module imports until
+                resolution time. Uses AST parsing to discover adapter-to-port
+                mappings without importing, then imports only the specific module
+                needed when resolve() is called. Each package retains its own
+                profile, so multiple lazy scans with different profiles work
+                correctly. Ignored when package is None (falls back to eager scan).
 
         Registration behavior:
             - SINGLETON scope (default): Creates singleton factory with caching
@@ -2201,17 +2351,26 @@ class Container:
             >>> # Or with string profile (also supported)
             >>> container2 = Container()
             >>> container2.scan(profile='production')  # Same as above
+            >>>
+            >>> # Lazy scan - defer module imports until needed
+            >>> container3 = Container()
+            >>> container3.scan(package='myapp.adapters', profile=Profile.PRODUCTION, lazy=True)
+            >>> # No modules imported yet; they load on first resolve()
 
         Raises:
             ValueError: If multiple adapters are registered for the same port
                 and profile combination (ambiguous registration)
 
         Note:
-            - Ensure all component/adapter classes are imported before calling scan()
+            - For eager mode (default): ensure all component/adapter classes are
+              imported before calling scan(). With lazy=True, pre-importing is
+              not required - modules are imported on demand at resolve time.
             - Constructor dependencies must have type hints
             - Circular dependencies will cause infinite recursion
             - Manual registrations (register_*) take precedence over scan()
             - Profile names are case-insensitive (normalized to lowercase)
+            - AST-based lazy discovery only detects ``@adapter.for_(PortName)``
+              when ``adapter`` is imported directly (not aliased imports).
         """
         from dioxide._registry import (
             PROFILE_ATTRIBUTE,
@@ -2225,9 +2384,16 @@ class Container:
         services_registered_count = 0
         modules_imported_count = 0
 
-        # Import package modules if package parameter provided
-        if package is not None:
+        # Import package modules if package parameter provided (skip for lazy mode)
+        if package is not None and not lazy:
             modules_imported_count = self._import_package(package, strict=strict)
+
+        # For lazy mode, discover adapters via AST without importing
+        if lazy and package is not None:
+            self._validate_package_allowed(package)
+            self._lazy_packages.append((package, profile))
+            self._discover_lazy_adapters(package, profile)
+            return None
 
         # Normalize profile to lowercase if provided
         # Profile is a str subclass, so we can call .lower() directly on any str
