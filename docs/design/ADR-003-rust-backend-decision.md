@@ -43,7 +43,7 @@ Benchmarks measured **raw container operations** (no `scan()`, no decorator mach
 | Container | Implementation | Location |
 |-----------|---------------|----------|
 | Rust (via PyO3) | HashMap + RwLock in Rust, exposed via `#[pyclass]` | `rust/src/lib.rs` |
-| Pure Python | `dict` + enum-based Provider | `python/dioxide/_python_container.py` |
+| Pure Python | `dict` + enum-based Provider | `python/dioxide/_pure_python_container.py` (via [PR #447](https://github.com/mikelane/dioxide/pull/447)) |
 
 ---
 
@@ -103,9 +103,11 @@ The Python container avoids all of this. A `resolve()` call is just: check `dict
 
 2. **Thread safety guarantees:** The Rust container's `Arc<RwLock<HashMap>>` provides compile-time-verified thread safety. The Python container has no thread safety. While the GIL protects against data corruption in CPython, the free-threaded Python initiative (PEP 703) is removing the GIL, making Rust's guarantees increasingly valuable.
 
-3. **Dependency graph operations:** The Rust container uses `petgraph` for dependency graph construction, topological sorting, and circular dependency detection. These operations happen at `scan()` time and are more complex than raw dict operations. The benchmark for scan (100 services in ~9.4ms) includes graph building that would be slower in pure Python.
+3. **Future scalability:** As dioxide adds features like scoped containers, lifecycle management, and request-scoped injection, the Rust core provides a foundation for complex state management without the GIL bottleneck. The `petgraph` crate is declared in `Cargo.toml` as a foundation for migrating graph operations (currently in Python) to Rust.
 
-4. **Future scalability:** As dioxide adds features like scoped containers, lifecycle management, and request-scoped injection, the Rust core provides a foundation for complex state management without the GIL bottleneck.
+### Where Python Handles Graph Operations
+
+Dependency graph construction, topological sorting (Kahn's algorithm), and circular dependency detection are implemented in **Python** (`python/dioxide/container.py`), not in Rust. The `petgraph` crate is declared in `Cargo.toml` but is currently unused in `lib.rs`; it may be leveraged in a future optimization pass or should be removed as a dependency. The scan benchmark (100 services in ~9.4ms) reflects the combined cost of Python-side graph building and Rust-side registration.
 
 ### The FFI Overhead Question
 
@@ -127,7 +129,7 @@ The FFI overhead (~700ns per call) is real but must be evaluated in context:
 
 2. **Thread safety is forward-looking.** The free-threaded Python initiative (PEP 703, targeted for Python 3.13+) will remove the GIL. When that happens, Rust's compile-time thread safety becomes critical, not just nice-to-have.
 
-3. **Graph operations justify Rust.** Circular dependency detection, topological sorting, and dependency graph validation are CPU-bound operations where Rust genuinely outperforms Python. These happen at scan() time and scale with application complexity.
+3. **Foundation for graph operations.** Circular dependency detection, topological sorting, and dependency graph validation are currently implemented in Python. The `petgraph` crate is declared as a Rust dependency for potential future migration of these CPU-bound operations, which would benefit from Rust's performance at scale.
 
 4. **Installation friction is solved.** Pre-built wheels are published for all major platforms (Linux x86_64/aarch64, macOS x86_64/arm64, Windows x86_64) via GitHub Actions. Users never need a Rust compiler: `pip install dioxide` just works.
 
@@ -141,7 +143,7 @@ The FFI overhead (~700ns per call) is real but must be evaluated in context:
 |----------|---------|
 | Python is faster for raw operations | True, but irrelevant -- DI resolution is not a bottleneck |
 | Simpler build and install | Solved by pre-built wheels |
-| Easier to contribute | Rust code is ~300 LOC in one file; Python handles all API design |
+| Easier to contribute | Rust code is ~400 LOC in one file; Python handles all API design |
 | Fewer dependencies | maturin is a build-time dependency only |
 
 ### Trade-offs Accepted
@@ -185,7 +187,7 @@ uv run pytest tests/     # Run tests (Rust changes picked up)
 
 **Q: Is the Rust backend actually faster?**
 
-A: For raw container operations, no -- Python dict lookups are faster than crossing the FFI boundary. But dioxide uses Rust for memory efficiency (84x less overhead), thread safety (important for free-threaded Python), and complex graph operations (circular dependency detection, topological sort). The ~1.8us resolve latency is well under the 10us target and invisible in real applications.
+A: For raw container operations, no -- Python dict lookups are faster than crossing the FFI boundary. But dioxide uses Rust for memory efficiency (84x less overhead) and thread safety (important for free-threaded Python). Graph operations (circular dependency detection, topological sort) are currently implemented in Python, with the `petgraph` Rust crate reserved for potential future optimization. The ~1.8us resolve latency is well under the 10us target and invisible in real applications.
 
 **Q: Do I need Rust installed?**
 
@@ -206,7 +208,7 @@ A: Dioxide's resolve latency (~1.8us) is already sub-10-microsecond. If you're r
 | Metric | Target | Actual | Status |
 |--------|--------|--------|--------|
 | Single resolution (p50) | < 10us | 1.87us | PASS |
-| Bulk resolution (10,000 calls) | < 100ns/call | ~1.8us/call | Within 20x target |
+| Bulk resolution (10,000 calls) | < 2us/call | ~1.8us/call | PASS |
 | Scan (100 services) | < 50ms | 9.4ms | PASS |
 | Memory (1000 singletons) | < 1KB/provider | ~1 byte/provider | PASS |
 | Installation (pip install) | No Rust needed | Pre-built wheels | PASS |
@@ -223,11 +225,11 @@ When the GIL is removed, dioxide's Rust-backed container will be one of the few 
 
 1. **Release builds:** Current benchmarks use debug builds. Release builds with LTO could reduce FFI overhead by 2-5x.
 2. **Batch operations:** A `resolve_many()` API could amortize FFI overhead across multiple resolutions.
-3. **Pre-compiled dependency graphs:** Caching the topological sort result could speed up repeated scans.
+3. **Rust-side graph operations:** Migrating dependency graph construction and topological sorting from Python to Rust (using `petgraph`) could reduce scan() overhead, especially for large service graphs.
 
 ### Pure Python Fallback
 
-The `PythonContainer` prototype from #391 is preserved in the codebase for:
+The `PurePythonContainer` prototype from #391 will be preserved in the codebase (as `python/dioxide/_pure_python_container.py`, available via [PR #447](https://github.com/mikelane/dioxide/pull/447)) for:
 - Benchmark comparison reference
 - Potential fallback for platforms without pre-built wheels
 - Educational purposes (understanding the container abstraction)
