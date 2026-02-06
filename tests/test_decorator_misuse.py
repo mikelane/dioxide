@@ -44,6 +44,14 @@ class DescribeAdapterWithoutForCall:
             class MyAdapter:
                 pass
 
+    def it_raises_type_error_when_called_with_non_class(self) -> None:
+        with pytest.raises(TypeError, match=r'@adapter cannot be used directly'):
+            adapter(42)  # type: ignore[arg-type]
+
+    def it_raises_type_error_when_called_with_string(self) -> None:
+        with pytest.raises(TypeError, match=r'@adapter cannot be used directly'):
+            adapter('not a class')  # type: ignore[arg-type]
+
 
 class DescribeStackedServiceAndAdapter:
     """Tests for stacking @service and @adapter on the same class."""

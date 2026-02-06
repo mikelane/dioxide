@@ -219,12 +219,13 @@ class AdapterDecorator:
 
     def __call__(self, cls: type[Any]) -> type[Any]:
         """Intercept direct @adapter usage and provide guidance."""
+        cls_name = getattr(cls, '__name__', repr(cls))
         msg = (
             f'@adapter cannot be used directly as a decorator. '
-            f'Use @adapter.for_(PortType) to specify which port {cls.__name__} implements.\n'
+            f'Use @adapter.for_(PortType) to specify which port {cls_name} implements.\n'
             f'\n'
             f'  @adapter.for_(YourPort, profile=Profile.PRODUCTION)\n'
-            f'  class {cls.__name__}:\n'
+            f'  class {cls_name}:\n'
             f'      ...'
         )
         raise TypeError(msg)
