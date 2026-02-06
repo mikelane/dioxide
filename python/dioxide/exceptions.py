@@ -183,6 +183,23 @@ if TYPE_CHECKING:
 DOCS_BASE_URL = 'https://dioxide.readthedocs.io/en/stable'
 
 
+class DioxideDeprecationWarning(DeprecationWarning):
+    """Custom deprecation warning for dioxide APIs.
+
+    Using a dedicated warning subclass allows users to filter dioxide
+    deprecation warnings separately from other DeprecationWarning sources::
+
+        import warnings
+        from dioxide import DioxideDeprecationWarning
+
+        # Silence all dioxide deprecation warnings
+        warnings.filterwarnings('ignore', category=DioxideDeprecationWarning)
+
+        # Turn dioxide deprecation warnings into errors during testing
+        warnings.filterwarnings('error', category=DioxideDeprecationWarning)
+    """
+
+
 class DioxideError(Exception):
     """Base class for all dioxide errors with rich formatting.
 
