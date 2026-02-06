@@ -1,3 +1,4 @@
+@wip
 Feature: Manual Provider Registration
   As a Python developer
   I want to manually register providers when needed

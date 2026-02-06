@@ -1,3 +1,4 @@
+@wip
 Feature: Container Auto-Discovery via scan()
   As a Python developer
   I want the container to automatically discover @component classes

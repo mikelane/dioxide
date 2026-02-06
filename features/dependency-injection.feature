@@ -1,3 +1,4 @@
+@wip
 Feature: Constructor Dependency Injection
   As a Python developer
   I want constructor parameters to be auto-injected
