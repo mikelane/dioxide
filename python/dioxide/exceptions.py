@@ -183,6 +183,26 @@ if TYPE_CHECKING:
 DOCS_BASE_URL = 'https://dioxide.readthedocs.io/en/stable'
 
 
+class SideEffectWarning(UserWarning):
+    """Warning emitted when strict mode detects potential module-level side effects.
+
+    Issued by ``container.scan(strict=True)`` when AST analysis finds
+    module-level function calls that may cause side effects (database
+    connections, file I/O, network requests, etc.).
+
+    Users can filter these warnings using the standard ``warnings`` module::
+
+        import warnings
+        from dioxide.exceptions import SideEffectWarning
+
+        # Suppress all side-effect warnings
+        warnings.filterwarnings('ignore', category=SideEffectWarning)
+
+        # Or escalate them to errors
+        warnings.filterwarnings('error', category=SideEffectWarning)
+    """
+
+
 class DioxideDeprecationWarning(DeprecationWarning):
     """Custom deprecation warning for dioxide APIs.
 

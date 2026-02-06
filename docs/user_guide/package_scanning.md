@@ -142,6 +142,75 @@ class PostgresAdapter:
             await self.connection.close()
 ```
 
+## Strict Mode: Detecting Side Effects Before Import
+
+Dioxide provides a **strict mode** that uses AST analysis to warn about potential module-level side effects *before* importing modules. Enable it by passing `strict=True` to `scan()`:
+
+```python
+container = Container()
+container.scan(package="myapp", profile=Profile.PRODUCTION, strict=True)
+```
+
+When strict mode is enabled, dioxide reads each module's source code and analyzes the AST (Abstract Syntax Tree) for module-level function calls that may cause side effects. Warnings are emitted as `SideEffectWarning` before the module is imported.
+
+### What Strict Mode Detects
+
+Strict mode flags module-level function calls that are not on the safe allowlist:
+
+```python
+# myapp/dangerous.py
+
+import psycopg2
+
+# These are flagged:
+connection = psycopg2.connect("postgresql://localhost/mydb")  # Database connection
+data = open("config.json").read()                             # File I/O
+print("initializing module")                                  # Console output
+result: int = expensive_computation()                         # Annotated assignment with call
+
+# These are safe (allowlisted):
+import logging
+logger = logging.getLogger(__name__)        # Logging setup
+DB_URL = os.environ.get("DATABASE_URL")     # Environment variable access
+T = TypeVar("T")                            # Type variable definition
+```
+
+### Filtering Warnings
+
+`SideEffectWarning` is a standard Python warning category, so you can control it with the `warnings` module:
+
+```python
+import warnings
+from dioxide.exceptions import SideEffectWarning
+
+# Suppress all side-effect warnings
+warnings.filterwarnings("ignore", category=SideEffectWarning)
+
+# Escalate them to errors (fail on any side effect)
+warnings.filterwarnings("error", category=SideEffectWarning)
+
+# Only show once per location
+warnings.filterwarnings("once", category=SideEffectWarning)
+```
+
+### When to Use Strict Mode
+
+| Scenario | Recommendation |
+|----------|---------------|
+| CI/CD pipelines | Enable to catch side effects early |
+| Large codebases | Enable to audit third-party package interactions |
+| Development | Optional, helpful when onboarding new modules |
+| Production startup | Usually not needed if CI catches issues |
+
+### Limitations
+
+Strict mode is a **best-effort heuristic**:
+
+- It only examines top-level statements (not code inside functions or classes)
+- It cannot detect side effects in C extensions or compiled modules
+- False positives are possible for safe-but-unusual patterns
+- The package `__init__.py` is also checked before import
+
 ## Controlling Scan Scope
 
 ### Narrow Scanning (Recommended)

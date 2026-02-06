@@ -73,6 +73,7 @@ from .exceptions import (
     ResolutionError,
     ScopeError,
     ServiceNotFoundError,
+    SideEffectWarning,
 )
 from .lifecycle import lifecycle
 from .profile_enum import Profile
@@ -104,6 +105,7 @@ __all__ = [
     'ScopedContainer',
     'ServiceInfo',
     'ServiceNotFoundError',
+    'SideEffectWarning',
     '_clear_registry',
     '_get_registered_components',
     'adapter',

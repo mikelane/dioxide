@@ -2020,7 +2020,7 @@ class Container:
 
         return build_scan_plan(package)
 
-    def _import_package(self, package_name: str) -> int:
+    def _import_package(self, package_name: str, *, strict: bool = False) -> int:
         """Import all modules in a package to trigger decorator execution.
 
         Recursively walks through the package and all sub-packages, importing
@@ -2029,6 +2029,7 @@ class Container:
 
         Args:
             package_name: The fully-qualified package name to import (e.g. "app.services").
+            strict: If True, run AST-based side-effect detection before importing each module.
 
         Raises:
             ImportError: If the package name is invalid or cannot be imported.
@@ -2053,6 +2054,10 @@ class Container:
                 )
                 raise ValueError(msg)
 
+        # Strict mode: check package __init__.py before importing it
+        if strict:
+            self._check_module_side_effects(package_name)
+
         try:
             # Import the package itself
             package = importlib.import_module(package_name)
@@ -2071,6 +2076,10 @@ class Container:
             prefix=package.__name__ + '.',
             onerror=lambda x: None,  # Silently skip modules that fail to import
         ):
+            # Strict mode: analyze source for side effects before importing
+            if strict:
+                self._check_module_side_effects(modname)
+
             try:
                 importlib.import_module(modname)
                 count += 1
@@ -2082,11 +2091,51 @@ class Container:
 
         return count
 
+    def _check_module_side_effects(self, module_name: str) -> None:
+        """Analyze a module's source for potential side effects before importing.
+
+        Uses AST analysis to detect function calls at module level that may
+        cause side effects. Emits warnings for each finding.
+
+        Args:
+            module_name: Fully-qualified module name to analyze.
+        """
+        import importlib.util
+        import warnings
+
+        from dioxide._strict import detect_side_effects
+
+        spec = importlib.util.find_spec(module_name)
+        if spec is None or spec.origin is None:
+            return
+
+        from pathlib import Path
+
+        try:
+            source = Path(spec.origin).read_text(encoding='utf-8')
+        except (OSError, UnicodeDecodeError):
+            return
+
+        findings = detect_side_effects(source, spec.origin)
+        for finding in findings:
+            from dioxide.exceptions import SideEffectWarning
+
+            warnings.warn(
+                f'Potential side effect in {module_name} '
+                f'(line {finding.line}): {finding.description}\n'
+                f'  Suggestion: {finding.suggestion}',
+                category=SideEffectWarning,
+                # stacklevel=4: warn -> _check_module_side_effects -> _import_package -> scan
+                stacklevel=4,
+            )
+
     def scan(
         self,
         package: str | None = None,
         profile: str | Profile | None = None,
         stats: bool = False,
+        *,
+        strict: bool = False,
     ) -> ScanStats | None:
         """Discover and register all @component and @adapter decorated classes.
 
@@ -2109,6 +2158,11 @@ class Container:
                 matching profile in their __dioxide_profiles__ attribute. Components/
                 adapters decorated with Profile.ALL ("*") are registered in all profiles.
                 Profile names are normalized to lowercase for matching.
+            strict: If True, analyze module source code for potential side effects
+                using AST analysis before importing. Emits SideEffectWarning for
+                module-level function calls that may cause side effects (database
+                connections, file I/O, network requests). Safe patterns like
+                logging.getLogger() are allowlisted. Defaults to False.
 
         Registration behavior:
             - SINGLETON scope (default): Creates singleton factory with caching
@@ -2173,7 +2227,7 @@ class Container:
 
         # Import package modules if package parameter provided
         if package is not None:
-            modules_imported_count = self._import_package(package)
+            modules_imported_count = self._import_package(package, strict=strict)
 
         # Normalize profile to lowercase if provided
         # Profile is a str subclass, so we can call .lower() directly on any str
