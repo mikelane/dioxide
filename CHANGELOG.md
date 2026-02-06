@@ -5,6 +5,40 @@ All notable changes to dioxide will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+See also: [API Stability Policy](docs/api-stability-policy.md)
+
+<!-- CHANGELOG TEMPLATE
+When adding entries, use the following sections in order:
+
+### BREAKING CHANGES
+For each breaking change, include:
+- **BREAKING: Short description** (#issue)
+  - **Migration effort**: Low / Medium / High
+  - **What changed**: Clear description of the change
+  - **Before**: `old_code_pattern()`
+  - **After**: `new_code_pattern()`
+  - **Migration guide**: [Link to migration docs](docs/migration/vX.md)
+
+### Added
+- **Feature name** (#issue)
+  - Detail
+
+### Changed
+- Description (#issue)
+
+### Deprecated
+- `deprecated_api()` - Use `replacement()` instead. Will be removed in vX.0. (#issue)
+
+### Removed
+- `removed_api()` - Deprecated since vX.0. Use `replacement()` instead. (#issue)
+
+### Fixed
+- Description (#issue)
+
+### Security
+- Description (#issue)
+-->
+
 ## [Unreleased]
 
 ## [2.0.1] - 2026-01-27
@@ -48,15 +82,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-01-23
 
-### ⚠️ BREAKING CHANGES
+### BREAKING CHANGES
 
-- **Profile is now an extensible `str` subclass instead of `StrEnum`** (#333)
-  - `Profile.PRODUCTION`, `Profile.TEST`, etc. still work unchanged
-  - **Broken:** `profile.value` → use `str(profile)` or just `profile`
-  - **Broken:** `profile.name` → not available, use the constant directly
-  - **Broken:** `for p in Profile:` → use explicit list `[Profile.PRODUCTION, Profile.TEST, ...]`
-  - **Broken:** `Profile['PRODUCTION']` → use `Profile.PRODUCTION` directly
-  - **New:** Custom profiles are now first-class: `MY_PROFILE = Profile('custom')`
+- **BREAKING: `Profile` changed from `StrEnum` to extensible `str` subclass** (#333)
+  - **Migration effort**: Low (find/replace)
+  - **What changed**: `Profile` is now a `str` subclass instead of `StrEnum`. Constants like `Profile.PRODUCTION` and `Profile.TEST` still work. Enum-specific accessors were removed.
+  - **Before**: `profile.value`, `profile.name`, `for p in Profile:`, `Profile['PRODUCTION']`
+  - **After**: `str(profile)`, use constant directly, `[Profile.PRODUCTION, Profile.TEST, ...]`, `Profile.PRODUCTION`
+  - **New capability**: Custom profiles are now first-class: `MY_PROFILE = Profile('custom')`
   - See the **[v1.x to v2.0 Migration Guide](https://dioxide.readthedocs.io/en/latest/migration-v1-to-v2.html)** for step-by-step migration instructions, find-replace patterns, and codemod tooling
 
 ### Added
@@ -75,10 +108,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - No more stack trace noise for common configuration errors
   - Clear "what went wrong" + "how to fix it" format
 
-- **Deprecation warnings for non-canonical profile patterns** (#333)
-  - Using string profiles (`profile='production'`) now emits `DeprecationWarning`
-  - Guides users to canonical `Profile.PRODUCTION` pattern
-  - Strings still work but will be removed in v2.0
+### Deprecated
+
+- **String profile arguments** (#333) - Using string profiles (e.g., `profile='production'`)
+  now emits `DeprecationWarning`. Use `Profile.PRODUCTION` instead. Strings still work but
+  the deprecation warning guides users to the canonical enum-based pattern.
 
 ### Documentation
 
