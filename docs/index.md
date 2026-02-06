@@ -388,6 +388,7 @@ user_guide/architecture
 
 testing/index
 testing/philosophy
+testing/fakes-in-production
 testing/patterns
 testing/fixtures
 testing/integration

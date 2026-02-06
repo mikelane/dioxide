@@ -235,6 +235,13 @@ Where Fakes Live
 4. Can be shipped for user testing
 5. Developers can run app locally without PostgreSQL, SendGrid, etc.
 
+.. note::
+
+   Worried about shipping fakes to production? See
+   :doc:`fakes-in-production` for a detailed explanation of why fakes
+   in the source tree are safe, how the profile system prevents accidental
+   activation, and what the actual deployment impact is.
+
 ----
 
 When to Use Mocks Instead

@@ -74,6 +74,7 @@ Documentation Sections
 
    philosophy
    mock-vs-fake
+   fakes-in-production
    patterns
    fixtures
    integration
