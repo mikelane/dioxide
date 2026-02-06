@@ -63,10 +63,12 @@ from .container import (
     container,
     reset_global_container,
 )
+from .deprecation import deprecated
 from .exceptions import (
     AdapterNotFoundError,
     CaptiveDependencyError,
     CircularDependencyError,
+    DioxideDeprecationWarning,
     DioxideError,
     ResolutionError,
     ScopeError,
@@ -84,6 +86,7 @@ __all__ = [
     'CaptiveDependencyError',
     'CircularDependencyError',
     'Container',
+    'DioxideDeprecationWarning',
     'DioxideError',
     'Profile',
     'ResolutionError',
@@ -95,6 +98,7 @@ __all__ = [
     '_get_registered_components',
     'adapter',
     'container',
+    'deprecated',
     'fresh_container',
     'lifecycle',
     'reset_global_container',
