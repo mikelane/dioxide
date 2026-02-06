@@ -27,7 +27,7 @@ profile = Profile(profile_name)
 print(f"\n{'=' * 60}")
 print("dioxide FastAPI Example")
 print(f"{'=' * 60}")
-print(f"Profile: {profile.value}")
+print(f"Profile: {str(profile)}")
 print(f"{'=' * 60}\n")
 
 # Create FastAPI app
@@ -192,4 +192,4 @@ async def health_check() -> dict[str, str]:
             "profile": "development"
         }
     """
-    return {"status": "healthy", "profile": profile.value}
+    return {"status": "healthy", "profile": str(profile)}

@@ -348,21 +348,90 @@ This example uses **fakes** instead of mocks:
 - Brittle - break when refactoring
 - Harder to understand
 
-Example fake:
+### Fake Patterns Demonstrated
+
+This example showcases four key patterns that make fakes powerful for testing:
+
+#### Pattern 1: In-Memory Storage
+
+The simplest fake pattern -- store data in a dictionary instead of a real database:
 
 ```python
-@adapter.for_(EmailPort, profile=Profile.TEST)
-class FakeEmailAdapter:
+@adapter.for_(DatabasePort, profile=Profile.TEST)
+class FakeDatabaseAdapter:
     def __init__(self):
-        self.sent_emails = []  # Real storage, just in-memory
+        self.users: dict[str, dict] = {}
+        self._next_id = 1
 
-    async def send_welcome_email(self, to: str, name: str):
-        # Real implementation - just records instead of sending
-        self.sent_emails.append({"to": to, "name": name, "type": "welcome"})
+    async def create_user(self, name: str, email: str) -> dict:
+        user_id = str(self._next_id)
+        self._next_id += 1
+        user = {"id": user_id, "name": name, "email": email}
+        self.users[user_id] = user
+        return user
+```
 
-    def was_welcome_email_sent_to(self, email: str) -> bool:
-        # Convenience method for tests
-        return any(e["to"] == email and e["type"] == "welcome" for e in self.sent_emails)
+#### Pattern 2: Test Helper Methods (`seed()`, `was_*_sent_to()`)
+
+Fakes can provide convenience methods that make tests more readable:
+
+```python
+# Seed test data directly (skip the API layer for setup)
+db.seed(
+    {"id": "100", "name": "Seeded User", "email": "seeded@example.com"},
+    {"id": "200", "name": "Another User", "email": "another@example.com"},
+)
+
+# Convenience assertions (cleaner than searching a list)
+assert email.was_welcome_email_sent_to("alice@example.com")
+```
+
+#### Pattern 3: Error Injection (`configure_to_fail()`)
+
+Test how your application handles infrastructure failures without needing
+a real service that can actually fail:
+
+```python
+# Simulate database failure
+db.configure_to_fail(RuntimeError("Connection refused"))
+
+with pytest.raises(RuntimeError, match="Connection refused"):
+    client.post("/users", json={"name": "Alice", "email": "alice@example.com"})
+
+# Simulate email service failure
+email.configure_to_fail(RuntimeError("SMTP connection failed"))
+```
+
+#### Pattern 4: State Reset (`reset()`)
+
+Each fake provides a `reset()` method that clears both data and error
+injection state, making test isolation straightforward:
+
+```python
+db.configure_to_fail(RuntimeError("Temporary failure"))
+db.reset()  # Clears data AND stops failing
+
+response = client.post("/users", json={"name": "Alice", "email": "alice@example.com"})
+assert response.status_code == 201  # Works again
+```
+
+### Fake Controllable Configuration
+
+The `FakeConfigAdapter` demonstrates how to make configuration testable.
+Instead of reading environment variables, it stores values in a dictionary
+with a `set()` method for test control:
+
+```python
+@adapter.for_(ConfigPort, profile=Profile.TEST)
+class FakeConfigAdapter:
+    def __init__(self):
+        self.values = {"DATABASE_URL": ":memory:", "SENDGRID_API_KEY": "test-api-key"}
+
+    def get(self, key: str, default: str = "") -> str:
+        return self.values.get(key, default)
+
+    def set(self, key: str, value: str) -> None:
+        self.values[key] = value  # Test-only: control config values
 ```
 
 ## API Endpoints

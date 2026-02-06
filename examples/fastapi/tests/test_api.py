@@ -7,6 +7,7 @@ These tests demonstrate dioxide's hexagonal architecture in action:
 - No mocking frameworks needed
 """
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.domain.ports import DatabasePort, EmailPort
@@ -210,3 +211,64 @@ class DescribeFakeConvenience:
 
         # This is cleaner than:
         # assert any(e["to"] == "alice@example.com" for e in email.sent_emails)
+
+
+class DescribeSeedHelper:
+    """Tests demonstrating seed() helper for pre-populating test data."""
+
+    def it_seeds_test_data_directly(self, client: TestClient, db: DatabasePort) -> None:
+        """seed() lets tests pre-populate data without going through the API."""
+        db.seed(
+            {"id": "100", "name": "Seeded User", "email": "seeded@example.com"},
+        )
+
+        response = client.get("/users/100")
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Seeded User"
+
+    def it_seeds_multiple_users_at_once(
+        self, client: TestClient, db: DatabasePort
+    ) -> None:
+        """seed() accepts multiple users for bulk test setup."""
+        db.seed(
+            {"id": "1", "name": "Alice", "email": "alice@example.com"},
+            {"id": "2", "name": "Bob", "email": "bob@example.com"},
+            {"id": "3", "name": "Carol", "email": "carol@example.com"},
+        )
+
+        response = client.get("/users")
+
+        assert response.status_code == 200
+        assert len(response.json()) == 3
+
+
+class DescribeErrorInjection:
+    """Tests demonstrating error injection for failure scenario testing."""
+
+    def it_propagates_database_errors(
+        self, client: TestClient, db: DatabasePort
+    ) -> None:
+        """Error injection lets tests verify the app propagates database failures."""
+        db.configure_to_fail(RuntimeError("Connection refused"))
+
+        with pytest.raises(RuntimeError, match="Connection refused"):
+            client.post("/users", json={"name": "Alice", "email": "alice@example.com"})
+
+    def it_propagates_email_errors(self, client: TestClient, email: EmailPort) -> None:
+        """Error injection verifies unhandled email failures propagate."""
+        email.configure_to_fail(RuntimeError("SMTP connection failed"))
+
+        with pytest.raises(RuntimeError, match="SMTP connection failed"):
+            client.post("/users", json={"name": "Alice", "email": "alice@example.com"})
+
+    def it_resets_failure_mode(self, client: TestClient, db: DatabasePort) -> None:
+        """reset() clears error injection so subsequent calls succeed."""
+        db.configure_to_fail(RuntimeError("Temporary failure"))
+        db.reset()
+
+        response = client.post(
+            "/users", json={"name": "Alice", "email": "alice@example.com"}
+        )
+
+        assert response.status_code == 201
