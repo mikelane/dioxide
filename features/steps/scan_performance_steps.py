@@ -229,11 +229,7 @@ def step_verify_module_count(context: Context, count: int) -> None:
     if not getattr(context, 'scan_plan_supported', False):
         raise AssertionError('container.scan_plan() method does not exist yet. The scan_plan API is not implemented.')
     result = context.scan_plan_result
-    # ScanPlan object exposes modules as a list attribute
-    modules = getattr(result, 'modules', result) if not isinstance(result, list) else result
-    assert isinstance(modules, list), (
-        f'scan_plan should return an object with a modules list, got {type(result)}'
-    )
+    modules = result.modules
     # Filter to only child modules (exclude the package root itself)
     child_modules = [m for m in modules if m != context.pkg_name]
     assert len(child_modules) == count, (

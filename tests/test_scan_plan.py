@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 
 from dioxide import Container
+from dioxide.scan_plan import ScanPlan
 
 
 class DescribeScanPlan:
@@ -14,7 +16,7 @@ class DescribeScanPlan:
         container = Container()
         plan = container.scan_plan(package='tests.fixtures.test_package_a')
 
-        assert plan is not None
+        assert isinstance(plan, ScanPlan)
 
     def it_lists_discovered_module_paths(self) -> None:
         container = Container()
@@ -44,7 +46,8 @@ class DescribeScanPlan:
         plan = container.scan_plan(package='tests.fixtures.test_package_d')
 
         adapter_names = [a.class_name for a in plan.adapters]
-        assert len(adapter_names) > 0
+        assert 'TestOnlyService' in adapter_names
+        assert 'ProductionOnlyService' in adapter_names
 
     def it_includes_module_path_in_discovered_items(self) -> None:
         container = Container()
@@ -81,9 +84,20 @@ class DescribeScanPlan:
         assert 'ScanPlan' in plan_repr
         assert 'modules' in plan_repr
 
-    def it_handles_packages_with_syntax_errors_gracefully(self) -> None:
+    def it_handles_packages_with_syntax_errors_gracefully(self, caplog: object) -> None:
         container = Container()
-        plan = container.scan_plan(package='tests.fixtures.test_package_with_errors')
 
-        assert plan is not None
-        assert isinstance(plan.modules, list)
+        with caplog.at_level(logging.WARNING):  # type: ignore[union-attr]
+            plan = container.scan_plan(package='tests.fixtures.test_package_with_errors')
+
+        assert 'tests.fixtures.test_package_with_errors.syntax_error_module' in plan.modules
+        syntax_error_services = [s for s in plan.services if 'syntax_error_module' in s.module]
+        assert syntax_error_services == []
+        assert any('syntax error' in r.message.lower() for r in caplog.records)  # type: ignore[union-attr]
+
+    def it_raises_import_error_for_nonexistent_package(self) -> None:
+        import pytest
+
+        container = Container()
+        with pytest.raises(ImportError):
+            container.scan_plan(package='nonexistent.package.that.does.not.exist')
