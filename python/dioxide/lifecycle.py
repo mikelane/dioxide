@@ -275,9 +275,15 @@ See Also:
 """
 
 import inspect
-from typing import TypeVar
+from typing import (
+    Any,
+    TypeVar,
+)
 
 T = TypeVar('T', bound=type)
+
+# Global registry for @lifecycle-decorated classes
+_lifecycle_registry: set[type[Any]] = set()
 
 
 def lifecycle(cls: T) -> T:
@@ -504,4 +510,8 @@ def lifecycle(cls: T) -> T:
         raise TypeError(msg)
 
     cls._dioxide_lifecycle = True  # type: ignore[attr-defined]
+
+    # Register for orphan detection during scan()
+    _lifecycle_registry.add(cls)
+
     return cls

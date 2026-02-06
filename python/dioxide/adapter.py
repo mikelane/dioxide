@@ -217,6 +217,19 @@ class AdapterDecorator:
     configuration visible at the seams.
     """
 
+    def __call__(self, cls: type[Any]) -> type[Any]:
+        """Intercept direct @adapter usage and provide guidance."""
+        cls_name = getattr(cls, '__name__', repr(cls))
+        msg = (
+            f'@adapter cannot be used directly as a decorator. '
+            f'Use @adapter.for_(PortType) to specify which port {cls_name} implements.\n'
+            f'\n'
+            f'  @adapter.for_(YourPort, profile=Profile.PRODUCTION)\n'
+            f'  class {cls_name}:\n'
+            f'      ...'
+        )
+        raise TypeError(msg)
+
     def for_(
         self,
         port: type[Any],
@@ -403,7 +416,37 @@ class AdapterDecorator:
             - :class:`dioxide.services.service` - For core domain logic
         """
 
+        # Validate port argument (runtime check for user-facing API safety)
+        if not isinstance(port, type):
+            msg = (  # type: ignore[unreachable]
+                f'adapter.for_() port argument must be a class (Protocol or ABC), '
+                f'got {type(port).__name__}: {port!r}\n'
+                f'\n'
+                f'  @adapter.for_(YourPort, profile=Profile.PRODUCTION)\n'
+                f'  class YourAdapter: ...'
+            )
+            raise TypeError(msg)
+
         def decorator(cls: type[T]) -> type[T]:
+            # Check for stacked @service and @adapter
+            from dioxide._registry import _component_registry  # noqa: PLC0415
+
+            if cls in _component_registry:
+                msg = (
+                    f'{cls.__name__} has both @service and @adapter.for_() decorators. '
+                    f'A class must be either a service (core logic) or an adapter '
+                    f'(port implementation), not both.\n'
+                    f'\n'
+                    f'  Use @service for core business logic:\n'
+                    f'    @service\n'
+                    f'    class {cls.__name__}: ...\n'
+                    f'\n'
+                    f'  Use @adapter.for_() for port implementations:\n'
+                    f'    @adapter.for_({port.__name__}, profile=Profile.PRODUCTION)\n'
+                    f'    class {cls.__name__}: ...'
+                )
+                raise TypeError(msg)
+
             # Emit deprecation warnings for non-canonical profile patterns
             if isinstance(profile, str):
                 # Raw string profile (not Profile instance) is deprecated for known profiles
