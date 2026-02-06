@@ -95,6 +95,19 @@ class DescribeScanPlan:
         assert syntax_error_services == []
         assert any('syntax error' in r.message.lower() for r in caplog.records)  # type: ignore[union-attr]
 
+    def it_discovers_underscore_prefixed_modules(self) -> None:
+        container = Container()
+        plan = container.scan_plan(package='tests.fixtures.test_package_underscore')
+
+        module_names = plan.modules
+        assert any('_internal' in m for m in module_names), (
+            f'scan_plan should discover underscore-prefixed modules like _internal.py, got: {module_names}'
+        )
+        service_names = [s.class_name for s in plan.services]
+        assert 'InternalService' in service_names, (
+            f'scan_plan should find decorators in underscore-prefixed modules, got: {service_names}'
+        )
+
     def it_raises_import_error_for_nonexistent_package(self) -> None:
         import pytest
 

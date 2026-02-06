@@ -81,8 +81,6 @@ def _discover_modules(package_name: str) -> list[str]:
 def _walk_package_dir(directory: Path, prefix: str, modules: list[str]) -> None:
     """Recursively walk a directory to discover Python module paths."""
     for item in sorted(directory.iterdir()):
-        if item.name.startswith('_') and item.name != '__init__.py':
-            continue
         if item.is_file() and item.suffix == '.py' and item.name != '__init__.py':
             module_name = f'{prefix}.{item.stem}'
             modules.append(module_name)
