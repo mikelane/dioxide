@@ -203,6 +203,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"features/**/*.py" = ["S101", "PLC0415"]  # Allow assert, deferred imports in behave step definitions
 "tests/**/*.py" = ["S101", "B008", "PLC0415"]  # Allow assert, Inject() in defaults, local imports in tests
 "python/dioxide/container.py" = ["PLC0415"]  # Allow local imports in scan() to avoid circular dependencies
 "python/dioxide/decorators.py" = ["PLC0415"]  # Allow local imports to avoid circular dependencies
