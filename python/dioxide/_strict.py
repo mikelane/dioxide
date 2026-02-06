@@ -95,6 +95,8 @@ def _find_calls_in_node(node: ast.AST) -> list[ast.Call]:
         calls.extend(_find_calls_in_node(node.func))
         for arg in node.args:
             calls.extend(_find_calls_in_node(arg))
+        for kw in node.keywords:
+            calls.extend(_find_calls_in_node(kw.value))
     elif isinstance(node, ast.Attribute):
         calls.extend(_find_calls_in_node(node.value))
     return calls

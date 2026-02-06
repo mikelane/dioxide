@@ -162,6 +162,17 @@ class DescribeDetectModuleLevelCalls:
         assert len(findings) == 1
         assert 'open' in findings[0].description
 
+    def it_detects_side_effects_in_keyword_arguments(self) -> None:
+        from dioxide._strict import detect_side_effects
+
+        source = textwrap.dedent("""\
+            config = dict(connection=db.connect())
+        """)
+        findings = detect_side_effects(source, 'test_module.py')
+        assert len(findings) >= 1
+        descriptions = [f.description for f in findings]
+        assert any('db.connect' in d for d in descriptions)
+
 
 class DescribeFindingDetails:
     """Side-effect findings include useful details."""
