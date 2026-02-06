@@ -472,4 +472,5 @@ navigation
 design-principles
 design/ADR-001-container-architecture
 design/ADR-002-pyo3-binding-strategy
+design/ADR-003-rust-backend-decision
 ```
