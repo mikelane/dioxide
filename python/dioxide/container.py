@@ -1145,8 +1145,9 @@ class Container:
             port_type: The port type that couldn't be resolved.
 
         Returns:
-            A terse error message (1-3 lines) with key diagnostic info.
+            A terse error message with key diagnostic info and guidance.
         """
+        from dioxide._registry import _get_registered_components
         from dioxide.adapter import _adapter_registry
 
         port_name = port_type.__name__
@@ -1162,14 +1163,38 @@ class Container:
                     profile_list = ', '.join(sorted(profiles)) if profiles else 'none'
                     adapters_for_port.append(f'{adapter_name} ({profile_list})')
 
-        # Build terse message: 1-3 lines max
+        # Build message
         lines = [f"No adapter for {port_name} in profile '{profile_str}'"]
         if adapters_for_port:
             lines.append(f'  Registered: {", ".join(adapters_for_port)}')
         else:
             lines.append('  Registered: none')
 
+        # Check if any @service classes look like they could be adapters for this port
+        port_methods = self._get_protocol_methods(port_type)
+        if port_methods:
+            for svc_class in _get_registered_components():
+                svc_methods = {name for name in dir(svc_class) if not name.startswith('_')}
+                if port_methods.issubset(svc_methods):
+                    lines.append('')
+                    lines.append(
+                        f'  Hint: {svc_class.__name__} is registered as @service but implements {port_name} methods.'
+                    )
+                    lines.append(f'  If {svc_class.__name__} is an adapter, use @adapter.for_() instead:')
+                    lines.append(f'    @adapter.for_({port_name}, profile=Profile.PRODUCTION)')
+                    lines.append(f'    class {svc_class.__name__}: ...')
+
         return '\n'.join(lines)
+
+    def _get_protocol_methods(self, port_type: type[Any]) -> set[str]:
+        """Get the set of method names defined by a Protocol type."""
+        methods: set[str] = set()
+        for name, value in vars(port_type).items():
+            if name.startswith('_'):
+                continue
+            if callable(value) or isinstance(value, (staticmethod, classmethod, property)):
+                methods.add(name)
+        return methods
 
     def _build_service_not_found_message(self, service_type: type[Any]) -> str:
         """Build terse error message for missing service/component.
@@ -2296,6 +2321,9 @@ class Container:
                 normalized_profile,
             )
 
+        # Warn about @lifecycle classes not registered with @service or @adapter
+        self._warn_orphan_lifecycle_classes()
+
         if stats and start_time is not None:
             elapsed_ms = (time.perf_counter() - start_time) * 1000
             return ScanStats(
@@ -2306,6 +2334,25 @@ class Container:
             )
 
         return None
+
+    def _warn_orphan_lifecycle_classes(self) -> None:
+        """Warn about @lifecycle classes not registered with @service or @adapter."""
+        import warnings
+
+        from dioxide._registry import _get_registered_components
+        from dioxide.adapter import _adapter_registry
+        from dioxide.lifecycle import _lifecycle_registry
+
+        registered = _get_registered_components() | _adapter_registry
+        for cls in _lifecycle_registry:
+            if cls not in registered:
+                warnings.warn(
+                    f'{cls.__name__} has @lifecycle but is not registered with '
+                    f'@service or @adapter.for_(). It will not be discovered by '
+                    f'the container. Add @service or @adapter.for_() to register it.',
+                    UserWarning,
+                    stacklevel=2,
+                )
 
     def _create_auto_injecting_factory(self, cls: type[T]) -> Callable[[], T]:
         """Create a factory function that auto-injects dependencies from type hints.

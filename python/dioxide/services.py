@@ -267,6 +267,24 @@ def service(
     """
 
     def decorator(cls_to_decorate: type[T]) -> type[T]:
+        # Check for stacked @service and @adapter
+        if hasattr(cls_to_decorate, '__dioxide_port__'):
+            port_name = cls_to_decorate.__dioxide_port__.__name__  # type: ignore[attr-defined]
+            msg = (
+                f'{cls_to_decorate.__name__} has both @service and @adapter.for_() '
+                f'decorators. A class must be either a service (core logic) or an '
+                f'adapter (port implementation), not both.\n'
+                f'\n'
+                f'  Use @service for core business logic:\n'
+                f'    @service\n'
+                f'    class {cls_to_decorate.__name__}: ...\n'
+                f'\n'
+                f'  Use @adapter.for_() for port implementations:\n'
+                f'    @adapter.for_({port_name}, profile=Profile.PRODUCTION)\n'
+                f'    class {cls_to_decorate.__name__}: ...'
+            )
+            raise TypeError(msg)
+
         # Store DI metadata on the class
         cls_to_decorate.__dioxide_scope__ = scope  # type: ignore[attr-defined]
         cls_to_decorate.__dioxide_profiles__ = frozenset(['*'])  # type: ignore[attr-defined]  # Available in all profiles
@@ -277,6 +295,14 @@ def service(
     # Handle both @service and @service(scope=...) syntaxes
     if cls is not None:
         # Called as @service without parentheses
+        if not isinstance(cls, type):
+            msg = (  # type: ignore[unreachable]
+                f'@service must be applied to a class, got {type(cls).__name__}: {cls!r}\n'
+                f'\n'
+                f'  @service\n'
+                f'  class YourService: ...'
+            )
+            raise TypeError(msg)
         return decorator(cls)
     else:
         # Called as @service(scope=...) with parentheses

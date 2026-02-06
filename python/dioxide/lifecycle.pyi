@@ -4,7 +4,12 @@ This module provides type hints for IDE autocomplete and mypy validation
 of the @lifecycle decorator and the lifecycle protocol interface.
 """
 
-from typing import Protocol
+from typing import (
+    Any,
+    Protocol,
+)
+
+_lifecycle_registry: set[type[Any]]
 
 class LifecycleProtocol(Protocol):
     """Protocol defining the lifecycle interface for components.

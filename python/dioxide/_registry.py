@@ -38,7 +38,7 @@ def _get_registered_components() -> set[type[Any]]:
 
 
 def _clear_registry() -> None:
-    """Clear the component and adapter registries.
+    """Clear the component, adapter, and lifecycle registries.
 
     Internal function used in test cleanup to reset the global registry
     state between tests. Should not be used in production code.
@@ -49,9 +49,11 @@ def _clear_registry() -> None:
     """
     # Import here to avoid circular imports
     from dioxide.adapter import _adapter_registry  # noqa: PLC0415
+    from dioxide.lifecycle import _lifecycle_registry  # noqa: PLC0415
 
     _component_registry.clear()
     _adapter_registry.clear()
+    _lifecycle_registry.clear()
 
 
 # Attribute name for storing profiles on decorated classes
