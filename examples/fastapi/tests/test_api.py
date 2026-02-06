@@ -242,6 +242,30 @@ class DescribeSeedHelper:
         assert response.status_code == 200
         assert len(response.json()) == 3
 
+    def it_does_not_overwrite_seeded_users_on_create(
+        self, client: TestClient, db: DatabasePort
+    ) -> None:
+        """create_user after seed() generates IDs that do not collide with seeded IDs."""
+        db.seed(
+            {"id": "1", "name": "Seeded Alice", "email": "alice@example.com"},
+            {"id": "2", "name": "Seeded Bob", "email": "bob@example.com"},
+        )
+
+        response = client.post(
+            "/users", json={"name": "New User", "email": "new@example.com"}
+        )
+
+        assert response.status_code == 201
+        new_user = response.json()
+        assert new_user["name"] == "New User"
+        assert new_user["id"] not in ("1", "2")
+
+        seeded_alice = client.get("/users/1")
+        assert seeded_alice.json()["name"] == "Seeded Alice"
+
+        seeded_bob = client.get("/users/2")
+        assert seeded_bob.json()["name"] == "Seeded Bob"
+
 
 class DescribeErrorInjection:
     """Tests demonstrating error injection for failure scenario testing."""

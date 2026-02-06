@@ -65,11 +65,20 @@ class FakeDatabaseAdapter:
         This avoids going through the API for test setup, making tests
         faster and more focused on what they're actually testing.
 
+        Automatically advances the ID counter past any seeded IDs to
+        prevent collisions when create_user is called afterwards.
+
         Args:
             *users: User dictionaries, each must have "id", "name", "email"
         """
         for user in users:
             self.users[user["id"]] = user
+            try:
+                seeded_id = int(user["id"])
+                if seeded_id >= self._next_id:
+                    self._next_id = seeded_id + 1
+            except (ValueError, TypeError):
+                pass
 
     def configure_to_fail(self, error: Exception) -> None:
         """Configure all operations to raise the given error.
