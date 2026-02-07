@@ -117,6 +117,11 @@ a:hover {
     color: var(--brand-bright);
 }
 
+/* ─── Brand Color ─── */
+.brand {
+    color: var(--brand);
+}
+
 /* ─── Code ─── */
 code {
     font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', monospace;
