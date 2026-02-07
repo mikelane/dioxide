@@ -260,6 +260,7 @@ Key conventions:
 - Use **uv** for Python tooling: `uv run`, `uv sync`, `uv add`
 - Do NOT use `uv pip` commands
 - Use groups/extras where appropriate: `uv sync --group dev`
+- **NEVER use bare `python` or `python3`** — always use `uv run python`. Bare `python` resolves to system Python which has a stale dioxide install without recent features. This applies to scripts, one-liners (`python -c "..."`), and agent verification commands. The `lights-on-uv.sh` AYLO hook enforces this at the decision boundary.
 
 ## Profile Class API
 
