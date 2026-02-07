@@ -987,6 +987,20 @@ class UserViewSet(APIView):
 
 See [Django Integration Guide](docs/integrations/django.md) for complete documentation including request scoping and lifecycle management.
 
+## Common Errors
+
+dioxide fails fast with actionable error messages. Here's a quick reference for the most common errors:
+
+| Error | What It Means | How to Fix |
+|-------|---------------|------------|
+| `AdapterNotFoundError` | No adapter registered for a port in the active profile | Add `@adapter.for_(Port, profile=Profile.X)` for the missing profile |
+| `ServiceNotFoundError` | Service missing `@service` decorator or has an unresolvable dependency | Add `@service` decorator, or register the missing dependency |
+| `CircularDependencyError` | `@lifecycle` components depend on each other in a cycle | Break the cycle: remove `@lifecycle` from one component, use a port, or extract shared logic |
+| `ScopeError` | REQUEST-scoped component resolved outside a scope context | Wrap resolution in `async with container.create_scope() as scope:` |
+| `CaptiveDependencyError` | SINGLETON depends on a REQUEST-scoped component | Change the parent to REQUEST scope, or use a factory pattern |
+
+Each error includes context (active profile, available adapters, dependencies) and a link to detailed troubleshooting. See the [Troubleshooting Guide](https://dioxide.readthedocs.io/en/stable/troubleshooting/) for full details.
+
 ## Features
 
 ### v1.0.0 STABLE - MLP Production Ready

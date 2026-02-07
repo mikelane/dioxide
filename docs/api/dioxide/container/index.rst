@@ -900,6 +900,25 @@ Module Contents
 
 
 
+   .. py:method:: __repr__()
+
+      Return an informative string representation for debugging.
+
+      Shows the active profile, port count, and service count so agents
+      and developers can inspect container state in a REPL or debugger.
+
+      :returns: A string like ``Container(profile=Profile.PRODUCTION, ports=5, services=3)``
+                or ``Container(profile=None, ports=0, services=0)`` when no profile is set.
+
+      .. admonition:: Example
+
+         >>> from dioxide import Container, Profile
+         >>> container = Container(profile=Profile.PRODUCTION)
+         >>> repr(container)
+         'Container(profile=Profile.PRODUCTION, ports=..., services=...)'
+
+
+
    .. py:method:: list_registered()
 
       List all types registered in this container.
@@ -1156,7 +1175,31 @@ Module Contents
 
 
 
-   .. py:method:: scan(package = None, profile = None)
+   .. py:method:: scan_plan(package)
+
+      Preview what scan() would discover without importing any modules.
+
+      Walks the package tree and uses AST parsing to find @service and
+      @adapter.for_() decorators. No modules are imported and nothing is
+      registered with the container.
+
+      :param package: The package name to analyze (e.g. "myapp.adapters").
+
+      :returns: A ScanPlan object with discovered modules, services, and adapters.
+
+      :raises ImportError: If the package cannot be found.
+      :raises ValueError: If the package is not in allowed_packages (if configured).
+
+      .. admonition:: Example
+
+         >>> container = Container()
+         >>> plan = container.scan_plan(package='myapp')
+         >>> print(plan.modules)  # ['myapp', 'myapp.services', ...]
+         >>> print(plan.services)  # [ServiceInfo(class_name='UserService', ...)]
+
+
+
+   .. py:method:: scan(package = None, profile = None, stats = False, *, strict = False, lazy = False)
 
       Discover and register all @component and @adapter decorated classes.
 
@@ -1178,6 +1221,17 @@ Module Contents
                       matching profile in their __dioxide_profiles__ attribute. Components/
                       adapters decorated with Profile.ALL ("*") are registered in all profiles.
                       Profile names are normalized to lowercase for matching.
+      :param strict: If True, analyze module source code for potential side effects
+                     using AST analysis before importing. Emits SideEffectWarning for
+                     module-level function calls that may cause side effects (database
+                     connections, file I/O, network requests). Safe patterns like
+                     logging.getLogger() are allowlisted. Defaults to False.
+      :param lazy: If True and package is provided, defer module imports until
+                   resolution time. Uses AST parsing to discover adapter-to-port
+                   mappings without importing, then imports only the specific module
+                   needed when resolve() is called. Each package retains its own
+                   profile, so multiple lazy scans with different profiles work
+                   correctly. Ignored when package is None (falls back to eager scan).
 
       Registration behavior:
           - SINGLETON scope (default): Creates singleton factory with caching
@@ -1217,17 +1271,26 @@ Module Contents
          >>> # Or with string profile (also supported)
          >>> container2 = Container()
          >>> container2.scan(profile='production')  # Same as above
+         >>>
+         >>> # Lazy scan - defer module imports until needed
+         >>> container3 = Container()
+         >>> container3.scan(package='myapp.adapters', profile=Profile.PRODUCTION, lazy=True)
+         >>> # No modules imported yet; they load on first resolve()
 
       :raises ValueError: If multiple adapters are registered for the same port
           and profile combination (ambiguous registration)
 
       .. note::
 
-         - Ensure all component/adapter classes are imported before calling scan()
+         - For eager mode (default): ensure all component/adapter classes are
+           imported before calling scan(). With lazy=True, pre-importing is
+           not required - modules are imported on demand at resolve time.
          - Constructor dependencies must have type hints
          - Circular dependencies will cause infinite recursion
          - Manual registrations (register_*) take precedence over scan()
          - Profile names are case-insensitive (normalized to lowercase)
+         - AST-based lazy discovery only detects ``@adapter.for_(PortName)``
+           when ``adapter`` is imported directly (not aliased imports).
 
 
 
@@ -1530,6 +1593,23 @@ Module Contents
 
 
       Get the parent container.
+
+
+   .. py:method:: __repr__()
+
+      Return an informative string representation for debugging.
+
+      Shows the active profile from the parent container and the parent type
+      so agents and developers can inspect scoped container state.
+
+      :returns: A string like ``ScopedContainer(profile=Profile.TEST, parent=Container)``.
+
+      .. admonition:: Example
+
+         >>> async with container.create_scope() as scope:
+         ...     repr(scope)
+         'ScopedContainer(profile=Profile.TEST, parent=Container)'
+
 
 
    .. py:method:: resolve(component_type)

@@ -83,8 +83,10 @@ Module Contents
 
    .. admonition:: Examples
 
-      >>> Profile.PRODUCTION
-      'production'
+      >>> repr(Profile.PRODUCTION)
+      'Profile.PRODUCTION'
+      >>> str(Profile.ALL)
+      'ALL'
       >>> Profile.PRODUCTION == 'production'
       True
       >>> isinstance(Profile.PRODUCTION, str)
@@ -119,13 +121,49 @@ Module Contents
       :type:  ClassVar[Profile]
 
 
+   .. py:method:: __str__()
+
+      Return the display name, hiding implementation details.
+
+      Built-in profiles return their constant name (e.g., 'ALL' instead
+      of '*'). Custom profiles return their string value unchanged.
+
+      .. admonition:: Examples
+
+         >>> str(Profile.ALL)
+         'ALL'
+         >>> str(Profile.PRODUCTION)
+         'PRODUCTION'
+         >>> str(Profile('custom'))
+         'custom'
+
+
+
+   .. py:method:: __format__(format_spec)
+
+      Format using the display name rather than the raw value.
+
+      .. admonition:: Examples
+
+         >>> f'{Profile.ALL:>10}'
+         '       ALL'
+         >>> f'{Profile.PRODUCTION:>15}'
+         '     PRODUCTION'
+
+
+
    .. py:method:: __repr__()
 
       Return a detailed string representation.
 
+      Built-in profiles show their constant name (e.g., Profile.ALL).
+      Custom profiles show the constructor form (e.g., Profile('custom')).
+
       .. admonition:: Examples
 
+         >>> repr(Profile.ALL)
+         'Profile.ALL'
          >>> repr(Profile.PRODUCTION)
-         "Profile('production')"
+         'Profile.PRODUCTION'
          >>> repr(Profile('custom'))
          "Profile('custom')"

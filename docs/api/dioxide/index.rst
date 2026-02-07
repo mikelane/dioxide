@@ -68,6 +68,7 @@ Submodules
    /api/dioxide/celery/index
    /api/dioxide/click/index
    /api/dioxide/container/index
+   /api/dioxide/deprecation/index
    /api/dioxide/django/index
    /api/dioxide/exceptions/index
    /api/dioxide/fastapi/index
@@ -75,6 +76,8 @@ Submodules
    /api/dioxide/lifecycle/index
    /api/dioxide/ninja/index
    /api/dioxide/profile_enum/index
+   /api/dioxide/scan_plan/index
+   /api/dioxide/scan_stats/index
    /api/dioxide/scope/index
    /api/dioxide/services/index
    /api/dioxide/testing/index
@@ -97,10 +100,12 @@ Exceptions
    dioxide.AdapterNotFoundError
    dioxide.CaptiveDependencyError
    dioxide.CircularDependencyError
+   dioxide.DioxideDeprecationWarning
    dioxide.DioxideError
    dioxide.ResolutionError
    dioxide.ScopeError
    dioxide.ServiceNotFoundError
+   dioxide.SideEffectWarning
 
 
 Classes
@@ -111,6 +116,10 @@ Classes
    dioxide.Container
    dioxide.ScopedContainer
    dioxide.Profile
+   dioxide.AdapterInfo
+   dioxide.ScanPlan
+   dioxide.ServiceInfo
+   dioxide.ScanStats
    dioxide.Scope
 
 
@@ -120,6 +129,7 @@ Functions
 .. autoapisummary::
 
    dioxide.reset_global_container
+   dioxide.deprecated
    dioxide.lifecycle
    dioxide.service
    dioxide.fresh_container
@@ -571,6 +581,25 @@ Package Contents
 
 
 
+   .. py:method:: __repr__()
+
+      Return an informative string representation for debugging.
+
+      Shows the active profile, port count, and service count so agents
+      and developers can inspect container state in a REPL or debugger.
+
+      :returns: A string like ``Container(profile=Profile.PRODUCTION, ports=5, services=3)``
+                or ``Container(profile=None, ports=0, services=0)`` when no profile is set.
+
+      .. admonition:: Example
+
+         >>> from dioxide import Container, Profile
+         >>> container = Container(profile=Profile.PRODUCTION)
+         >>> repr(container)
+         'Container(profile=Profile.PRODUCTION, ports=..., services=...)'
+
+
+
    .. py:method:: list_registered()
 
       List all types registered in this container.
@@ -827,7 +856,31 @@ Package Contents
 
 
 
-   .. py:method:: scan(package = None, profile = None)
+   .. py:method:: scan_plan(package)
+
+      Preview what scan() would discover without importing any modules.
+
+      Walks the package tree and uses AST parsing to find @service and
+      @adapter.for_() decorators. No modules are imported and nothing is
+      registered with the container.
+
+      :param package: The package name to analyze (e.g. "myapp.adapters").
+
+      :returns: A ScanPlan object with discovered modules, services, and adapters.
+
+      :raises ImportError: If the package cannot be found.
+      :raises ValueError: If the package is not in allowed_packages (if configured).
+
+      .. admonition:: Example
+
+         >>> container = Container()
+         >>> plan = container.scan_plan(package='myapp')
+         >>> print(plan.modules)  # ['myapp', 'myapp.services', ...]
+         >>> print(plan.services)  # [ServiceInfo(class_name='UserService', ...)]
+
+
+
+   .. py:method:: scan(package = None, profile = None, stats = False, *, strict = False, lazy = False)
 
       Discover and register all @component and @adapter decorated classes.
 
@@ -849,6 +902,17 @@ Package Contents
                       matching profile in their __dioxide_profiles__ attribute. Components/
                       adapters decorated with Profile.ALL ("*") are registered in all profiles.
                       Profile names are normalized to lowercase for matching.
+      :param strict: If True, analyze module source code for potential side effects
+                     using AST analysis before importing. Emits SideEffectWarning for
+                     module-level function calls that may cause side effects (database
+                     connections, file I/O, network requests). Safe patterns like
+                     logging.getLogger() are allowlisted. Defaults to False.
+      :param lazy: If True and package is provided, defer module imports until
+                   resolution time. Uses AST parsing to discover adapter-to-port
+                   mappings without importing, then imports only the specific module
+                   needed when resolve() is called. Each package retains its own
+                   profile, so multiple lazy scans with different profiles work
+                   correctly. Ignored when package is None (falls back to eager scan).
 
       Registration behavior:
           - SINGLETON scope (default): Creates singleton factory with caching
@@ -888,17 +952,26 @@ Package Contents
          >>> # Or with string profile (also supported)
          >>> container2 = Container()
          >>> container2.scan(profile='production')  # Same as above
+         >>>
+         >>> # Lazy scan - defer module imports until needed
+         >>> container3 = Container()
+         >>> container3.scan(package='myapp.adapters', profile=Profile.PRODUCTION, lazy=True)
+         >>> # No modules imported yet; they load on first resolve()
 
       :raises ValueError: If multiple adapters are registered for the same port
           and profile combination (ambiguous registration)
 
       .. note::
 
-         - Ensure all component/adapter classes are imported before calling scan()
+         - For eager mode (default): ensure all component/adapter classes are
+           imported before calling scan(). With lazy=True, pre-importing is
+           not required - modules are imported on demand at resolve time.
          - Constructor dependencies must have type hints
          - Circular dependencies will cause infinite recursion
          - Manual registrations (register_*) take precedence over scan()
          - Profile names are case-insensitive (normalized to lowercase)
+         - AST-based lazy discovery only detects ``@adapter.for_(PortName)``
+           when ``adapter`` is imported directly (not aliased imports).
 
 
 
@@ -1203,6 +1276,23 @@ Package Contents
       Get the parent container.
 
 
+   .. py:method:: __repr__()
+
+      Return an informative string representation for debugging.
+
+      Shows the active profile from the parent container and the parent type
+      so agents and developers can inspect scoped container state.
+
+      :returns: A string like ``ScopedContainer(profile=Profile.TEST, parent=Container)``.
+
+      .. admonition:: Example
+
+         >>> async with container.create_scope() as scope:
+         ...     repr(scope)
+         'ScopedContainer(profile=Profile.TEST, parent=Container)'
+
+
+
    .. py:method:: resolve(component_type)
 
       Resolve a component instance within this scope.
@@ -1319,6 +1409,18 @@ Package Contents
 
       :meth:`Container.reset`: Clears singleton cache but preserves registrations
       :func:`dioxide.testing.fresh_container`: Creates isolated container instances
+
+
+.. py:function:: deprecated(*, since, removed_in, alternative = None)
+
+   Mark a function or method as deprecated.
+
+   :param since: The version when this was deprecated (e.g., '2.0.0').
+   :param removed_in: The version when this will be removed (e.g., '3.0.0').
+   :param alternative: What to use instead (e.g., 'str(profile)').
+
+   :returns: A decorator that wraps the function to emit a DioxideDeprecationWarning
+             when called.
 
 
 .. py:exception:: AdapterNotFoundError(message = '', *, port = None, profile = None, available_adapters = None)
@@ -1474,13 +1576,13 @@ Package Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Adapter Not Found'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/adapter-not-found.html'
 
 
@@ -1620,13 +1722,13 @@ Package Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Captive Dependency'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/captive-dependency.html'
 
 
@@ -1834,15 +1936,35 @@ Package Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Circular Dependency'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/circular-dependency.html'
 
+
+
+.. py:exception:: DioxideDeprecationWarning
+
+   Bases: :py:obj:`DeprecationWarning`
+
+
+   Custom deprecation warning for dioxide APIs.
+
+   Using a dedicated warning subclass allows users to filter dioxide
+   deprecation warnings separately from other DeprecationWarning sources::
+
+       import warnings
+       from dioxide import DioxideDeprecationWarning
+
+       # Silence all dioxide deprecation warnings
+       warnings.filterwarnings('ignore', category=DioxideDeprecationWarning)
+
+       # Turn dioxide deprecation warnings into errors during testing
+       warnings.filterwarnings('error', category=DioxideDeprecationWarning)
 
 
 .. py:exception:: DioxideError(message = '')
@@ -1864,13 +1986,13 @@ Package Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Dioxide Error'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/'
 
 
@@ -1940,13 +2062,13 @@ Package Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Resolution Failed'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/'
 
 
@@ -2038,13 +2160,13 @@ Package Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Scope Error'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/scope-error.html'
 
 
@@ -2223,15 +2345,38 @@ Package Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Service Not Found'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/service-not-found.html'
 
+
+
+.. py:exception:: SideEffectWarning
+
+   Bases: :py:obj:`UserWarning`
+
+
+   Warning emitted when strict mode detects potential module-level side effects.
+
+   Issued by ``container.scan(strict=True)`` when AST analysis finds
+   module-level function calls that may cause side effects (database
+   connections, file I/O, network requests, etc.).
+
+   Users can filter these warnings using the standard ``warnings`` module::
+
+       import warnings
+       from dioxide.exceptions import SideEffectWarning
+
+       # Suppress all side-effect warnings
+       warnings.filterwarnings('ignore', category=SideEffectWarning)
+
+       # Or escalate them to errors
+       warnings.filterwarnings('error', category=SideEffectWarning)
 
 
 .. py:function:: lifecycle(cls)
@@ -2493,8 +2638,10 @@ Package Contents
 
    .. admonition:: Examples
 
-      >>> Profile.PRODUCTION
-      'production'
+      >>> repr(Profile.PRODUCTION)
+      'Profile.PRODUCTION'
+      >>> str(Profile.ALL)
+      'ALL'
       >>> Profile.PRODUCTION == 'production'
       True
       >>> isinstance(Profile.PRODUCTION, str)
@@ -2529,17 +2676,158 @@ Package Contents
       :type:  ClassVar[Profile]
 
 
+   .. py:method:: __str__()
+
+      Return the display name, hiding implementation details.
+
+      Built-in profiles return their constant name (e.g., 'ALL' instead
+      of '*'). Custom profiles return their string value unchanged.
+
+      .. admonition:: Examples
+
+         >>> str(Profile.ALL)
+         'ALL'
+         >>> str(Profile.PRODUCTION)
+         'PRODUCTION'
+         >>> str(Profile('custom'))
+         'custom'
+
+
+
+   .. py:method:: __format__(format_spec)
+
+      Format using the display name rather than the raw value.
+
+      .. admonition:: Examples
+
+         >>> f'{Profile.ALL:>10}'
+         '       ALL'
+         >>> f'{Profile.PRODUCTION:>15}'
+         '     PRODUCTION'
+
+
+
    .. py:method:: __repr__()
 
       Return a detailed string representation.
 
+      Built-in profiles show their constant name (e.g., Profile.ALL).
+      Custom profiles show the constructor form (e.g., Profile('custom')).
+
       .. admonition:: Examples
 
+         >>> repr(Profile.ALL)
+         'Profile.ALL'
          >>> repr(Profile.PRODUCTION)
-         "Profile('production')"
+         'Profile.PRODUCTION'
          >>> repr(Profile('custom'))
          "Profile('custom')"
 
+
+
+.. py:class:: AdapterInfo
+
+   Information about a discovered @adapter.for_()-decorated class.
+
+
+   .. py:attribute:: class_name
+      :type:  str
+
+
+   .. py:attribute:: module
+      :type:  str
+
+
+.. py:class:: ScanPlan
+
+   Preview of what container.scan() would discover and import.
+
+   Created by ``container.scan_plan()`` to show which modules would be
+   imported and which decorated classes would be found, without actually
+   importing any modules or registering any components.
+
+   .. attribute:: modules
+
+      List of fully-qualified module paths that would be imported.
+
+   .. attribute:: services
+
+      List of ``ServiceInfo`` objects for discovered @service classes.
+
+   .. attribute:: adapters
+
+      List of ``AdapterInfo`` objects for discovered @adapter classes.
+
+
+   .. py:attribute:: modules
+      :type:  list[str]
+      :value: []
+
+
+
+   .. py:attribute:: services
+      :type:  list[ServiceInfo]
+      :value: []
+
+
+
+   .. py:attribute:: adapters
+      :type:  list[AdapterInfo]
+      :value: []
+
+
+
+   .. py:method:: __repr__()
+
+
+.. py:class:: ServiceInfo
+
+   Information about a discovered @service-decorated class.
+
+
+   .. py:attribute:: class_name
+      :type:  str
+
+
+   .. py:attribute:: module
+      :type:  str
+
+
+.. py:class:: ScanStats
+
+   Statistics from a container.scan() operation.
+
+   .. attribute:: services_registered
+
+      Number of @service components registered.
+
+   .. attribute:: adapters_registered
+
+      Number of @adapter components registered.
+
+   .. attribute:: modules_imported
+
+      Number of modules imported during package scanning.
+
+   .. attribute:: duration_ms
+
+      Wall-clock time of the scan in milliseconds.
+
+
+   .. py:attribute:: services_registered
+      :type:  int
+
+
+   .. py:attribute:: adapters_registered
+      :type:  int
+
+
+   .. py:attribute:: modules_imported
+      :type:  int
+
+
+   .. py:attribute:: duration_ms
+      :type:  float
 
 
 .. py:class:: Scope
