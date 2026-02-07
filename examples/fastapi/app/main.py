@@ -18,7 +18,7 @@ from dioxide.fastapi import DioxideMiddleware, Inject
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from .domain.services import UserService
+from .domain.services import RequestContext, UserService
 
 # Get profile from environment, default to 'development'
 profile_name = os.getenv("PROFILE", "development")
@@ -174,6 +174,30 @@ async def list_users(
     """
     users = await service.list_all_users()
     return [UserResponse(**user) for user in users]
+
+
+@app.get("/context")
+async def request_context(
+    ctx: RequestContext = Inject(RequestContext),
+) -> dict[str, str]:
+    """Demonstrate REQUEST-scoped dependency injection.
+
+    Each request gets a unique RequestContext with its own request_id.
+    Within a single request, the same instance is shared across all
+    injection points. When the request ends, the instance is disposed.
+
+    Returns:
+        The unique request ID for this request
+
+    Example:
+        GET /context
+
+        Response (200 OK):
+        {
+            "request_id": "550e8400-e29b-41d4-a716-446655440000"
+        }
+    """
+    return {"request_id": ctx.request_id}
 
 
 @app.get("/health")

@@ -4,12 +4,27 @@ Services are framework-agnostic and depend only on ports (interfaces), not
 concrete implementations. This makes them highly testable and portable.
 """
 
-from dioxide import service
+import uuid
+
+from dioxide import Scope, service
 
 from .ports import (
     DatabasePort,
     EmailPort,
 )
+
+
+@service(scope=Scope.REQUEST)
+class RequestContext:
+    """Per-request context with a unique request ID.
+
+    Demonstrates REQUEST scope: each HTTP request gets its own instance,
+    shared across all injection points within that request. Disposed
+    automatically when the request ends.
+    """
+
+    def __init__(self) -> None:
+        self.request_id = str(uuid.uuid4())
 
 
 @service

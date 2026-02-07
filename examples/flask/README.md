@@ -6,9 +6,10 @@ This example demonstrates how to build a production-ready Flask application usin
 
 1. **Hexagonal Architecture**: Clean separation between domain logic and infrastructure
 2. **Profile-Based Configuration**: Different adapters for production, development, and testing
-3. **Lifecycle Management**: Proper initialization and cleanup of resources
-4. **Testing with Fakes**: Fast, deterministic tests without mocks
-5. **Flask Integration**: Container lifecycle integrated with Flask app configuration
+3. **Request Scoping**: REQUEST-scoped components unique per HTTP request
+4. **Lifecycle Management**: Proper initialization and cleanup of resources
+5. **Testing with Fakes**: Fast, deterministic tests without mocks
+6. **Flask Integration**: Container lifecycle integrated with Flask app configuration
 
 ## Quick Start
 
@@ -143,6 +144,35 @@ def create_user():
     return jsonify(user), 201
 ```
 
+### 5. Request Scoping
+
+Components decorated with `@service(scope=Scope.REQUEST)` get a fresh instance per HTTP request. Within a single request, the same instance is shared across all injection points.
+
+```python
+# app/domain/services.py
+from dioxide import Scope, service
+
+@service(scope=Scope.REQUEST)
+class RequestContext:
+    def __init__(self):
+        self.request_id = str(uuid.uuid4())
+
+# app/main.py
+@app.route("/context")
+def request_context():
+    ctx = inject(RequestContext)
+    return jsonify({"request_id": ctx.request_id})
+```
+
+Each call to `GET /context` returns a different `request_id`. The scope is stored in Flask's `g` object, which is thread-local, so concurrent requests each get their own scope.
+
+```
+Request lifecycle:
+  Request arrives  → before_request creates ScopedContainer
+  Route handler    → inject() resolves from scope (REQUEST components cached)
+  Response sent    → teardown_request disposes scope
+```
+
 ## Key Differences from FastAPI Integration
 
 | Feature | FastAPI | Flask |
@@ -199,6 +229,19 @@ GET /users
         "email": "alice@example.com"
     }
 ]
+```
+
+### Request Context (REQUEST Scope Demo)
+
+```bash
+GET /context
+
+# Response: 200 OK
+{
+    "request_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+
+# Each request returns a different request_id
 ```
 
 ### Health Check
