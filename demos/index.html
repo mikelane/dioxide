@@ -6,195 +6,286 @@
     <title>Dioxide Demos</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        header {
+        /* ─── Hero ─── */
+        .hero {
+            position: relative;
             text-align: center;
-            padding: 3rem 1rem 2rem;
+            padding: 4rem 1.5rem 3rem;
+            background: var(--bg-hero);
             border-bottom: 1px solid var(--border);
+            overflow: hidden;
         }
 
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--bg-hero-glow);
+            pointer-events: none;
         }
 
-        header h1 span {
-            color: var(--accent);
+        .hero-content {
+            position: relative;
         }
 
-        header p {
+        .hero h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 0.75rem;
+        }
+
+        .hero .brand {
+            color: var(--brand);
+        }
+
+        .hero p {
             color: var(--text-secondary);
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto;
+            font-size: 1.05rem;
+            max-width: 520px;
+            margin: 0 auto 1.5rem;
+            line-height: 1.6;
         }
 
-        main {
-            max-width: 900px;
+        .hero-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
         }
 
+        .hero-links a {
+            color: var(--text-muted);
+            padding-bottom: 1px;
+            border-bottom: 1px solid transparent;
+            transition: color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .hero-links a:hover {
+            color: var(--brand);
+            border-bottom-color: var(--brand);
+        }
+
+        /* ─── Section Header ─── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .section-header::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ─── Demo Cards ─── */
         .demo-list {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
         .demo-card {
-            background-color: var(--bg-card);
+            position: relative;
+            display: block;
+            background: var(--bg-surface);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.5rem;
-            transition: border-color 0.2s;
+            border-left: 3px solid var(--brand);
+            border-radius: 6px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
         }
 
         .demo-card:hover {
-            border-color: var(--accent);
+            background: var(--bg-surface-hover);
+            border-color: var(--border-hover);
+            border-left-color: var(--brand-bright);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
         }
 
         .demo-card-header {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: flex-start;
             gap: 1rem;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
 
-        .demo-card h2 {
-            font-size: 1.25rem;
+        .demo-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
             color: var(--text-primary);
+            letter-spacing: -0.01em;
         }
 
-        .demo-card h2 a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-        .demo-card h2 a:hover {
-            color: var(--accent-hover);
-            text-decoration: underline;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-
-        .badge-coming-soon {
-            background-color: var(--tag-bg);
-            color: var(--coming-soon);
-            border: 1px solid var(--coming-soon);
-        }
-
-        .badge-ready {
-            background-color: var(--tag-bg);
-            color: #9ece6a;
-            border: 1px solid #9ece6a;
+        .demo-card .number {
+            color: var(--brand);
+            font-weight: 800;
+            margin-right: 0.35rem;
+            font-variant-numeric: tabular-nums;
         }
 
         .demo-card p {
             color: var(--text-secondary);
-            margin-bottom: 0.75rem;
+            font-size: 0.925rem;
+            line-height: 1.65;
+            margin-bottom: 0.6rem;
         }
 
-        .demo-card .issue-link {
+        .demo-card .meta {
+            font-size: 0.8rem;
             color: var(--text-muted);
-            font-size: 0.85rem;
         }
 
-        .demo-card .issue-link a {
+        .demo-card .meta a {
             color: var(--text-muted);
-            text-decoration: none;
         }
 
-        .demo-card .issue-link a:hover {
-            color: var(--accent);
-            text-decoration: underline;
+        .demo-card .meta a:hover {
+            color: var(--brand);
         }
 
+        /* ─── Badges ─── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.65rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .badge-coming-soon {
+            background: var(--badge-coming-bg);
+            color: var(--badge-coming-text);
+            border: 1px solid var(--badge-coming-border);
+        }
+
+        .badge-ready {
+            background: var(--badge-ready-bg);
+            color: var(--badge-ready-text);
+            border: 1px solid var(--badge-ready-border);
+        }
+
+        /* ─── Responsive ─── */
         @media (max-width: 600px) {
-            header h1 {
-                font-size: 1.75rem;
+            .hero {
+                padding: 2.5rem 1rem 2rem;
+            }
+
+            .hero h1 {
+                font-size: 1.65rem;
+            }
+
+            .hero p {
+                font-size: 0.95rem;
+            }
+
+            .hero-links {
+                flex-direction: column;
+                gap: 0.5rem;
             }
 
             .demo-card-header {
                 flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
             }
 
             .demo-card {
-                padding: 1rem;
+                padding: 1rem 1.25rem;
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1><span>dioxide</span> Demos</h1>
-        <p>Narrated terminal recordings showcasing dioxide's dependency injection framework for Python.</p>
+    <header class="hero">
+        <div class="hero-content animate-in">
+            <h1><span class="brand">dioxide</span> demos</h1>
+            <p>Narrated terminal recordings showing how dioxide makes dependency injection feel inevitable in Python.</p>
+            <div class="hero-links">
+                <a href="https://dioxide.readthedocs.io">Documentation</a>
+                <a href="https://pypi.org/project/dioxide/">PyPI</a>
+                <a href="https://github.com/mikelane/dioxide">GitHub</a>
+            </div>
+        </div>
     </header>
 
     <main>
+        <div class="section-header animate-in delay-1">
+            <h2>Demo Videos</h2>
+        </div>
+
         <div class="demo-list">
-            <div class="demo-card">
+            <div class="demo-card animate-in delay-1">
                 <div class="demo-card-header">
-                    <h2>1. Before/After Scan Performance</h2>
+                    <h3><span class="number">01</span> Before/After Scan Performance</h3>
                     <span class="badge badge-coming-soon">Coming Soon</span>
                 </div>
                 <p>See how dioxide's Rust-backed container scanning compares to pure Python alternatives. Watch real-time performance metrics as we scan increasingly large dependency graphs.</p>
-                <div class="issue-link">Tracking: <a href="https://github.com/mikelane/dioxide/issues/385">#385</a></div>
+                <div class="meta">Tracking: <a href="https://github.com/mikelane/dioxide/issues/385">#385</a></div>
             </div>
 
-            <div class="demo-card">
+            <div class="demo-card animate-in delay-2">
                 <div class="demo-card-header">
-                    <h2>2. Side-by-Side Decorator Usage</h2>
+                    <h3><span class="number">02</span> Side-by-Side Decorator Usage</h3>
                     <span class="badge badge-coming-soon">Coming Soon</span>
                 </div>
-                <p>Compare dioxide's clean decorator API with other DI frameworks. See how <code>@adapter.for_()</code> and <code>@service</code> simplify dependency wiring while maintaining type safety.</p>
-                <div class="issue-link">Tracking: <a href="https://github.com/mikelane/dioxide/issues/389">#389</a></div>
+                <p>Compare dioxide's clean decorator API with other DI frameworks. See how <code>@adapter.for_()</code> and <code>@service</code> simplify wiring while maintaining type safety.</p>
+                <div class="meta">Tracking: <a href="https://github.com/mikelane/dioxide/issues/389">#389</a></div>
             </div>
 
-            <div class="demo-card">
+            <div class="demo-card animate-in delay-3">
                 <div class="demo-card-header">
-                    <h2>3. Rust Backend Correctness Guarantees</h2>
+                    <h3><span class="number">03</span> Rust Backend Correctness Guarantees</h3>
                     <span class="badge badge-coming-soon">Coming Soon</span>
                 </div>
                 <p>Explore how dioxide's Rust core catches circular dependencies, missing bindings, and other wiring errors at startup time rather than at runtime.</p>
-                <div class="issue-link">Tracking: <a href="https://github.com/mikelane/dioxide/issues/393">#393</a></div>
+                <div class="meta">Tracking: <a href="https://github.com/mikelane/dioxide/issues/393">#393</a></div>
             </div>
 
-            <div class="demo-card">
+            <div class="demo-card animate-in delay-4">
                 <div class="demo-card-header">
-                    <h2>4. Mock-to-Fake Migration</h2>
+                    <h3><span class="number">04</span> Mock-to-Fake Migration</h3>
                     <span class="badge badge-coming-soon">Coming Soon</span>
                 </div>
                 <p>Watch a real test suite transform from brittle mocks to clean, profile-based fakes. See test reliability improve while reducing boilerplate.</p>
-                <div class="issue-link">Tracking: <a href="https://github.com/mikelane/dioxide/issues/404">#404</a></div>
+                <div class="meta">Tracking: <a href="https://github.com/mikelane/dioxide/issues/404">#404</a></div>
             </div>
 
-            <div class="demo-card">
+            <div class="demo-card animate-in delay-5">
                 <div class="demo-card-header">
-                    <h2>5. Automated Migration Tool</h2>
+                    <h3><span class="number">05</span> Automated Migration Tool</h3>
                     <span class="badge badge-coming-soon">Coming Soon</span>
                 </div>
                 <p>See dioxide's automated migration tool convert an existing codebase from manual dependency wiring to dioxide's declarative patterns in minutes.</p>
-                <div class="issue-link">Tracking: <a href="https://github.com/mikelane/dioxide/issues/410">#410</a></div>
+                <div class="meta">Tracking: <a href="https://github.com/mikelane/dioxide/issues/410">#410</a></div>
             </div>
         </div>
     </main>
 
-    <footer>
-        <p>
-            <a href="https://github.com/mikelane/dioxide">dioxide</a> &mdash;
-            Declarative dependency injection for Python, powered by Rust.
-        </p>
-        <p style="margin-top: 0.5rem;">
-            <a href="https://dioxide.readthedocs.io">Documentation</a> &middot;
-            <a href="https://pypi.org/project/dioxide/">PyPI</a> &middot;
-            <a href="https://github.com/mikelane/dioxide/issues">Issues</a>
-        </p>
+    <footer class="animate-in delay-5">
+        <a href="https://github.com/mikelane/dioxide">dioxide</a> &mdash;
+        Declarative dependency injection for Python, powered by Rust.
     </footer>
 </body>
 </html>

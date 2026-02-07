@@ -1,50 +1,173 @@
+/* ─── Dioxide Demo Site ─── */
+/* Palette derived from dioxide.readthedocs.io (Furo theme) */
+/* Brand: #8d2f0d (rust) light, #ff8445 (orange) dark */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── Light Mode (default) ─── */
 :root {
-    --bg-primary: #1a1b26;
-    --bg-secondary: #24283b;
-    --bg-card: #1f2335;
-    --text-primary: #c0caf5;
-    --text-secondary: #a9b1d6;
-    --text-muted: #565f89;
-    --accent: #7aa2f7;
-    --accent-hover: #89b4fa;
-    --border: #3b4261;
-    --tag-bg: #292e42;
-    --coming-soon: #e0af68;
+    --bg-page: #fafaf9;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #fef7f2;
+    --bg-code: #f5f5f4;
+    --bg-hero: linear-gradient(135deg, #fdfcfb 0%, #fef3eb 50%, #fdfcfb 100%);
+    --bg-hero-glow: radial-gradient(ellipse 600px 300px at 50% 40%, rgba(141, 47, 13, 0.06) 0%, transparent 70%);
+
+    --text-primary: #1c1917;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+
+    --brand: #8d2f0d;
+    --brand-bright: #ff8445;
+    --brand-glow: rgba(141, 47, 13, 0.08);
+    --brand-border: rgba(141, 47, 13, 0.2);
+
+    --border: #e7e5e4;
+    --border-hover: #d6d3d1;
+
+    --badge-coming-bg: #fef3eb;
+    --badge-coming-text: #c2410c;
+    --badge-coming-border: #fdba74;
+    --badge-ready-bg: #f0fdf4;
+    --badge-ready-text: #16a34a;
+    --badge-ready-border: #86efac;
+
+    --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
+    --shadow-md: 0 4px 12px rgba(28, 25, 23, 0.06);
+    --shadow-lg: 0 8px 24px rgba(28, 25, 23, 0.08);
+    --shadow-card-hover: 0 8px 24px rgba(141, 47, 13, 0.08);
+
+    color-scheme: light dark;
 }
 
-* {
+/* ─── Dark Mode ─── */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-page: #1c1917;
+        --bg-surface: #292524;
+        --bg-surface-hover: #302a27;
+        --bg-code: #292524;
+        --bg-hero: linear-gradient(135deg, #1c1917 0%, #271f1b 50%, #1c1917 100%);
+        --bg-hero-glow: radial-gradient(ellipse 600px 300px at 50% 40%, rgba(255, 132, 69, 0.07) 0%, transparent 70%);
+
+        --text-primary: #e7e5e4;
+        --text-secondary: #a8a29e;
+        --text-muted: #78716c;
+
+        --brand: #ff8445;
+        --brand-bright: #ffb088;
+        --brand-glow: rgba(255, 132, 69, 0.1);
+        --brand-border: rgba(255, 132, 69, 0.25);
+
+        --border: #44403c;
+        --border-hover: #57534e;
+
+        --badge-coming-bg: rgba(255, 132, 69, 0.1);
+        --badge-coming-text: #ffb088;
+        --badge-coming-border: rgba(255, 132, 69, 0.3);
+        --badge-ready-bg: rgba(22, 163, 74, 0.1);
+        --badge-ready-text: #86efac;
+        --badge-ready-border: rgba(34, 197, 94, 0.3);
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
+        --shadow-card-hover: 0 8px 24px rgba(255, 132, 69, 0.1);
+    }
+}
+
+/* ─── Reset ─── */
+*, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+/* ─── Base ─── */
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: var(--bg-primary);
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.7;
     color: var(--text-primary);
-    line-height: 1.6;
+    background-color: var(--bg-page);
 }
 
+/* ─── Layout ─── */
 main {
-    max-width: 960px;
+    max-width: 820px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 2.5rem 1.5rem;
 }
 
+/* ─── Links ─── */
+a {
+    color: var(--brand);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--brand-bright);
+}
+
+/* ─── Code ─── */
+code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', monospace;
+    font-size: 0.875em;
+    font-weight: 500;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    background-color: var(--bg-code);
+    color: var(--brand);
+    border: 1px solid var(--border);
+}
+
+/* ─── Footer ─── */
 footer {
+    max-width: 820px;
+    margin: 0 auto;
     text-align: center;
-    padding: 2rem 1rem;
+    padding: 2rem 1.5rem;
     border-top: 1px solid var(--border);
     color: var(--text-muted);
     font-size: 0.85rem;
-    margin-top: 2rem;
+    line-height: 1.8;
 }
 
 footer a {
-    color: var(--accent);
-    text-decoration: none;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
 }
 
 footer a:hover {
-    text-decoration: underline;
+    color: var(--brand);
 }
+
+/* ─── Entrance Animations ─── */
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in {
+    animation: fadeUp 0.5s ease-out both;
+}
+
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
