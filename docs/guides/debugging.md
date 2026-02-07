@@ -149,16 +149,16 @@ Output:
 === Resolution: UserService ===
 
 UserService (SINGLETON)
-+-- db: DatabasePort
-|   DatabasePort
-|       +-- PostgresAdapter (SINGLETON, profile: production)
-|           +-- config: AppConfig
-|               AppConfig (SINGLETON)
-+-- email: EmailPort
-    EmailPort
-        +-- SendGridAdapter (SINGLETON, profile: production)
-            +-- config: AppConfig
-                AppConfig (SINGLETON)
+    +-- db: DatabasePort
+    |   DatabasePort
+    |   |   +-- PostgresAdapter (SINGLETON, profile: production)
+    |   |       +-- config: AppConfig
+    |   |           AppConfig (SINGLETON)
+    +-- email: EmailPort
+        EmailPort
+            +-- SendGridAdapter (SINGLETON, profile: production)
+                +-- config: AppConfig
+                    AppConfig (SINGLETON)
 ```
 
 ### Understanding Resolution for a Port
@@ -211,8 +211,8 @@ Output:
 === Resolution: SelfRefService ===
 
 SelfRefService (SINGLETON)
-+-- other: SelfRefService
-    SelfRefService (circular reference)
+    +-- other: SelfRefService
+        SelfRefService (circular reference)
 ```
 
 ### Handling Unregistered Types
