@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decorator Usage — dioxide demos</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .back-link:hover {
+            color: var(--brand);
+        }
+
+        .demo-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .video-container {
+            position: relative;
+            background: #0d0d0d;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+        }
+
+        .video-container video {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .demo-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 600px) {
+            .demo-details {
+                grid-template-columns: 1fr;
+            }
+
+            .demo-title {
+                font-size: 1.35rem;
+            }
+        }
+
+        .detail-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1.25rem;
+        }
+
+        .detail-card h3 {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .detail-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <a class="back-link animate-in" href="../">&larr; All demos</a>
+
+        <h1 class="demo-title animate-in delay-1">Two Decorators, One Rule</h1>
+        <p class="demo-subtitle animate-in delay-1">See how dioxide's two decorators map to clean architecture decisions. <code>@service</code> marks business logic that never changes. <code>@adapter.for_()</code> marks infrastructure that does.</p>
+
+        <div class="video-container animate-in delay-2">
+            <video controls preload="metadata">
+                <source src="../videos/decorator-usage.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="tagline animate-in delay-3">
+            @service for logic. @adapter.for_() for infrastructure.
+        </div>
+
+        <div class="demo-details animate-in delay-3">
+            <div class="detail-card">
+                <h3>The Question</h3>
+                <p>Which decorator do I use? <code>@service</code> is for core domain logic that stays the same across all environments. <code>@adapter.for_()</code> is for infrastructure integrations that change per profile (production, test, dev).</p>
+            </div>
+            <div class="detail-card">
+                <h3>The Answer</h3>
+                <p>Business logic does not change between environments. Infrastructure does. <code>@service</code> for the first, <code>@adapter.for_()</code> for the second. Same service code, different adapters per profile.</p>
+            </div>
+        </div>
+
+        <div class="demo-details animate-in delay-4">
+            <div class="detail-card">
+                <h3>Source Code</h3>
+                <p>
+                    <a href="https://github.com/mikelane/dioxide/tree/main/demos/decorator-usage">Browse on GitHub</a>
+                </p>
+            </div>
+            <div class="detail-card">
+                <h3>Learn More</h3>
+                <p>
+                    <a href="https://dioxide.readthedocs.io">dioxide documentation</a><br>
+                    <a href="https://github.com/mikelane/dioxide/issues/389">Issue #389</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="animate-in delay-5">
+        <a href="https://github.com/mikelane/dioxide">dioxide</a> &mdash;
+        Declarative dependency injection for Python, powered by Rust.
+    </footer>
+</body>
+</html>
