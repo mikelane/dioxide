@@ -8,11 +8,11 @@ This file provides guidance to Claude Code when working on the dioxide codebase.
 - **Hexagonal Architecture API** - `@adapter.for_()` and `@service` decorators with type hints
 - **Type safety** - Full support for mypy and type checkers
 - **Clean architecture** - Encourages loose coupling and testability
-- **Rust-backed core** - Fast container operations via PyO3
+- **Rust-backed core** - Correctness guarantees (circular dependency detection, graph validation) via PyO3
 
-**Note**: The package was recently renamed from `rivet_di` to `dioxide`.
+**History**: The package was renamed from `rivet_di` to `dioxide`. Legacy `rivet_di` references in the codebase should be updated to `dioxide`.
 
-**v1.0.0 STABLE**: MLP Complete! Hexagonal architecture API, lifecycle management, circular dependency detection, performance benchmarking, framework integrations (FastAPI, Flask, Celery, Click), and comprehensive testing guide all implemented.
+**v1.0.0 STABLE**: MLP (Minimum Loveable Product) complete. Hexagonal architecture API, lifecycle management, circular dependency detection, performance benchmarking, framework integrations (FastAPI, Flask, Celery, Click, Django, Ninja), and comprehensive testing guide all implemented. Active development continues on post-MLP features (lazy discovery, strict mode, scan planning, request scoping).
 
 ## Design Principles: The North Star
 
@@ -88,26 +88,78 @@ dioxide/
 │   ├── lifecycle.py         # @lifecycle decorator
 │   ├── profile_enum.py      # Profile class (extensible, type-safe)
 │   ├── scope.py             # Scope enum (SINGLETON, FACTORY)
-│   ├── exceptions.py        # Custom exceptions
+│   ├── exceptions.py        # Custom exceptions (incl. SideEffectWarning)
 │   ├── testing.py           # Test utilities (fresh_container)
 │   ├── fastapi.py           # FastAPI integration
 │   ├── flask.py             # Flask integration
 │   ├── celery.py            # Celery integration
 │   ├── click.py             # Click CLI integration
-│   └── _registry.py         # Internal registration system
+│   ├── django.py            # Django integration
+│   ├── ninja.py             # Django Ninja integration
+│   ├── _registry.py         # Internal registration system
+│   ├── _dioxide_core.pyi    # Rust binding type stubs
+│   └── py.typed             # PEP 561 marker
 ├── rust/src/                # PRIVATE Rust implementation
 │   └── lib.rs               # PyO3 bindings and container logic
 ├── tests/                   # Python integration tests
 │   ├── type_checking/       # mypy type safety tests
-│   └── benchmarks/          # Performance benchmark tests
+│   ├── benchmarks/          # Performance benchmark tests
+│   └── fixtures/            # Test fixtures
+├── features/                # BDD/Behave acceptance tests
+│   ├── steps/               # Step definitions
+│   └── *.feature            # Gherkin feature files
 ├── examples/                # Example applications
-├── docs/                    # Documentation
+│   ├── fastapi/             # FastAPI integration example
+│   ├── flask/               # Flask integration example
+│   ├── celery/              # Celery integration example
+│   ├── click/               # Click CLI example
+│   ├── migrations/          # Migration examples
+│   └── patterns/            # Common DI patterns
+├── demos/                   # GitHub Pages demo site
+│   ├── scripts/             # Recording + narration toolchain
+│   └── narration-scripts/   # Voiceover script templates
+├── docs/                    # Sphinx documentation (ReadTheDocs)
 │   ├── design-principles.md # Canonical design specification
 │   ├── TESTING_GUIDE.md     # Testing philosophy and patterns
-│   └── design/              # Architecture Decision Records
+│   ├── testing/             # Testing docs section
+│   ├── user_guide/          # User guide
+│   ├── api/                 # API reference
+│   ├── integrations/        # Framework integration docs
+│   ├── troubleshooting/     # Troubleshooting guides
+│   ├── cookbook/             # Recipes and patterns
+│   ├── guides/              # How-to guides
+│   └── design/              # ADRs and design docs
+├── .github/workflows/       # CI/CD pipelines
+│   ├── ci.yml               # Main CI (test matrix, lint, BDD)
+│   └── deploy-demos.yml     # GitHub Pages deployment
 ├── .claude/rules/           # Modular guidelines (see below)
 └── CLAUDE.md                # This file
 ```
+
+## Scan API (Post-MLP Features)
+
+Recent additions to the container's `scan()` method:
+
+```python
+container = Container(profile=Profile.PRODUCTION)
+
+# Basic scan
+container.scan("myapp")
+
+# Scan with statistics
+stats = container.scan("myapp", stats=True)  # Returns ScanStats
+
+# Strict mode — detect side effects during import
+container.scan("myapp", strict=True)  # Raises SideEffectWarning on side effects
+
+# Lazy discovery — register adapters without importing modules
+container.scan("myapp", lazy=True)  # Defers imports until resolution
+
+# Preview what scan would import
+plan = container.scan_plan("myapp")  # Returns ScanPlan (no side effects)
+```
+
+Key types: `ScanStats`, `ScanPlan`, `AdapterInfo`, `ServiceInfo`, `SideEffectWarning`
 
 ## Working with Claude Code
 
@@ -147,15 +199,25 @@ For detailed guidelines, see `.claude/rules/`:
 | Git Commits | `git-commits.md` | Conventional commits with issue reference |
 | Design Principles | `mlp-vision-summary.md` | 7 guiding principles summary |
 
-**BDD Workflow**: See `docs/design/bdd-workflow.md` for Gherkin tags, @wip enforcement, and CI jobs.
+### BDD Workflow
+
+The project uses Behave for acceptance testing with Gherkin feature files in `features/`. See `docs/design/bdd-workflow.md` for full details.
+
+Key conventions:
+- Tag features with `@issue-NNN` to link to GitHub issues
+- Use `@wip` for tests under development (expected to fail)
+- CI runs `--tags="not @wip"` for the regression suite
+- BDD tests are separate from pytest unit tests
 
 ## Configuration Files
 
 | File | Purpose |
 |------|---------|
-| `pyproject.toml` | Python config: maturin build, pytest (Describe*/it_*), coverage |
+| `pyproject.toml` | Python config: maturin build, pytest (Describe*/it_*), coverage, behave |
 | `Cargo.toml` | Rust config: pyo3, petgraph |
 | `.pre-commit-config.yaml` | Quality gates: ruff, mypy, cargo clippy, pytest coverage |
+| `.github/workflows/ci.yml` | CI pipeline: test matrix, lint, BDD, docs build |
+| `.gitattributes` | Binary file handling (MP4, GIF), line ending normalization |
 
 ## Troubleshooting
 
@@ -165,6 +227,9 @@ For detailed guidelines, see `.claude/rules/`:
 | Import errors after Rust changes | `maturin develop` |
 | Test discovery issues | Check `pyproject.toml`: `python_classes = ["Describe*", "Test*"]` |
 | Coverage not running | Check `.pre-commit-config.yaml` includes coverage args |
+| `SideEffectWarning` during strict scan | Expected behavior — strict mode flags side effects during import |
+| mypy error on bare `return` | Use `return None` explicitly in functions returning `X \| None` |
+| Worktree missing dependencies | Run `uv sync --all-groups && maturin develop` in the worktree |
 
 ## Reference Documentation
 
@@ -172,10 +237,13 @@ For detailed guidelines, see `.claude/rules/`:
 |----------|---------|
 | `docs/design-principles.md` | **CANONICAL DESIGN DOCUMENT** - The north star |
 | `README.md` | Project overview and quick start |
-| `STATUS.md` | Current sprint status and progress |
-| `ROADMAP.md` | Long-term vision |
-| `docs/TESTING_GUIDE.md` | Testing philosophy (fakes > mocks) |
+| `CHANGELOG.md` | Release history and breaking changes |
 | `COVERAGE.md` | Coverage requirements and documentation |
+| `docs/TESTING_GUIDE.md` | Testing philosophy (fakes > mocks) |
+| `docs/design/bdd-workflow.md` | BDD conventions, Gherkin tags, CI jobs |
+| `docs/design/ADR-001-container-architecture.md` | Container architecture decisions |
+| `docs/design/ADR-002-pyo3-binding-strategy.md` | PyO3 binding strategy |
+| `demos/README.md` | Demo video recording pipeline |
 
 ## Tool Usage
 
