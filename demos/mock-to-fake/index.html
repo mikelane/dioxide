@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock → Fake Migration — dioxide demos</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .back-link:hover {
+            color: var(--brand);
+        }
+
+        .demo-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .video-container {
+            position: relative;
+            background: #0d0d0d;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+        }
+
+        .video-container video {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .demo-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 600px) {
+            .demo-details {
+                grid-template-columns: 1fr;
+            }
+
+            .demo-title {
+                font-size: 1.35rem;
+            }
+        }
+
+        .detail-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1.25rem;
+        }
+
+        .detail-card h3 {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .detail-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <a class="back-link animate-in" href="../">&larr; All demos</a>
+
+        <h1 class="demo-title animate-in delay-1">Mock &rarr; Fake: Why Fakes Survive Refactoring</h1>
+        <p class="demo-subtitle animate-in delay-1">Watch what happens when you refactor code tested with mocks. The mock test breaks. The fake test passes. Same refactoring, different outcome.</p>
+
+        <div class="video-container animate-in delay-2">
+            <video controls preload="metadata">
+                <source src="../videos/mock-to-fake.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="tagline animate-in delay-3">
+            Mocks couple to HOW. Fakes couple to WHAT.
+        </div>
+
+        <div class="demo-details animate-in delay-3">
+            <div class="detail-card">
+                <h3>The Problem</h3>
+                <p>A test that patches <code>app.smtplib.SMTP</code> is coupled to the implementation. When the service switches from SMTP to an HTTP API, the mock explodes — even though the behavior is identical.</p>
+            </div>
+            <div class="detail-card">
+                <h3>The Solution</h3>
+                <p>Define an <code>EmailPort</code> protocol. The service depends on the port, not the transport. A simple fake implements the port. Same refactoring, same test, it passes.</p>
+            </div>
+        </div>
+
+        <div class="demo-details animate-in delay-4">
+            <div class="detail-card">
+                <h3>Source Code</h3>
+                <p>
+                    <a href="https://github.com/mikelane/dioxide/tree/main/demos/mock-to-fake">Browse on GitHub</a>
+                </p>
+            </div>
+            <div class="detail-card">
+                <h3>Learn More</h3>
+                <p>
+                    <a href="https://dioxide.readthedocs.io">dioxide documentation</a><br>
+                    <a href="https://github.com/mikelane/dioxide/issues/404">Issue #404</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="animate-in delay-5">
+        <a href="https://github.com/mikelane/dioxide">dioxide</a> &mdash;
+        Declarative dependency injection for Python, powered by Rust.
+    </footer>
+</body>
+</html>

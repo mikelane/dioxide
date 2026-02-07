@@ -1,0 +1,56 @@
+[
+  {
+    "name": "title",
+    "text": "Watch what happens when you refactor code that's tested with mocks.",
+    "duration": 4.37,
+    "clip": "mock-to-fake_title.mp3"
+  },
+  {
+    "name": "show_service",
+    "text": "Here's a typical email service. It imports smtplib directly and sends messages through SMTP.",
+    "duration": 6.36,
+    "clip": "mock-to-fake_show_service.mp3"
+  },
+  {
+    "name": "show_mock_test",
+    "text": "The test uses at-patch to mock smtplib, asserting on starttls, login, and send message. Everything passes.",
+    "duration": 7.2,
+    "clip": "mock-to-fake_show_mock_test.mp3"
+  },
+  {
+    "name": "explain_refactor",
+    "text": "Now the business says switch from SMTP to a REST API. Same behavior, different transport. We refactor the service to use an HTTP endpoint instead.",
+    "duration": 10.17,
+    "clip": "mock-to-fake_explain_refactor.mp3"
+  },
+  {
+    "name": "mock_breaks",
+    "text": "We run the same mock test and it explodes. The mock was patching app dot smtplib, which no longer exists. The test was coupled to the implementation, not the behavior.",
+    "duration": 11.52,
+    "clip": "mock-to-fake_mock_breaks.mp3"
+  },
+  {
+    "name": "show_dioxide",
+    "text": "Now here's the dioxide way. The service depends on an email port protocol. It doesn't know or care whether emails go through SMTP, an API, or a carrier pigeon.",
+    "duration": 9.71,
+    "clip": "mock-to-fake_show_dioxide.mp3"
+  },
+  {
+    "name": "show_fake_test",
+    "text": "The test uses a simple fake. Seven lines of code. It records what was sent and lets us assert on the result.",
+    "duration": 5.85,
+    "clip": "mock-to-fake_show_fake_test.mp3"
+  },
+  {
+    "name": "fake_survives",
+    "text": "Same refactoring. Same test. It passes. Because the fake implements the port, not the implementation.",
+    "duration": 4.83,
+    "clip": "mock-to-fake_fake_survives.mp3"
+  },
+  {
+    "name": "closing",
+    "text": "Mocks couple to how. Fakes couple to what. That's why fakes survive refactoring.",
+    "duration": 3.99,
+    "clip": "mock-to-fake_closing.mp3"
+  }
+]
