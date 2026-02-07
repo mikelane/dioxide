@@ -137,16 +137,16 @@ cross-linked from:
 
 ### 2.1 Data Engineering Stack Analysis
 
-#### Market Share (2024 PyPI Downloads)
+#### Market Share (PyPI Downloads, as of early 2026)
 
-| Orchestrator | Downloads | Market Position |
-|-------------|-----------|-----------------|
-| Apache Airflow | 320M | Dominant (10x nearest competitor) |
-| Prefect | 32M | Strong #2 |
-| Dagster | 15M | Growing #3 |
-| Luigi | 5.6M | Legacy/declining |
+| Orchestrator | Monthly Downloads | Market Position |
+|-------------|-------------------|-----------------|
+| Apache Airflow | ~16M | Dominant (#1, ~2x nearest competitor) |
+| Prefect | ~8M | Strong #2 |
+| Dagster | ~4.5M | Growing #3 |
+| Luigi | ~1.6M | Legacy/declining |
 
-**Source**: PyPI download statistics, 2024
+**Source**: pypistats.org, February 2026
 
 #### Typical Data Engineer Stack
 
@@ -177,7 +177,7 @@ major orchestrators.
 - Testing custom operators requires mocking `self.get_connection()` or `Variable.get()`
 - No separation between "what my task does" and "how it connects to infrastructure"
 - DAG-level tests are slow because they parse the full DAG, including all imports
-- Airflow 3.0 improved things with the TaskFlow API, but DI is still manual
+- Airflow 2.0 introduced the TaskFlow API, and Airflow 3.0 added the Task SDK, but DI is still manual
 
 **What a dioxide integration would look like**:
 
@@ -216,8 +216,7 @@ class IngestionPipeline:
 # DAG definition
 @task
 def ingest(source_path: str, target_table: str):
-    container = Container()
-    container.scan(profile=Profile.PRODUCTION)
+    container = Container(profile=Profile.PRODUCTION)
     pipeline = container.resolve(IngestionPipeline)
     return pipeline.run(source_path, target_table)
 
@@ -624,7 +623,8 @@ class DescribeIngestionPipeline:
     def notifications(self, container):
         return container.resolve(NotificationPort)
 
-    def it_ingests_valid_data(self, pipeline, storage, db, notifications):
+    @pytest.mark.asyncio
+    async def it_ingests_valid_data(self, pipeline, storage, db, notifications):
         source_data = pd.DataFrame({
             "user_id": ["u1", "u2", "u3"],
             "event_type": ["click", "purchase", "click"],
@@ -639,7 +639,8 @@ class DescribeIngestionPipeline:
         assert len(db.tables["clean_events"]) == 3
         assert len(notifications.successes) == 1
 
-    def it_drops_rows_with_missing_user_id(self, pipeline, storage, db):
+    @pytest.mark.asyncio
+    async def it_drops_rows_with_missing_user_id(self, pipeline, storage, db):
         source_data = pd.DataFrame({
             "user_id": ["u1", None, "u3"],
             "event_type": ["click", "purchase", "click"],
@@ -651,7 +652,8 @@ class DescribeIngestionPipeline:
 
         assert rows == 2  # One row dropped
 
-    def it_notifies_on_failure(self, pipeline, storage, notifications):
+    @pytest.mark.asyncio
+    async def it_notifies_on_failure(self, pipeline, storage, notifications):
         # No file seeded -- read will fail
 
         with pytest.raises(FileNotFoundError):
@@ -660,7 +662,8 @@ class DescribeIngestionPipeline:
         assert len(notifications.failures) == 1
         assert "missing/file.parquet" in notifications.failures[0][0]
 
-    def it_converts_event_date_to_datetime(self, pipeline, storage, db):
+    @pytest.mark.asyncio
+    async def it_converts_event_date_to_datetime(self, pipeline, storage, db):
         source_data = pd.DataFrame({
             "user_id": ["u1"],
             "event_type": ["click"],
