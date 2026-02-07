@@ -392,23 +392,37 @@ service = container.resolve(UserService)
 
 ### Common Patterns
 
-**Config Adapter Pattern**: Create a `ConfigPort` that adapters depend on for configuration:
+**Config Injection Pattern**: Define configuration as a `@service` and inject it into adapters. Use [Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) for type-safe environment variable loading:
 
 ```python
+from pydantic_settings import BaseSettings
+from dioxide import service
+
+@service
+class AppConfig(BaseSettings):
+    database_url: str = "sqlite:///dev.db"
+    sendgrid_api_key: str = ""
+
 @adapter.for_(EmailPort, profile=Profile.PRODUCTION)
 class SendGridAdapter:
-    def __init__(self, config: ConfigPort) -> None:
-        self.api_key = config.get("SENDGRID_API_KEY")
-```
+    def __init__(self, config: AppConfig) -> None:  # Injected automatically
+        self.api_key = config.sendgrid_api_key
 
-**Database Connection Pattern**: Wrap database connections in a port for injection:
-
-```python
 @adapter.for_(DatabasePort, profile=Profile.PRODUCTION)
 class PostgresAdapter:
-    def __init__(self, config: ConfigPort) -> None:
-        self.url = config.get("DATABASE_URL")
+    def __init__(self, config: AppConfig) -> None:
+        self.url = config.database_url
 ```
+
+In tests, override the config with `register_instance()`:
+
+```python
+container = Container()
+container.register_instance(AppConfig, AppConfig(database_url="sqlite:///:memory:"))
+container.scan(profile=Profile.TEST)
+```
+
+See the [Configuration Injection Guide](https://dioxide.readthedocs.io/en/latest/guides/configuration/) for patterns covering multiple config classes, startup validation, and environment-specific config.
 
 **Test Fakes Without Dependencies**: Test adapters are often simple and don't need dependencies:
 

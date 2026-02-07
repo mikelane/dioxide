@@ -402,6 +402,7 @@ testing/troubleshooting
 :caption: Advanced Topics
 
 guides/choosing-decorators
+guides/configuration
 guides/scoping
 guides/lifecycle-async-patterns
 guides/decorator-order
