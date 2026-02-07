@@ -1,0 +1,44 @@
+[
+  {
+    "name": "title",
+    "text": "Most dependency injection frameworks let wiring errors slip through to runtime. dioxide catches them before your app starts.",
+    "duration": 7.8,
+    "clip": "rust-correctness_title.mp3"
+  },
+  {
+    "name": "show_missing",
+    "text": "Here is an Order Service that depends on a Notification Port. But we forgot to register an adapter. Watch what happens when we resolve it.",
+    "duration": 7.8,
+    "clip": "rust-correctness_show_missing.mp3"
+  },
+  {
+    "name": "run_missing",
+    "text": "dioxide stops immediately. The error tells you exactly which port is missing, which profile you scanned, and even shows you the fix. No guessing, no stack trace spelunking.",
+    "duration": 10.22,
+    "clip": "rust-correctness_run_missing.mp3"
+  },
+  {
+    "name": "show_circular",
+    "text": "Now a trickier bug. Auth Service depends on User Service, and User Service depends right back on Auth Service. A circular dependency.",
+    "duration": 7.76,
+    "clip": "rust-correctness_show_circular.mp3"
+  },
+  {
+    "name": "run_circular",
+    "text": "The Rust backend walks the dependency graph and catches the cycle at resolution time. This would be a stack overflow at 2 AM in other frameworks. dioxide catches it at startup.",
+    "duration": 11.8,
+    "clip": "rust-correctness_run_circular.mp3"
+  },
+  {
+    "name": "show_correct",
+    "text": "When the wiring is correct, resolution is instant. The adapter is injected, the service works, and you ship with confidence.",
+    "duration": 7.71,
+    "clip": "rust-correctness_show_correct.mp3"
+  },
+  {
+    "name": "closing",
+    "text": "Fail fast. Fail at startup. That is what the Rust backend guarantees.",
+    "duration": 3.85,
+    "clip": "rust-correctness_closing.mp3"
+  }
+]
