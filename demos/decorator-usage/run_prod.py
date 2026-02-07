@@ -1,13 +1,11 @@
 """Run with PRODUCTION profile — real Slack + Postgres adapters."""
 
+import adapters_prod  # noqa: F401 — registers production adapters
+
 from dioxide import Container
 from dioxide.profile_enum import Profile
-
-container = Container()
-container.scan("service")
-container.scan("adapters_prod", profile=Profile.PRODUCTION)
-
 from service import OrderProcessor
 
+container = Container(profile=Profile.PRODUCTION)
 processor = container.resolve(OrderProcessor)
 processor.place_order("alice", "Rust in Action")

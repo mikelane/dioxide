@@ -1,15 +1,13 @@
 """Run with TEST profile — fast in-memory fakes."""
 
+import adapters_test  # noqa: F401 — registers test fakes
+
 from dioxide import Container
 from dioxide.profile_enum import Profile
-
-container = Container()
-container.scan("service")
-container.scan("adapters_test", profile=Profile.TEST)
-
 from ports import AuditLogPort, NotificationPort
 from service import OrderProcessor
 
+container = Container(profile=Profile.TEST)
 processor = container.resolve(OrderProcessor)
 processor.place_order("alice", "Rust in Action")
 
