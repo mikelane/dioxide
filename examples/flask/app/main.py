@@ -24,7 +24,7 @@ from flask import (
     request,
 )
 
-from .domain.services import UserService
+from .domain.services import RequestContext, UserService
 
 # Get profile from environment, default to 'development'
 profile_name = os.getenv("PROFILE", "development")
@@ -143,6 +143,29 @@ def list_users():
     service = inject(UserService)
     users = service.list_all_users()
     return jsonify(users)
+
+
+@app.route("/context", methods=["GET"])
+def request_context():
+    """Demonstrate REQUEST-scoped dependency injection.
+
+    Each request gets a unique RequestContext with its own request_id.
+    Within a single request, the same instance is shared across all
+    injection points. When the request ends, the instance is disposed.
+
+    Returns:
+        The unique request ID for this request
+
+    Example:
+        GET /context
+
+        Response (200 OK):
+        {
+            "request_id": "550e8400-e29b-41d4-a716-446655440000"
+        }
+    """
+    ctx = inject(RequestContext)
+    return jsonify({"request_id": ctx.request_id})
 
 
 @app.route("/health", methods=["GET"])

@@ -6,9 +6,10 @@ This example demonstrates how to build a production-ready FastAPI application us
 
 1. **Hexagonal Architecture**: Clean separation between domain logic and infrastructure
 2. **Profile-Based Configuration**: Different adapters for production, development, and testing
-3. **Lifecycle Management**: Proper initialization and cleanup of resources
-4. **Testing with Fakes**: Fast, deterministic tests without mocks
-5. **FastAPI Integration**: Container lifecycle integrated with FastAPI lifespan
+3. **Request Scoping**: REQUEST-scoped components unique per HTTP request
+4. **Lifecycle Management**: Proper initialization and cleanup of resources
+5. **Testing with Fakes**: Fast, deterministic tests without mocks
+6. **FastAPI Integration**: Container lifecycle integrated with FastAPI lifespan
 
 ## Quick Start
 
@@ -275,6 +276,33 @@ App Start → lifespan.__aenter__ → container.start() → initialize() on adap
 App Stop  → lifespan.__aexit__  → container.stop()  → dispose() on adapters → Shutdown
 ```
 
+### Request Scoping
+
+Components decorated with `@service(scope=Scope.REQUEST)` get a fresh instance per HTTP request. Within a single request, the same instance is shared across all injection points. The `DioxideMiddleware` handles scope creation and disposal automatically.
+
+```python
+# app/domain/services.py
+from dioxide import Scope, service
+
+@service(scope=Scope.REQUEST)
+class RequestContext:
+    def __init__(self):
+        self.request_id = str(uuid.uuid4())
+
+# app/main.py
+@app.get("/context")
+async def request_context(ctx: RequestContext = Inject(RequestContext)):
+    return {"request_id": ctx.request_id}
+```
+
+Each call to `GET /context` returns a different `request_id`. If `RequestContext` is injected multiple times within the same request, all injection points receive the same instance.
+
+```
+Request lifecycle:
+  Request arrives  → ScopedContainer created → REQUEST components cached per scope
+  Response sent    → ScopedContainer disposed → REQUEST @lifecycle.dispose() called
+```
+
 ### Constructor Dependency Injection
 
 Adapters can depend on other adapters or services through constructor injection. dioxide automatically resolves and injects dependencies based on type hints.
@@ -486,6 +514,19 @@ GET /users
         "email": "bob@example.com"
     }
 ]
+```
+
+### Request Context (REQUEST Scope Demo)
+
+```bash
+GET /context
+
+# Response: 200 OK
+{
+    "request_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+
+# Each request returns a different request_id
 ```
 
 ### Health Check
