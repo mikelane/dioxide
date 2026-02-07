@@ -1,0 +1,50 @@
+[
+  {
+    "name": "title",
+    "text": "Two decorators. One simple rule. Let me show you how dioxide keeps business logic and infrastructure apart.",
+    "duration": 5.34,
+    "clip": "decorator-usage_title.mp3"
+  },
+  {
+    "name": "show_ports",
+    "text": "First, the ports. These are just Python protocols. They define what your app needs, a notifier and an audit log, without saying how.",
+    "duration": 8.31,
+    "clip": "decorator-usage_show_ports.mp3"
+  },
+  {
+    "name": "show_service",
+    "text": "Now the service. It uses at-service because business logic never changes between environments. Order Processor depends on the ports, not on Slack or Postgres.",
+    "duration": 8.73,
+    "clip": "decorator-usage_show_service.mp3"
+  },
+  {
+    "name": "show_prod_adapters",
+    "text": "Here are the production adapters. Each one uses at-adapter-dot-for with a profile. Slack Notifier handles notifications. Postgres Audit Log handles compliance. They are wired to the production profile.",
+    "duration": 12.68,
+    "clip": "decorator-usage_show_prod_adapters.mp3"
+  },
+  {
+    "name": "show_test_adapters",
+    "text": "And the test adapters. Same ports, different profile. These are fast in-memory fakes. No network, no database. Just lists that record what happened.",
+    "duration": 7.71,
+    "clip": "decorator-usage_show_test_adapters.mp3"
+  },
+  {
+    "name": "run_prod",
+    "text": "Lets run with the production profile. The container scans adapters, resolves the service, and injects Slack and Postgres automatically.",
+    "duration": 7.71,
+    "clip": "decorator-usage_run_prod.mp3"
+  },
+  {
+    "name": "run_test",
+    "text": "Now the test profile. Same service, same code path. But now it uses the fakes. No infrastructure needed. The assertions run against in-memory data.",
+    "duration": 7.99,
+    "clip": "decorator-usage_run_test.mp3"
+  },
+  {
+    "name": "closing",
+    "text": "At-service for logic that never changes. At-adapter-dot-for for infrastructure that does. That is the only rule you need.",
+    "duration": 7.48,
+    "clip": "decorator-usage_closing.mp3"
+  }
+]
