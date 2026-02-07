@@ -5,8 +5,7 @@
 # Usage: ./scripts/combine-video-audio.sh <video.mp4> <audio.mp3> <output.mp4>
 #
 # This overlays narration audio onto the terminal recording video.
-# If the audio is shorter than the video (or vice versa), the shorter
-# stream is padded so the output matches the longer duration.
+# The -shortest flag truncates the output to match the shorter stream.
 
 set -euo pipefail
 

@@ -15,6 +15,7 @@ to the ElevenLabs text-to-speech API.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -67,11 +68,11 @@ def generate_audio(text: str, output_path: Path, api_key: str, voice_id: str) ->
     """Send text to ElevenLabs API and save the resulting audio."""
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
 
-    payload = (
-        '{"text": '
-        + _json_encode_string(text)
-        + ', "model_id": "eleven_monolingual_v1", "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}}'
-    )
+    payload = json.dumps({
+        "text": text,
+        "model_id": "eleven_monolingual_v1",
+        "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+    })
 
     request = Request(
         url,
@@ -85,19 +86,13 @@ def generate_audio(text: str, output_path: Path, api_key: str, voice_id: str) ->
     )
 
     try:
-        with urlopen(request) as response:  # noqa: S310
+        with urlopen(request) as response:  # noqa: S310 — URL is hardcoded to https://api.elevenlabs.io; voice_id is validated alphanumeric
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_bytes(response.read())
     except HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
         print(f"ElevenLabs API error (HTTP {exc.code}): {body}", file=sys.stderr)
         sys.exit(1)
-
-
-def _json_encode_string(s: str) -> str:
-    """Encode a string as a JSON string value with proper escaping."""
-    escaped = s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
-    return f'"{escaped}"'
 
 
 def main() -> None:
@@ -120,6 +115,10 @@ def main() -> None:
     voice_id = os.environ.get("ELEVENLABS_VOICE_ID")
     if not voice_id:
         print("ELEVENLABS_VOICE_ID environment variable is required", file=sys.stderr)
+        sys.exit(1)
+
+    if not re.fullmatch(r"[A-Za-z0-9]+", voice_id):
+        print("ELEVENLABS_VOICE_ID must contain only alphanumeric characters", file=sys.stderr)
         sys.exit(1)
 
     narration_text = extract_narration_text(script_path)

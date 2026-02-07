@@ -4,32 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Demo: DEMO_TITLE - Dioxide</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        :root {
-            --bg-primary: #1a1b26;
-            --bg-secondary: #24283b;
-            --bg-card: #1f2335;
-            --text-primary: #c0caf5;
-            --text-secondary: #a9b1d6;
-            --text-muted: #565f89;
-            --accent: #7aa2f7;
-            --accent-hover: #89b4fa;
-            --border: #3b4261;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-        }
-
         nav {
             padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border);
@@ -43,12 +19,6 @@
 
         nav a:hover {
             text-decoration: underline;
-        }
-
-        main {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
         }
 
         h1 {
@@ -72,21 +42,6 @@
         video {
             width: 100%;
             display: block;
-        }
-
-        .video-fallback {
-            padding: 3rem 2rem;
-            text-align: center;
-            color: var(--text-muted);
-        }
-
-        .video-fallback a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-        .video-fallback a:hover {
-            text-decoration: underline;
         }
 
         .description {
@@ -124,24 +79,6 @@
             text-decoration: underline;
         }
 
-        footer {
-            text-align: center;
-            padding: 2rem 1rem;
-            border-top: 1px solid var(--border);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-top: 2rem;
-        }
-
-        footer a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
-        }
-
         @media (max-width: 600px) {
             h1 {
                 font-size: 1.35rem;
@@ -176,12 +113,10 @@
         <p class="subtitle">Dioxide Demo Video</p>
 
         <div class="video-container">
-            <video controls preload="metadata" poster="">
+            <video controls preload="metadata">
                 <source src="DEMO_VIDEO_FILE" type="video/mp4">
-                <div class="video-fallback">
-                    <p>Your browser does not support HTML5 video.</p>
-                    <p><a href="DEMO_VIDEO_FILE">Download the video</a> to watch locally.</p>
-                </div>
+                <p>Your browser does not support HTML5 video.
+                   <a href="DEMO_VIDEO_FILE">Download the video</a> instead.</p>
             </video>
         </div>
 

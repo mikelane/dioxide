@@ -7,7 +7,7 @@
 # Binary files (committed directly, NOT via Git LFS)
 # GitHub Pages does not serve LFS objects, so videos must be regular Git objects.
 *.mp4 binary
-*.cast binary
+*.cast text
 *.gif binary
 *.png binary
 *.jpg binary
