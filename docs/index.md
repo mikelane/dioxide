@@ -404,6 +404,7 @@ testing/troubleshooting
 guides/choosing-decorators
 guides/configuration
 guides/scoping
+guides/debugging
 guides/lifecycle-async-patterns
 guides/decorator-order
 guides/scan-performance
