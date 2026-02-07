@@ -1,0 +1,50 @@
+[
+  {
+    "name": "title",
+    "text": "How fast does your app start? Let's see what happens when dioxide scans a package with expensive imports.",
+    "duration": 6.22,
+    "clip": "scan-performance_title.mp3"
+  },
+  {
+    "name": "show_adapters",
+    "text": "Here are three adapters. Each one simulates a heavy SDK import, like Stripe or SendGrid, with a point-four second sleep at module level.",
+    "duration": 8.22,
+    "clip": "scan-performance_show_adapters.mp3"
+  },
+  {
+    "name": "eager_scan",
+    "text": "With eager scanning, dioxide imports every module upfront. Three adapters, each sleeping point-four seconds. Over a second just to start up.",
+    "duration": 8.08,
+    "clip": "scan-performance_eager_scan.mp3"
+  },
+  {
+    "name": "run_eager",
+    "text": "Watch. One-point-two seconds. All three adapters loaded, whether you need them or not.",
+    "duration": 4.88,
+    "clip": "scan-performance_run_eager.mp3"
+  },
+  {
+    "name": "lazy_intro",
+    "text": "Now the same package, but with lazy equals true. Dioxide reads the source code with AST parsing. No imports. No sleeps.",
+    "duration": 6.73,
+    "clip": "scan-performance_lazy_intro.mp3"
+  },
+  {
+    "name": "run_lazy",
+    "text": "One millisecond. The container knows what's available, but nothing has been imported yet.",
+    "duration": 4.78,
+    "clip": "scan-performance_run_lazy.mp3"
+  },
+  {
+    "name": "first_resolve",
+    "text": "When you resolve a port, only that adapter gets imported. One module, point-four seconds, instead of all three.",
+    "duration": 6.32,
+    "clip": "scan-performance_first_resolve.mp3"
+  },
+  {
+    "name": "closing",
+    "text": "Lazy scanning. Load what you need, when you need it.",
+    "duration": 2.6,
+    "clip": "scan-performance_closing.mp3"
+  }
+]
