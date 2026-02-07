@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytest
 from dioxide import Container, Profile
 
+import app.adapters as _adapters  # noqa: F401 — register adapters
 from app.domain import Order, OrderItem
 from app.domain.ports import OrderRepositoryPort, PaymentGatewayPort
 
@@ -12,8 +13,7 @@ from app.domain.ports import OrderRepositoryPort, PaymentGatewayPort
 @pytest.fixture
 def container() -> Container:
     """Create test container."""
-    c = Container()
-    c.scan("app", profile=Profile.TEST)
+    c = Container(profile=Profile.TEST)
     return c
 
 

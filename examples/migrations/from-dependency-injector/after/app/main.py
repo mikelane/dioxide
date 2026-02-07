@@ -8,6 +8,7 @@ import asyncio
 
 from dioxide import Container, Profile
 
+import app.adapters as _adapters  # noqa: F401 — register adapters for autoscan
 from app.services import UserService
 
 
@@ -17,8 +18,7 @@ async def main() -> None:
     Configuration comes from environment variables (12-Factor App),
     not from container config dictionaries.
     """
-    container = Container()
-    container.scan("app", profile=Profile.PRODUCTION)
+    container = Container(profile=Profile.PRODUCTION)
 
     service = container.resolve(UserService)
 

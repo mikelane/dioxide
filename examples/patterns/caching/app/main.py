@@ -8,6 +8,7 @@ import asyncio
 
 from dioxide import Container, Profile
 
+from . import adapters as _adapters  # noqa: F401 — register adapters for autoscan
 from .domain import UserService
 
 
@@ -25,8 +26,7 @@ async def main() -> None:
     print("          -> CachePort (RedisCache)")
     print()
 
-    container = Container()
-    container.scan("app", profile=Profile.PRODUCTION)
+    container = Container(profile=Profile.PRODUCTION)
 
     service = container.resolve(UserService)
 

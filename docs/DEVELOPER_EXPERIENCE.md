@@ -22,8 +22,7 @@ class UserController:
     def __init__(self, user_service: UserService):
         self.user_service = user_service
 
-container = Container()
-container.scan()  # Auto-discovers @component classes
+container = Container(profile=Profile.PRODUCTION)
 controller = container.resolve(UserController)  # UserService auto-injected!
 ```
 
@@ -128,8 +127,7 @@ class DatabaseConnection:
         self.disconnect()
 
 # Just works - no manual lifecycle management
-with Container() as container:
-    container.scan()
+with Container(profile=Profile.PRODUCTION) as container:
     db = container.resolve(DatabaseConnection)
     # db.connect() already called
 # db.disconnect() automatically called
@@ -166,8 +164,7 @@ class ServiceA:
 class ServiceB:
     def __init__(self, a: ServiceA): pass
 
-container = Container()
-container.scan()  # ← Raises immediately with clear error:
+container = Container(profile=Profile.PRODUCTION)  # ← Raises immediately with clear error:
 # ❌ Circular dependency detected:
 #    ServiceA → ServiceB → ServiceA
 #
@@ -206,11 +203,11 @@ container.scan()  # ← Raises immediately with clear error:
 
 ### 1. Automatic Scanning
 ```python
-# Finds all @component classes in your package
-container.scan("myapp")
+# Auto-scan: discovers all decorated classes at construction time
+container = Container(profile=Profile.PRODUCTION)
 
-# Smart defaults - scans current package
-container.scan()
+# Or scan a specific package for targeted discovery
+container.scan("myapp")
 ```
 
 ### 2. Environment-Aware Configuration
@@ -314,13 +311,13 @@ class UserService:
 
 ```python
 # When you make a mistake, you know immediately
-container = Container()
+container = Container(profile=Profile.PRODUCTION)
 
 # Missing dependency?
-# ❌ Error during container.scan() with clear fix
+# ❌ Error during construction with clear fix
 
 # Circular dependency?
-# ❌ Error during container.scan() with suggestion
+# ❌ Error during construction with suggestion
 
 # Type mismatch?
 # ❌ Caught by mypy/pyright before runtime

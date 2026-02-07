@@ -107,9 +107,8 @@ async def main() -> None:
     print(f'Profile: {profile.value}')
     print('=' * 60)
 
-    # Create container and scan for components
-    container = Container()
-    container.scan(profile=profile)
+    # Create container with the selected profile
+    container = Container(profile=profile)
 
     # Resolve and use service
     user_service = container.resolve(UserService)

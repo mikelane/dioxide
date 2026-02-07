@@ -136,23 +136,33 @@ dioxide/
 └── CLAUDE.md                # This file
 ```
 
-## Scan API (Post-MLP Features)
+## Container API
 
-Recent additions to the container's `scan()` method:
+The primary pattern uses autoscan via `Container(profile=...)`:
+
+```python
+# Autoscan: discovers all decorated classes at construction time (preferred)
+container = Container(profile=Profile.PRODUCTION)
+service = container.resolve(MyService)  # No explicit scan() needed
+```
+
+### Advanced Scan Features (Post-MLP)
+
+For targeted package scanning or advanced use cases, use `scan()` directly:
 
 ```python
 container = Container(profile=Profile.PRODUCTION)
 
-# Basic scan
+# Scan a specific package for targeted discovery
 container.scan("myapp")
 
 # Scan with statistics
 stats = container.scan("myapp", stats=True)  # Returns ScanStats
 
-# Strict mode — detect side effects during import
+# Strict mode -- detect side effects during import
 container.scan("myapp", strict=True)  # Raises SideEffectWarning on side effects
 
-# Lazy discovery — register adapters without importing modules
+# Lazy discovery -- register adapters without importing modules
 container.scan("myapp", lazy=True)  # Defers imports until resolution
 
 # Preview what scan would import

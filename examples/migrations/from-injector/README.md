@@ -13,7 +13,7 @@ dioxide replaces this with decorator-based registration and profile-based select
 
 | Aspect | injector | dioxide |
 |--------|----------|---------|
-| **Container** | `Injector` with `Module` classes | `Container` with `scan()` |
+| **Container** | `Injector` with `Module` classes | `Container(profile=...)` |
 | **Registration** | `Binder.bind()` in modules | `@adapter.for_()` decorators |
 | **Injection** | `@inject` decorator required | Automatic from type hints |
 | **Scoping** | `@singleton` decorator | `scope=Scope.SINGLETON/FACTORY` |
@@ -159,13 +159,11 @@ service = test_injector.get(OrderService)
 from dioxide import Container, Profile
 
 # Production
-container = Container()
-container.scan("app", profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 service = container.resolve(OrderService)
 
 # Testing
-container = Container()
-container.scan("app", profile=Profile.TEST)
+container = Container(profile=Profile.TEST)
 service = container.resolve(OrderService)
 ```
 

@@ -123,11 +123,9 @@ def main() -> None:
     print("  OrderServicePort -> OrderService (cycle!)")
     print()
 
-    container = Container()
-
     try:
         # This will fail because of the circular dependency
-        container.scan(profile=Profile.PRODUCTION)
+        container = Container(profile=Profile.PRODUCTION)
 
         # If we get here (shouldn't), try to resolve
         container.resolve(OrderServicePort)

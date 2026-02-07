@@ -3,6 +3,7 @@
 import pytest
 from dioxide import Container, Profile
 
+import app.adapters as _adapters  # noqa: F401 — register adapters
 from app.domain.models import Product
 from app.domain.ports import CachePort, EventPublisherPort, OrderRepositoryPort, ProductRepositoryPort
 
@@ -13,8 +14,7 @@ def container() -> Container:
 
     This activates all fake adapters automatically.
     """
-    c = Container()
-    c.scan("app", profile=Profile.TEST)
+    c = Container(profile=Profile.TEST)
     return c
 
 

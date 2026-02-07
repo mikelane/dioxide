@@ -3,6 +3,7 @@
 import pytest
 from dioxide import Container, Profile
 
+import app.adapters as _adapters  # noqa: F401 — register adapters
 from app.domain import User, UserRepositoryPort
 from app.domain.ports import CachePort
 
@@ -10,8 +11,7 @@ from app.domain.ports import CachePort
 @pytest.fixture
 def container() -> Container:
     """Create test container."""
-    c = Container()
-    c.scan("app", profile=Profile.TEST)
+    c = Container(profile=Profile.TEST)
     return c
 
 

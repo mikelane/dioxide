@@ -165,7 +165,7 @@ Complete before/after comparison showing migration from the `injector` library (
 **Key changes:**
 - Remove `@inject` decorators (dioxide infers from type hints)
 - Replace `Module` classes -> `@adapter.for_()` decorators
-- Replace `Injector([modules])` -> `Container().scan(profile=...)`
+- Replace `Injector([modules])` -> `Container(profile=...)`
 - Replace `binder.bind()` -> profile-based registration
 
 ```bash
@@ -300,13 +300,11 @@ Swap all implementations by changing the profile:
 from dioxide import Container, Profile
 
 # Production: Real SendGrid + PostgreSQL
-prod_container = Container()
-prod_container.scan(profile=Profile.PRODUCTION)
+prod_container = Container(profile=Profile.PRODUCTION)
 prod_service = prod_container.resolve(UserService)
 
 # Testing: Fake email + In-memory DB
-test_container = Container()
-test_container.scan(profile=Profile.TEST)
+test_container = Container(profile=Profile.TEST)
 test_service = test_container.resolve(UserService)
 ```
 

@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from dioxide import Container, Profile
 
+from . import adapters as _adapters  # noqa: F401 — register adapters for autoscan
 from .domain import Order, OrderItem, OrderStatus, PaymentService
 from .domain.ports import OrderRepositoryPort
 
@@ -26,8 +27,7 @@ async def main() -> None:
     print("       -> FakePaymentGateway (test, with error injection)")
     print()
 
-    container = Container()
-    container.scan("app", profile=Profile.PRODUCTION)
+    container = Container(profile=Profile.PRODUCTION)
 
     print("-" * 70)
     print("Initializing services...")

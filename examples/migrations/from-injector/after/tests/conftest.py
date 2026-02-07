@@ -1,11 +1,12 @@
 """Pytest fixtures for dioxide tests.
 
 With dioxide, testing is simpler - no TestModule needed.
-Just create a container with Profile.TEST and scan.
+Just create a container with Profile.TEST.
 """
 
 import pytest
 
+import app.adapters as _adapters  # noqa: F401 — register adapters
 from dioxide import Container, Profile
 
 
@@ -16,6 +17,5 @@ def container() -> Container:
     Profile.TEST automatically selects the fake adapters.
     No module configuration needed.
     """
-    c = Container()
-    c.scan("app", profile=Profile.TEST)
+    c = Container(profile=Profile.TEST)
     return c
