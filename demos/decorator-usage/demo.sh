@@ -69,7 +69,7 @@ echo -e "\n${GREEN}${BOLD}━━━ Production profile ━━━${RESET}\n"
 show_code "$DEMO_DIR/run_prod.py"
 echo ""
 cd "$DEMO_DIR"
-python run_prod.py
+uv run python run_prod.py
 sleep 5.9
 
 # ── run_test (8.0s) ──────────────────────────────
@@ -78,10 +78,10 @@ echo -e "\n${YELLOW}${BOLD}━━━ Test profile ━━━${RESET}\n"
 show_code "$DEMO_DIR/run_test.py"
 echo ""
 cd "$DEMO_DIR"
-python run_test.py
+uv run python run_test.py
 sleep 5.4
 
-# ── closing (7.5s + 3.5s buffer for GIF timing loss) ──
+# ── closing (7.5s + 8.5s buffer for GIF frame rounding loss) ──
 echo -e "\n${BOLD}@service for logic.  @adapter.for_() for infrastructure.${RESET}"
 echo -e "${DIM}dioxide.readthedocs.io${RESET}\n"
-sleep 11.0
+sleep 16.0
