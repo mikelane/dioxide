@@ -1,0 +1,44 @@
+[
+  {
+    "name": "title",
+    "text": "Every framework upgrade is a gamble. Will your code break? Let's find out.",
+    "duration": 3.72,
+    "clip": "migration-tool_title.mp3"
+  },
+  {
+    "name": "show_v1",
+    "text": "Here's a working app built on rivet dee eye version one. It uses adapter dot register, profile enum dot prod, and the old import paths.",
+    "duration": 8.64,
+    "clip": "migration-tool_show_v1.mp3"
+  },
+  {
+    "name": "upgrade_fails",
+    "text": "You upgrade to dioxide version two. The imports break immediately. Rivet dee eye no longer exists.",
+    "duration": 5.99,
+    "clip": "migration-tool_upgrade_fails.mp3"
+  },
+  {
+    "name": "show_migration",
+    "text": "But here's the migration guide. Four find-and-replace patterns. Package name, profile enum, decorator API, and container init. That's it.",
+    "duration": 8.54,
+    "clip": "migration-tool_show_migration.mp3"
+  },
+  {
+    "name": "show_v2",
+    "text": "After the migration, the code looks almost identical. Adapter dot for underscore replaces adapter dot register. Profile dot production replaces profile enum dot prod.",
+    "duration": 9.94,
+    "clip": "migration-tool_show_v2.mp3"
+  },
+  {
+    "name": "tests_pass",
+    "text": "We run the tests. They pass. Same logic, same behavior, cleaner API.",
+    "duration": 3.95,
+    "clip": "migration-tool_tests_pass.mp3"
+  },
+  {
+    "name": "closing",
+    "text": "We break APIs when we have to. But we never break your trust. Every breaking change comes with a migration path.",
+    "duration": 6.83,
+    "clip": "migration-tool_closing.mp3"
+  }
+]
