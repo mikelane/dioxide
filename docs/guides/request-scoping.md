@@ -38,7 +38,7 @@ Three steps to add request scoping to your application:
 
 ```python
 import uuid
-from dioxide import adapter, service, lifecycle, Profile, Scope
+from dioxide import adapter, Profile, Scope
 from typing import Protocol
 
 
@@ -126,7 +126,7 @@ Correlation IDs trace a request across services and log entries:
 ```python
 import uuid
 from typing import Protocol
-from dioxide import adapter, service, Profile, Scope
+from dioxide import adapter, Profile, Scope
 
 
 class CorrelationPort(Protocol):
@@ -314,7 +314,7 @@ class GlobalService:
         self.ctx = ctx
 
 
-# CaptiveDependencyError raised during container.scan()!
+# CaptiveDependencyError raised at scan time!
 ```
 
 ### Valid Scope Dependencies
@@ -665,7 +665,7 @@ CaptiveDependencyError: GlobalService (SINGLETON) -> RequestContext (REQUEST)
 
 ### REQUEST-scoped component not fresh per request
 
-**Cause:** The framework middleware is not configured, so no scope is created per request. Without a scope, REQUEST-scoped components fall back to FACTORY behavior (new instance every resolution, no sharing within request).
+**Cause:** The framework middleware is not configured, so no scope is created per request. Without a scope, resolving a REQUEST-scoped component raises `ScopeError`.
 
 **Fix:** Add the framework middleware:
 
