@@ -471,7 +471,6 @@ Here is a complete application showing configuration injection from end to end.
 ```python
 from typing import Protocol
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dioxide import Container, Profile, adapter, service
 
