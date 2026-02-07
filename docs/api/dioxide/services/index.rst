@@ -23,15 +23,27 @@ dioxide.services
        Do NOT use @service if you need different implementations per profile.
        Use @adapter.for_() instead.
 
-       **Decision Tree**::
+       **Quick Decision Tree** (answer in 10 seconds)::
 
-           Is this core business logic that shouldn't change between environments?
-           |-- YES --> Use @service
-           |-- NO  --> Use @adapter.for_(Port, profile=...)
-
-           Does this component talk directly to external systems?
-           |-- YES --> Use @adapter.for_(Port, profile=...)
-           |-- NO  --> Probably @service
+           Which decorator should I use?
+                       |
+           Does it talk to external systems (DB, API, file, network)?
+                       |
+              +--------+--------+
+              |                 |
+             YES               NO
+              |                 |
+              v                 v
+           @adapter         Should different profiles use
+           .for_()          different implementations?
+                                 |
+                        +--------+--------+
+                        |                 |
+                       YES               NO
+                        |                 |
+                        v                 v
+                     @adapter         @service
+                     .for_()          (this one!)
 
    Key Characteristics:
        - **Configurable scope**: SINGLETON (default), FACTORY, or REQUEST scope
@@ -149,6 +161,7 @@ dioxide.services
 
    .. seealso::
 
+      - :doc:`/guides/choosing-decorators` - Visual decision tree with examples
       - :class:`dioxide.adapter.adapter` - For marking boundary implementations
       - :class:`dioxide.profile_enum.Profile` - Standard profile values
       - :class:`dioxide.container.Container` - For dependency resolution

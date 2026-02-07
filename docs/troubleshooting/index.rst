@@ -8,8 +8,8 @@ This section covers common errors you may encounter when using dioxide and how t
    dioxide is designed to **fail fast** - errors are caught at startup, not at runtime.
    This means you'll see these errors during development, not in production.
 
-Common Errors
--------------
+Errors
+------
 
 .. toctree::
    :maxdepth: 1
@@ -20,10 +20,18 @@ Common Errors
    scope-error
    captive-dependency
 
+Warnings
+--------
+
+.. toctree::
+   :maxdepth: 1
+
+   side-effect-warning
+
 Quick Diagnosis
 ---------------
 
-Use this table to quickly identify your error:
+Use this table to identify your error:
 
 .. list-table::
    :header-rows: 1
@@ -41,6 +49,8 @@ Use this table to quickly identify your error:
      - Resolving REQUEST component without ``container.create_scope()``
    * - "Captive dependency: X (SINGLETON) -> Y (REQUEST)"
      - SINGLETON depending on shorter-lived REQUEST component
+   * - "SideEffectWarning: Module 'X' contains potential side effects"
+     - Module-level function calls detected during ``scan(strict=True)``
 
 General Troubleshooting Steps
 -----------------------------

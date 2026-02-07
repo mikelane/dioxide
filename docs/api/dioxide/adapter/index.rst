@@ -25,15 +25,28 @@ dioxide.adapter
        - The component should be the same across all environments (use @service)
        - You're not implementing a port interface
 
-       **Decision Tree**::
+       **Quick Decision Tree** (answer in 10 seconds)::
 
-           Do you need different implementations based on profile (test/prod/dev)?
-           |-- YES --> Define a Port (Protocol) + use @adapter.for_(Port, profile=...)
-           |-- NO  --> Use @service
-
-           Does this component talk to external systems (DB, network, filesystem)?
-           |-- YES --> Port + @adapter.for_() (allows faking in tests)
-           |-- NO  --> Probably @service
+           Which decorator should I use?
+                       |
+           Does it talk to external systems (DB, API, file, network)?
+                       |
+              +--------+--------+
+              |                 |
+             YES               NO
+              |                 |
+              v                 v
+           @adapter         Should different profiles use
+           .for_()          different implementations?
+           (this one!)           |
+                        +--------+--------+
+                        |                 |
+                       YES               NO
+                        |                 |
+                        v                 v
+                     @adapter         @service
+                     .for_()
+                     (this one!)
 
    In hexagonal architecture:
        - **Ports** are abstract interfaces (Protocols/ABCs) that define contracts
@@ -145,6 +158,7 @@ dioxide.adapter
 
    .. seealso::
 
+      - :doc:`/guides/choosing-decorators` - Visual decision tree with examples
       - :class:`dioxide.services.service` - For marking core domain logic
       - :class:`dioxide.profile_enum.Profile` - Extensible profile identifiers
       - :class:`dioxide.lifecycle.lifecycle` - For lifecycle management
@@ -181,6 +195,12 @@ Module Contents
 
    The decorator requires explicit profile association to make deployment
    configuration visible at the seams.
+
+
+   .. py:method:: __call__(cls)
+
+      Intercept direct @adapter usage and provide guidance.
+
 
 
    .. py:method:: for_(port, *, profile = Profile.ALL, scope = Scope.SINGLETON, multi = False, priority = 0)

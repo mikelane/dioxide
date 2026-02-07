@@ -190,6 +190,8 @@ Exceptions
 
 .. autoapisummary::
 
+   dioxide.exceptions.SideEffectWarning
+   dioxide.exceptions.DioxideDeprecationWarning
    dioxide.exceptions.DioxideError
    dioxide.exceptions.ResolutionError
    dioxide.exceptions.AdapterNotFoundError
@@ -204,6 +206,49 @@ Module Contents
 
 .. py:data:: DOCS_BASE_URL
    :value: 'https://dioxide.readthedocs.io/en/stable'
+
+
+.. py:exception:: SideEffectWarning
+
+   Bases: :py:obj:`UserWarning`
+
+
+   Warning emitted when strict mode detects potential module-level side effects.
+
+   Issued by ``container.scan(strict=True)`` when AST analysis finds
+   module-level function calls that may cause side effects (database
+   connections, file I/O, network requests, etc.).
+
+   Users can filter these warnings using the standard ``warnings`` module::
+
+       import warnings
+       from dioxide.exceptions import SideEffectWarning
+
+       # Suppress all side-effect warnings
+       warnings.filterwarnings('ignore', category=SideEffectWarning)
+
+       # Or escalate them to errors
+       warnings.filterwarnings('error', category=SideEffectWarning)
+
+
+.. py:exception:: DioxideDeprecationWarning
+
+   Bases: :py:obj:`DeprecationWarning`
+
+
+   Custom deprecation warning for dioxide APIs.
+
+   Using a dedicated warning subclass allows users to filter dioxide
+   deprecation warnings separately from other DeprecationWarning sources::
+
+       import warnings
+       from dioxide import DioxideDeprecationWarning
+
+       # Silence all dioxide deprecation warnings
+       warnings.filterwarnings('ignore', category=DioxideDeprecationWarning)
+
+       # Turn dioxide deprecation warnings into errors during testing
+       warnings.filterwarnings('error', category=DioxideDeprecationWarning)
 
 
 .. py:exception:: DioxideError(message = '')
@@ -225,13 +270,13 @@ Module Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Dioxide Error'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/'
 
 
@@ -301,13 +346,13 @@ Module Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Resolution Failed'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/'
 
 
@@ -465,13 +510,13 @@ Module Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Adapter Not Found'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/adapter-not-found.html'
 
 
@@ -650,13 +695,13 @@ Module Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Service Not Found'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/service-not-found.html'
 
 
@@ -748,13 +793,13 @@ Module Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Scope Error'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/scope-error.html'
 
 
@@ -894,13 +939,13 @@ Module Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Captive Dependency'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/captive-dependency.html'
 
 
@@ -1108,11 +1153,11 @@ Module Contents
 
 
    .. py:attribute:: title
-      :type:  ClassVar[str]
+      :type:  str
       :value: 'Circular Dependency'
 
 
 
    .. py:attribute:: docs_url
-      :type:  ClassVar[str | None]
+      :type:  str | None
       :value: 'https://dioxide.readthedocs.io/en/stable/troubleshooting/circular-dependency.html'
