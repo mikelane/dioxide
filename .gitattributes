@@ -1,0 +1,15 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# Shell scripts must use LF line endings
+*.sh text eol=lf
+
+# Binary files (committed directly, NOT via Git LFS)
+# GitHub Pages does not serve LFS objects, so videos must be regular Git objects.
+*.mp4 binary
+*.cast binary
+*.gif binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
