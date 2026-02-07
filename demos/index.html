@@ -40,6 +40,10 @@
             color: var(--brand);
         }
 
+        .hero .oxide {
+            color: var(--text-primary);
+        }
+
         .hero p {
             color: var(--text-secondary);
             font-size: 1.05rem;
@@ -100,7 +104,8 @@
 
         .demo-card {
             position: relative;
-            display: block;
+            display: flex;
+            gap: 1.25rem;
             background: var(--bg-surface);
             border: 1px solid var(--border);
             border-left: 3px solid var(--brand);
@@ -116,6 +121,29 @@
             border-left-color: var(--brand-bright);
             box-shadow: var(--shadow-card-hover);
             transform: translateY(-1px);
+        }
+
+        .demo-card-thumb {
+            flex-shrink: 0;
+            width: 160px;
+            height: 90px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #0d0d0d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .demo-card-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .demo-card-content {
+            flex: 1;
+            min-width: 0;
         }
 
         .demo-card-header {
@@ -152,14 +180,6 @@
             color: var(--text-muted);
         }
 
-        .demo-card .meta a {
-            color: var(--text-muted);
-        }
-
-        .demo-card .meta a:hover {
-            color: var(--brand);
-        }
-
         /* ─── Badges ─── */
         .badge {
             display: inline-flex;
@@ -172,12 +192,6 @@
             text-transform: uppercase;
             white-space: nowrap;
             flex-shrink: 0;
-        }
-
-        .badge-coming-soon {
-            background: var(--badge-coming-bg);
-            color: var(--badge-coming-text);
-            border: 1px solid var(--badge-coming-border);
         }
 
         .badge-ready {
@@ -212,7 +226,13 @@
             }
 
             .demo-card {
+                flex-direction: column;
                 padding: 1rem 1.25rem;
+            }
+
+            .demo-card-thumb {
+                width: 100%;
+                height: 120px;
             }
         }
     </style>
@@ -220,7 +240,7 @@
 <body>
     <header class="hero">
         <div class="hero-content animate-in">
-            <h1><span class="brand">dioxide</span> demos</h1>
+            <h1><span class="brand">di</span><span class="oxide">oxide</span> demos</h1>
             <p>Narrated terminal recordings showing how dioxide makes dependency injection feel inevitable in Python.</p>
             <div class="hero-links">
                 <a href="https://dioxide.readthedocs.io">Documentation</a>
@@ -237,54 +257,79 @@
 
         <div class="demo-list">
             <a class="demo-card animate-in delay-1" href="scan-performance/">
-                <div class="demo-card-header">
-                    <h3><span class="number">01</span> Before/After Scan Performance</h3>
-                    <span class="badge badge-ready">Ready</span>
+                <div class="demo-card-thumb">
+                    <img src="videos/scan-performance-thumb.jpg" alt="Scan performance demo thumbnail">
                 </div>
-                <p>See the difference between eager scanning and lazy scanning. Three adapters with expensive imports show why lazy=True keeps your startup fast.</p>
-                <div class="meta">48s narrated demo &middot; #385</div>
+                <div class="demo-card-content">
+                    <div class="demo-card-header">
+                        <h3><span class="number">01</span> Before/After Scan Performance</h3>
+                        <span class="badge badge-ready">Ready</span>
+                    </div>
+                    <p>See the difference between eager scanning and lazy scanning. Three adapters with expensive imports show why lazy=True keeps your startup fast.</p>
+                    <div class="meta">48s narrated demo · #385</div>
+                </div>
             </a>
 
             <a class="demo-card animate-in delay-2" href="decorator-usage/">
-                <div class="demo-card-header">
-                    <h3><span class="number">02</span> Side-by-Side Decorator Usage</h3>
-                    <span class="badge badge-ready">Ready</span>
+                <div class="demo-card-thumb">
+                    <img src="videos/decorator-usage-thumb.jpg" alt="Decorator usage demo thumbnail">
                 </div>
-                <p>See how dioxide's two decorators map to clean architecture. @service for business logic, @adapter.for_() for infrastructure. Same code, different adapters per profile.</p>
-                <div class="meta">66s narrated demo &middot; #389</div>
+                <div class="demo-card-content">
+                    <div class="demo-card-header">
+                        <h3><span class="number">02</span> Side-by-Side Decorator Usage</h3>
+                        <span class="badge badge-ready">Ready</span>
+                    </div>
+                    <p>See how dioxide's two decorators map to clean architecture. @service for business logic, @adapter.for_() for infrastructure. Same code, different adapters per profile.</p>
+                    <div class="meta">66s narrated demo · #389</div>
+                </div>
             </a>
 
             <a class="demo-card animate-in delay-3" href="rust-correctness/">
-                <div class="demo-card-header">
-                    <h3><span class="number">03</span> Rust Backend Correctness Guarantees</h3>
-                    <span class="badge badge-ready">Ready</span>
+                <div class="demo-card-thumb">
+                    <img src="videos/rust-correctness-thumb.jpg" alt="Rust correctness demo thumbnail">
                 </div>
-                <p>See how dioxide's Rust core catches missing bindings and circular dependencies at startup, not at runtime.</p>
-                <div class="meta">57s narrated demo &middot; #393</div>
+                <div class="demo-card-content">
+                    <div class="demo-card-header">
+                        <h3><span class="number">03</span> Rust Backend Correctness Guarantees</h3>
+                        <span class="badge badge-ready">Ready</span>
+                    </div>
+                    <p>See how dioxide's Rust core catches missing bindings and circular dependencies at startup, not at runtime.</p>
+                    <div class="meta">57s narrated demo · #393</div>
+                </div>
             </a>
 
             <a class="demo-card animate-in delay-4" href="mock-to-fake/">
-                <div class="demo-card-header">
-                    <h3><span class="number">04</span> Mock-to-Fake Migration</h3>
-                    <span class="badge badge-ready">Ready</span>
+                <div class="demo-card-thumb">
+                    <img src="videos/mock-to-fake-thumb.jpg" alt="Mock to Fake demo thumbnail">
                 </div>
-                <p>Watch what happens when you refactor code tested with mocks. Mocks couple to HOW; fakes couple to WHAT. See why fakes survive refactoring.</p>
-                <div class="meta">64s narrated demo &middot; #404</div>
+                <div class="demo-card-content">
+                    <div class="demo-card-header">
+                        <h3><span class="number">04</span> Mock-to-Fake Migration</h3>
+                        <span class="badge badge-ready">Ready</span>
+                    </div>
+                    <p>Watch what happens when you refactor code tested with mocks. Mocks couple to HOW; fakes couple to WHAT. See why fakes survive refactoring.</p>
+                    <div class="meta">64s narrated demo · #404</div>
+                </div>
             </a>
 
             <a class="demo-card animate-in delay-5" href="migration-tool/">
-                <div class="demo-card-header">
-                    <h3><span class="number">05</span> Migration Experience</h3>
-                    <span class="badge badge-ready">Ready</span>
+                <div class="demo-card-thumb">
+                    <img src="videos/migration-tool-thumb.jpg" alt="Migration experience demo thumbnail">
                 </div>
-                <p>See what happens when you upgrade between major versions. Four find-and-replace patterns, tests pass on the first try. We break APIs, not your trust.</p>
-                <div class="meta">48s narrated demo &middot; #410</div>
+                <div class="demo-card-content">
+                    <div class="demo-card-header">
+                        <h3><span class="number">05</span> Migration Experience</h3>
+                        <span class="badge badge-ready">Ready</span>
+                    </div>
+                    <p>See what happens when you upgrade between major versions. Four find-and-replace patterns, tests pass on the first try. We break APIs, not your trust.</p>
+                    <div class="meta">48s narrated demo · #410</div>
+                </div>
             </a>
         </div>
     </main>
 
     <footer class="animate-in delay-5">
-        <a href="https://github.com/mikelane/dioxide">dioxide</a> &mdash;
+        <a href="https://github.com/mikelane/dioxide"><span class="brand">di</span>oxide</a> &mdash;
         Declarative dependency injection for Python, powered by Rust.
     </footer>
 </body>
