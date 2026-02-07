@@ -163,6 +163,52 @@ assert fake_email.sent_emails[0]["to"] == "test@example.com"
 - **Profiles** (`Profile.PRODUCTION`, `Profile.TEST`): Environment selection
 - **Container**: Auto-wires dependencies based on type hints
 
+### Request Scoping
+
+Components marked with `Scope.REQUEST` get a fresh instance per HTTP request (or per scope in non-web contexts). Multiple resolutions within the same request return the same instance.
+
+```python
+import uuid
+from typing import Protocol
+from dioxide import adapter, service, Profile, Scope
+
+# Define a request-scoped port
+class RequestContextPort(Protocol):
+    request_id: str
+
+# Fresh instance per request
+@adapter.for_(RequestContextPort, profile=Profile.PRODUCTION, scope=Scope.REQUEST)
+class RequestContext:
+    def __init__(self):
+        self.request_id = str(uuid.uuid4())
+
+# Services resolve request-scoped dependencies normally
+@service(scope=Scope.REQUEST)
+class AuditService:
+    def __init__(self, ctx: RequestContextPort):
+        self.ctx = ctx
+
+    def log(self, action: str) -> None:
+        print(f"[{self.ctx.request_id}] {action}")
+```
+
+With FastAPI:
+
+```python
+from fastapi import FastAPI
+from dioxide import Profile
+from dioxide.fastapi import DioxideMiddleware, Inject
+
+app = FastAPI()
+app.add_middleware(DioxideMiddleware, profile=Profile.PRODUCTION, packages=["myapp"])
+
+@app.get("/audit")
+async def get_audit(ctx: RequestContextPort = Inject(RequestContextPort)):
+    return {"request_id": ctx.request_id}
+```
+
+See the [Request Scoping Guide](https://dioxide.readthedocs.io/en/latest/guides/request-scoping/) for database sessions, correlation IDs, user context patterns, and troubleshooting.
+
 ### Container Patterns: Global vs Instance
 
 dioxide offers two ways to use the container:
@@ -1056,10 +1102,12 @@ Each error includes context (active profile, available adapters, dependencies) a
 
 ### Post-MLP Features (v1.1.0+)
 
+Implemented:
+- [x] Request scoping for web frameworks (FastAPI, Flask, Django)
+- [x] Django integration
+
 Future enhancements under consideration:
-- Request scoping for web frameworks
 - Property injection
-- Django integration
 - Developer tooling (CLI, IDE plugins)
 
 ## Development
@@ -1203,7 +1251,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 **API Guarantee**: No breaking changes until v2.0. Your code written against v1.x will continue to work through all v1.x releases.
 
 **What's Next**:
-- **v1.1.0+**: Post-MLP enhancements (request scoping, property injection, additional framework integrations)
+- **v1.1.0+**: Post-MLP enhancements (property injection, developer tooling)
 - **v2.0.0+**: Major enhancements based on community needs
 
 **Get Started**: **[Read the Documentation](https://dioxide.readthedocs.io)** | **[Install from PyPI](https://pypi.org/project/dioxide/)** | **[View on GitHub](https://github.com/mikelane/dioxide)**
