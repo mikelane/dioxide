@@ -403,6 +403,7 @@ testing/troubleshooting
 
 guides/choosing-decorators
 guides/scoping
+guides/debugging
 guides/lifecycle-async-patterns
 guides/decorator-order
 guides/scan-performance
