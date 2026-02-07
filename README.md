@@ -169,7 +169,7 @@ dioxide offers two ways to use the container:
 
 | Pattern | Syntax | Best For |
 |---------|--------|----------|
-| **Instance** (recommended) | `container = Container()` | Libraries, web apps, testing |
+| **Instance** (recommended) | `container = Container(profile=Profile.X)` | Libraries, web apps, testing |
 | **Global** | `from dioxide import container` | Simple scripts, CLI tools |
 
 **Instance containers** (shown in examples above) provide better isolation and are easier to test.
@@ -285,13 +285,10 @@ For external dependencies or special cases, register manually:
 import sqlite3
 from dioxide import Container, Profile
 
-container = Container()
+container = Container(profile=Profile.PRODUCTION)
 
 # Register a factory that creates the dependency
 container.register_singleton(sqlite3.Connection, lambda: sqlite3.connect("app.db"))
-
-# Now scan - adapters depending on sqlite3.Connection will get it injected
-container.scan(profile=Profile.PRODUCTION)
 ```
 
 ### Complete Example: Adapters with Dependencies
@@ -369,8 +366,7 @@ class UserService:
 
 # --- Usage ---
 
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 
 # When UserService is resolved:
 # 1. dioxide sees UserService needs UserRepository and EmailPort
@@ -379,7 +375,7 @@ container.scan(profile=Profile.PRODUCTION)
 # 4. SendGridAdapter needs ConfigPort -> gets EnvConfigAdapter
 # 5. Everything is wired up automatically!
 
-service = container.resolve(UserService)
+user_service = container.resolve(UserService)
 ```
 
 ### Key Points
@@ -482,8 +478,7 @@ class Database:
             print("Database connection closed")
 
 # Use async context manager for automatic lifecycle
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 
 async with container:
     # All @lifecycle components initialized here (in dependency order)
@@ -560,8 +555,7 @@ class DataProcessor:
         return data
 
 # Usage
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 
 processor = container.resolve(DataProcessor)
 # processor.plugins == [ValidationPlugin, TransformPlugin, LoggingPlugin]
@@ -603,8 +597,7 @@ class EmailPort(Protocol):
     async def send(self, to: str, subject: str, body: str) -> None: ...
 
 # Set up container
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 
 # Standalone function with injected dependencies
 async def send_welcome_email(
@@ -633,8 +626,7 @@ from fastapi import FastAPI, Request
 from dioxide import Container, Profile
 
 app = FastAPI()
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 
 @app.post("/users")
 async def create_user(
@@ -679,8 +671,7 @@ class LoggerPort(Protocol):
     def error(self, msg: str) -> None: ...
 
 # Set up container
-container = Container()
-container.scan(profile=Profile.PRODUCTION)
+container = Container(profile=Profile.PRODUCTION)
 
 # Background task with injected dependencies
 async def process_invoice(
@@ -723,9 +714,7 @@ from dioxide import Container, Profile
 @pytest.fixture
 def test_container():
     """Container with test profile."""
-    container = Container()
-    container.scan(profile=Profile.TEST)
-    return container
+    return Container(profile=Profile.TEST)
 
 async def test_send_welcome_email(test_container):
     """Test function injection with fake email adapter."""
@@ -819,8 +808,7 @@ async def container():
 
     This is the RECOMMENDED pattern for test isolation.
     """
-    c = Container()
-    c.scan(profile=Profile.TEST)
+    c = Container(profile=Profile.TEST)
     async with c:
         yield c
     # Cleanup happens automatically
@@ -995,7 +983,7 @@ See [Django Integration Guide](docs/integrations/django.md) for complete documen
 - [x] `@adapter.for_(Port, profile=...)` decorator for hexagonal architecture
 - [x] `@service` decorator for core business logic
 - [x] `Profile` enum (PRODUCTION, TEST, DEVELOPMENT, STAGING, CI, ALL)
-- [x] Container with `scan(profile=...)` for profile-based activation
+- [x] Container with `Container(profile=...)` autoscan for profile-based activation
 - [x] Port-based resolution (`container.resolve(Port)` returns active adapter)
 - [x] Constructor dependency injection via type hints
 - [x] Type-safe `Container.resolve()` with full mypy support
@@ -1020,7 +1008,7 @@ See [Django Integration Guide](docs/integrations/django.md) for complete documen
 **Reliability**:
 - [x] Circular dependency detection at startup (fail-fast)
 - [x] Excellent error messages with actionable suggestions
-- [x] Package scanning: `container.scan(package="app.services")`
+- [x] Package scanning: `container.scan("app.services")` for targeted discovery
 - [x] High test coverage (~93%, 213+ tests)
 - [x] Full CI/CD automation with multi-platform wheels
 

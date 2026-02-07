@@ -21,8 +21,7 @@ Example::
     @pytest.fixture
     async def container():
         '''Fresh container per test - complete test isolation.'''
-        c = Container()
-        c.scan(profile=Profile.TEST)
+        c = Container(profile=Profile.TEST)
         async with c:
             yield c
         # Cleanup happens automatically
@@ -195,8 +194,7 @@ def clear_fakes(client) -> None:
         @pytest.fixture
         async def container():
             '''Fresh container per test - recommended pattern.'''
-            c = Container()
-            c.scan(profile=Profile.TEST)
+            c = Container(profile=Profile.TEST)
             async with c:
                 yield c
 
@@ -245,8 +243,7 @@ def clear_fakes(client) -> None:
 #
 #     This is the RECOMMENDED pattern for test isolation.
 #     """
-#     c = Container()
-#     c.scan(profile=Profile.TEST)
+#     c = Container(profile=Profile.TEST)
 #     async with c:
 #         yield c
 #

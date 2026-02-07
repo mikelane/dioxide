@@ -188,8 +188,7 @@ async def production_example() -> None:
     print('=' * 70 + '\n')
 
     # Create production container
-    container = Container()
-    container.scan(profile=Profile.PRODUCTION)
+    container = Container(profile=Profile.PRODUCTION)
 
     # Resolve service (gets SendGrid + Postgres adapters automatically)
     registration_service = container.resolve(UserRegistrationService)
@@ -207,8 +206,7 @@ async def test_example() -> None:
     print('=' * 70 + '\n')
 
     # Create test container
-    test_container = Container()
-    test_container.scan(profile=Profile.TEST)
+    test_container = Container(profile=Profile.TEST)
 
     # Resolve service (gets fake adapters automatically)
     registration_service = test_container.resolve(UserRegistrationService)
@@ -239,8 +237,7 @@ async def development_example() -> None:
     print('=' * 70 + '\n')
 
     # Create development container
-    dev_container = Container()
-    dev_container.scan(profile=Profile.DEVELOPMENT)
+    dev_container = Container(profile=Profile.DEVELOPMENT)
 
     # Resolve service
     registration_service = dev_container.resolve(UserRegistrationService)

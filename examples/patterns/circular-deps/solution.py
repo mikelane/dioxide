@@ -274,8 +274,7 @@ async def main() -> None:
     print("-" * 70)
     print()
 
-    container = Container()
-    container.scan(profile=Profile.PRODUCTION)
+    container = Container(profile=Profile.PRODUCTION)
 
     print()
     print("-" * 70)

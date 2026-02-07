@@ -8,13 +8,13 @@ import asyncio
 
 from dioxide import Container, Profile
 
+import app.adapters as _adapters  # noqa: F401 — register adapters for autoscan
 from app.services import OrderService
 
 
 async def main() -> None:
     """Run the application."""
-    container = Container()
-    container.scan("app", profile=Profile.PRODUCTION)
+    container = Container(profile=Profile.PRODUCTION)
 
     service = container.resolve(OrderService)
 

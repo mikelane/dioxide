@@ -64,8 +64,8 @@ dioxide uses a simple flat container with profiles for environment-based configu
 .. code-block:: python
 
     # dioxide: Simple profile-based configuration
-    container.scan(profile=Profile.PRODUCTION)  # Use production adapters
-    container.scan(profile=Profile.TEST)        # Use test fakes
+    container = Container(profile=Profile.PRODUCTION)  # Use production adapters
+    container = Container(profile=Profile.TEST)        # Use test fakes
 
 Performance Under Load
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -97,12 +97,12 @@ dioxide integrates cleanly with framework patterns:
 
     # dioxide + FastAPI: Clean integration
     from fastapi import FastAPI
-    from dioxide import container, Profile
+    from dioxide import Container, Profile
     from contextlib import asynccontextmanager
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        container.scan(profile=Profile.PRODUCTION)
+        container = Container(profile=Profile.PRODUCTION)
         async with container:
             yield
 
@@ -192,7 +192,7 @@ Here's how dependency-injector concepts map to dioxide:
      - Type hints only
      - No decorators needed
    * - ``container.wire()``
-     - ``container.scan()``
+     - ``Container(profile=...)``
      - Auto-discovery based on decorators
    * - ``container.override()``
      - Profile system
@@ -306,9 +306,8 @@ Basic Service with Dependency
         model_config = {"env_prefix": "APP_"}
 
     async def main():
-        container = Container()
+        container = Container(profile=Profile.PRODUCTION)
         container.register_instance(AppConfig, AppConfig())
-        container.scan(profile=Profile.PRODUCTION)
 
         user_service = container.resolve(UserService)
         user = await user_service.get_user(1)
@@ -372,9 +371,8 @@ Configuration Handling
             pass
 
     # Usage
-    container = Container()
+    container = Container(profile=Profile.PRODUCTION)
     container.register_instance(ApiConfig, ApiConfig())  # Loads from env vars
-    container.scan(profile=Profile.PRODUCTION)
 
     client = container.resolve(ApiClientPort)
 
@@ -444,8 +442,7 @@ Testing Setup
 
     @pytest.fixture
     def container():
-        c = Container()
-        c.scan(profile=Profile.TEST)  # Activates fakes!
+        c = Container(profile=Profile.TEST)  # Activates fakes!
         return c
 
     async def test_user_service(container):
@@ -499,12 +496,12 @@ FastAPI Integration
 
     # main.py
     from fastapi import FastAPI
-    from dioxide import container, Profile
+    from dioxide import Container, Profile
     from contextlib import asynccontextmanager
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        container.scan(profile=Profile.PRODUCTION)
+        container = Container(profile=Profile.PRODUCTION)
         async with container:
             yield
 
@@ -702,10 +699,10 @@ Step 6: Convert Overrides to Profiles
             self.data = {}
 
     # Production
-    container.scan(profile=Profile.PRODUCTION)
+    prod_container = Container(profile=Profile.PRODUCTION)
 
     # Testing
-    container.scan(profile=Profile.TEST)
+    test_container = Container(profile=Profile.TEST)
 
 Step 7: Remove Wiring
 ~~~~~~~~~~~~~~~~~~~~~
@@ -984,8 +981,8 @@ Flatten nested containers into a single container with profiles:
         def __init__(self, db: DatabasePort):
             self.db = db
 
-    # One container, one scan
-    container.scan(profile=Profile.PRODUCTION)
+    # One container, one profile
+    container = Container(profile=Profile.PRODUCTION)
 
 How do I handle circular dependencies?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

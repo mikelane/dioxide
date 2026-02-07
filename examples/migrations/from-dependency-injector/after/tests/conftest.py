@@ -2,12 +2,12 @@
 
 With dioxide, testing is simpler:
 1. Create a container with Profile.TEST
-2. Scan the app package
-3. Resolve services - fakes are used automatically
+2. Resolve services - fakes are used automatically
 """
 
 import pytest
 
+import app.adapters as _adapters  # noqa: F401 — register adapters
 from dioxide import Container, Profile
 
 
@@ -18,6 +18,5 @@ def container() -> Container:
     No provider overrides needed - Profile.TEST automatically
     selects the fake adapters.
     """
-    c = Container()
-    c.scan("app", profile=Profile.TEST)
+    c = Container(profile=Profile.TEST)
     return c
