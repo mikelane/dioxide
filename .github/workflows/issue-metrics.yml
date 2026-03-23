@@ -20,13 +20,13 @@ jobs:
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - name: Run issue-metrics tool
-        uses: github/issue-metrics@67526e7bd8100b870f10b1c120780a8375777b43 # v3.25.5
+        uses: github/issue-metrics@326551a377784dd5dd766944c9a87289550e7eb5 # v4.1.2
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SEARCH_QUERY: 'repo:mikelane/dioxide is:issue created:${{ steps.date.outputs.date }} -reason:"not planned"'
 
       - name: Upload metrics artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: issue-metrics-${{ steps.date.outputs.date }}
           path: issue_metrics.md
@@ -127,7 +127,7 @@ jobs:
             fs.writeFileSync('sla_report.md', slaReport);
 
       - name: Upload SLA report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: sla-compliance-report
           path: sla_report.md
