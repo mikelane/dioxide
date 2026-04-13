@@ -20,20 +20,20 @@ jobs:
         run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
       - name: Run issue-metrics tool
-        uses: github/issue-metrics@67526e7bd8100b870f10b1c120780a8375777b43 # v3.25.5
+        uses: github/issue-metrics@c9e9838147fd355dace335ba787f01b6641a400a # v4.2.2
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SEARCH_QUERY: 'repo:mikelane/dioxide is:issue created:${{ steps.date.outputs.date }} -reason:"not planned"'
 
       - name: Upload metrics artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: issue-metrics-${{ steps.date.outputs.date }}
           path: issue_metrics.md
           retention-days: 90
 
       - name: Create issue with report
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const fs = require('fs');
@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Calculate SLA compliance
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -127,7 +127,7 @@ jobs:
             fs.writeFileSync('sla_report.md', slaReport);
 
       - name: Upload SLA report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sla-compliance-report
           path: sla_report.md
