@@ -10,7 +10,6 @@ Each bug is proven by a failing test before recording.
 from __future__ import annotations
 
 from typing import (
-    Literal,
     Protocol,
 )
 
@@ -83,49 +82,43 @@ class DescribeBugUnionPrimitiveNonPrimitiveCrash:
 # BUG 2: typing.Literal causes TypeError crash
 # ============================================================
 #
-# These must be module-level so that get_type_hints can resolve Literal
-# annotations. Local classes defined inside test functions would trigger
-# a get_type_hints failure path that accidentally masks the bug.
-
-
-@service
-class _LiteralStringService:
-    def __init__(self, mode: Literal['dev', 'prod'] = 'dev') -> None:
-        self.mode = mode
-
-
-@service
-class _LiteralIntService:
-    def __init__(self, level: Literal[1, 2, 3] = 1) -> None:
-        self.level = level
+# Literal types defined in an external fixture module so that
+# get_type_hints can properly resolve the Literal annotation.
+# The import inside a test function triggers a different code path
+# (get_type_hints failure -> direct cls instantiation -> success),
+# which accidentally masks the TypeError bug.
 
 
 class DescribeBugLiteralTypeCrash:
-    """typing.Literal types are not recognized as primitives. Currently
-    they do not appear in get_type_hints() output so they don't crash.
-    Skip these tests pending further investigation."""
+    """typing.Literal types are not recognized as primitives. The
+    auto-injecting factory tries to resolve them from the container,
+    passing the Literal special form to _rust_core.resolve, which
+    crashes with TypeError.
 
-    @pytest.mark.skip(reason='Literal types do not appear in get_type_hints output')
+    Expected: ServiceNotFoundError with a clear message, or the parameter
+    is treated with its default and the service resolves normally."""
+
     def it_crashes_with_typeerror_for_literal_string_param(self) -> None:
         """Literal['dev', 'prod'] causes TypeError crash in Rust core."""
+        from tests.fixtures.qa_literal_fixtures import LiteralStringFixture
 
         container = Container()
         container.scan()
 
         # BUG: TypeError crash instead of clear handling.
         with pytest.raises(TypeError, match="not an instance of 'type'"):
-            container.resolve(_LiteralStringService)
+            container.resolve(LiteralStringFixture)
 
-    @pytest.mark.skip(reason='Literal types do not appear in get_type_hints output')
     def it_crashes_with_typeerror_for_literal_int_param(self) -> None:
         """Literal[1, 2, 3] causes TypeError crash in Rust core."""
+        from tests.fixtures.qa_literal_fixtures import LiteralIntFixture
 
         container = Container()
         container.scan()
 
         # BUG: TypeError crash instead of clear handling.
         with pytest.raises(TypeError, match="not an instance of 'type'"):
-            container.resolve(_LiteralIntService)
+            container.resolve(LiteralIntFixture)
 
 
 # ============================================================
