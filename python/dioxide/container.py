@@ -600,10 +600,43 @@ class Container:
         self._multi_bindings: dict[type[Any], list[type[Any]]] = {}  # Port -> list of multi adapter classes
         self._lazy_packages: list[tuple[str, str | Profile | None]] = []
         self._lazy_port_to_modules: dict[str, list[tuple[str, str | Profile | None]]] = {}
+        self._probing_deps: set[type[Any]] = set()  # Guards against circular probing
+        self._resolving: set[type[Any]] = set()  # Tracks types currently in resolve() stack
 
         # Auto-scan if profile is provided
         if profile is not None:
             self.scan(profile=profile)
+
+    @staticmethod
+    def _is_primitive_or_optional_primitive(dep_type: Any) -> bool:
+        """Check if a type is a primitive or Optional[primitive].
+
+        Handles UnionType (str | None), Optional[str] (which is str | None at
+        runtime), and bare primitive types like str, int, etc.
+
+        Args:
+            dep_type: The type annotation to check.
+
+        Returns:
+            True if the type is a primitive or a union of primitives/NoneType
+            that should not be resolved from the container.
+        """
+        # Direct primitive match
+        if dep_type in _PRIMITIVE_TYPES:
+            return True
+
+        # Check for UnionType (str | None, Optional[str], Union[str, int], etc.)
+        import types
+        import typing
+
+        origin = typing.get_origin(dep_type)
+        if origin in (typing.Union, types.UnionType):
+            args = typing.get_args(dep_type)
+            type_none = type(None)
+            # True if all non-None args are primitives
+            return all(arg in _PRIMITIVE_TYPES or arg is type_none for arg in args)
+
+        return False
 
     def register_instance(self, component_type: type[T], instance: T) -> None:
         """Register a pre-created instance for a given type.
@@ -951,44 +984,53 @@ class Container:
                 component_name = component_type.__name__
                 raise ScopeError(f'Cannot resolve {component_name}: REQUEST-scoped, requires active scope')
 
+        # Circular dependency guard: if this type is already in the resolve
+        # call stack, raise immediately to prevent infinite recursion.
+        if component_type in self._resolving:
+            raise KeyError(f"Circular dependency detected: '{component_type.__name__}' is already being resolved")
+
+        self._resolving.add(component_type)
         try:
-            return self._rust_core.resolve(component_type)
-        except KeyError as e:
-            # If lazy packages are pending, try per-module lazy import first
-            if self._lazy_port_to_modules:
-                type_name = getattr(component_type, '__name__', '')
-                if self._materialize_lazy_module(type_name):
+            try:
+                return self._rust_core.resolve(component_type)
+            except KeyError as e:
+                # If lazy packages are pending, try per-module lazy import first
+                if self._lazy_port_to_modules:
+                    type_name = getattr(component_type, '__name__', '')
+                    if self._materialize_lazy_module(type_name):
+                        try:
+                            return self._rust_core.resolve(component_type)
+                        except KeyError:
+                            pass  # Fall through to full materialization
+
+                # If per-module didn't work, try materializing all remaining lazy packages
+                if self._lazy_packages:
+                    self._materialize_all_lazy_packages()
                     try:
                         return self._rust_core.resolve(component_type)
                     except KeyError:
-                        pass  # Fall through to full materialization
+                        pass  # Fall through to error handling below
 
-            # If per-module didn't work, try materializing all remaining lazy packages
-            if self._lazy_packages:
-                self._materialize_all_lazy_packages()
-                try:
-                    return self._rust_core.resolve(component_type)
-                except KeyError:
-                    pass  # Fall through to error handling below
+                # Determine if this is a port (Protocol/ABC) or a service/component
+                is_port = self._is_port(component_type)
 
-            # Determine if this is a port (Protocol/ABC) or a service/component
-            is_port = self._is_port(component_type)
+                # Check if the type IS registered but its factory failed (transitive failure)
+                if self._is_registered_in_container(component_type):
+                    error_msg = self._build_transitive_failure_message(component_type)
+                    if is_port:
+                        raise AdapterNotFoundError(error_msg) from None
+                    raise ServiceNotFoundError(error_msg) from None
 
-            # Check if the type IS registered but its factory failed (transitive failure)
-            if self._is_registered_in_container(component_type):
-                error_msg = self._build_transitive_failure_message(component_type)
                 if is_port:
-                    raise AdapterNotFoundError(error_msg) from None
-                raise ServiceNotFoundError(error_msg) from None
-
-            if is_port:
-                # Build helpful error message for missing adapter
-                error_msg = self._build_adapter_not_found_message(component_type)
-                raise AdapterNotFoundError(error_msg) from e
-            else:
-                # Build helpful error message for missing service/component
-                error_msg = self._build_service_not_found_message(component_type)
-                raise ServiceNotFoundError(error_msg) from e
+                    # Build helpful error message for missing adapter
+                    error_msg = self._build_adapter_not_found_message(component_type)
+                    raise AdapterNotFoundError(error_msg) from e
+                else:
+                    # Build helpful error message for missing service/component
+                    error_msg = self._build_service_not_found_message(component_type)
+                    raise ServiceNotFoundError(error_msg) from e
+        finally:
+            self._resolving.discard(component_type)
 
     def _resolve_multi_binding(self, component_type: Any) -> list[Any] | None:
         """Check if component_type is list[Port] and resolve multi-bindings.
@@ -1308,8 +1350,9 @@ class Container:
         except (ValueError, AttributeError, NameError):
             type_hints = {}
 
-        # Skip parameters whose type hints can't be resolved or are primitives
-        # Primitives are not container-managed and should use their defaults
+        # Skip parameters whose type hints can't be resolved or are
+        # primitives/optional primitives. These are not container-managed
+        # and should use their defaults.
 
         for param_name in init_signature.parameters:
             if param_name == 'self':
@@ -1320,8 +1363,17 @@ class Container:
             if param_name not in type_hints:
                 continue
             dep_type = type_hints[param_name]
-            if dep_type in _PRIMITIVE_TYPES:
+            if self._is_primitive_or_optional_primitive(dep_type):
                 continue
+
+            # Guard against circular dependency probing
+            if dep_type in self._probing_deps:
+                failed_param = param_name
+                failed_type_name = getattr(dep_type, '__name__', str(dep_type))
+                failed_reason = 'circular dependency detected during resolution'
+                break
+
+            self._probing_deps.add(dep_type)
             try:
                 self.resolve(dep_type)
             except (AdapterNotFoundError, ServiceNotFoundError, KeyError) as dep_error:
@@ -1340,6 +1392,8 @@ class Container:
                         break
                 failed_reason = raw_msg.strip()
                 break
+            finally:
+                self._probing_deps.discard(dep_type)
 
         # Build chain message
         if failed_param and failed_type_name:
@@ -2870,7 +2924,7 @@ class Container:
             for name in init_signature.parameters
             if name != 'self'
             and name in type_hints
-            and type_hints[name] not in _PRIMITIVE_TYPES
+            and not self._is_primitive_or_optional_primitive(type_hints[name])
             and init_signature.parameters[name].kind
             not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL)
         ]
@@ -2889,7 +2943,7 @@ class Container:
                     continue
                 if param_name in type_hints:
                     dependency_type = type_hints[param_name]
-                    if dependency_type in _PRIMITIVE_TYPES:
+                    if self._is_primitive_or_optional_primitive(dependency_type):
                         continue
                     kwargs[param_name] = self.resolve(dependency_type)
             return cls(**kwargs)
