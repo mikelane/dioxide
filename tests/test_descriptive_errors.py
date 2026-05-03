@@ -128,8 +128,6 @@ class DescribeServiceNotFoundError:
         assert 'UserService' in error_msg
         # Should mention the missing dependency
         assert 'DatabasePort' in error_msg
-        # Should indicate missing dependency (terse format)
-        assert 'missing dependency' in error_msg.lower() or 'dependency' in error_msg.lower()
 
     def it_raises_when_component_not_registered(self) -> None:
         """Raises ServiceNotFoundError when trying to resolve unregistered component."""
@@ -171,3 +169,66 @@ class DescribeServiceNotFoundError:
         assert 'EmailPort' in error_msg
         # Should mention the profile
         assert 'production' in error_msg.lower()
+
+
+class DescribeTransitiveDependencyError:
+    """Tests for error messages when transitive dependency resolution fails."""
+
+    def it_shows_resolution_chain_when_adapter_dep_fails(self) -> None:
+        """Error shows chain when adapter IS registered but transitive dep fails."""
+
+        class SettingsPort(Protocol):
+            database_url: str
+
+        class AuthPort(Protocol):
+            def authenticate(self, token: str) -> bool: ...
+
+        @adapter.for_(AuthPort, profile=Profile.DEVELOPMENT)
+        class ClerkAdapter:
+            def __init__(self, settings: SettingsPort) -> None:
+                self.settings = settings
+
+            def authenticate(self, token: str) -> bool:
+                return True
+
+        container = Container()
+        container.scan(profile=Profile.DEVELOPMENT)
+
+        with pytest.raises(AdapterNotFoundError) as exc_info:
+            container.resolve(AuthPort)
+
+        error_msg = str(exc_info.value)
+        assert 'AuthPort' in error_msg
+        assert 'ClerkAdapter' in error_msg
+        assert 'SettingsPort' in error_msg
+
+    def it_shows_chain_when_service_dep_fails(self) -> None:
+        """Error shows chain when service IS registered but transitive dep fails."""
+
+        @service
+        class UserService:
+            def __init__(self, email: EmailPort) -> None:
+                self.email = email
+
+        container = Container()
+        container.scan(profile=Profile.DEVELOPMENT)
+
+        with pytest.raises(ServiceNotFoundError) as exc_info:
+            container.resolve(UserService)
+
+        error_msg = str(exc_info.value)
+        assert 'UserService' in error_msg
+        assert 'EmailPort' in error_msg
+
+    def it_preserves_original_error_when_port_truly_missing(self) -> None:
+        """Original-style error when port genuinely has no adapter."""
+
+        container = Container()
+        container.scan(profile=Profile.DEVELOPMENT)
+
+        with pytest.raises(AdapterNotFoundError) as exc_info:
+            container.resolve(EmailPort)
+
+        error_msg = str(exc_info.value)
+        assert 'No adapter for EmailPort' in error_msg
+        assert 'Registered: none' in error_msg

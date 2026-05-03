@@ -10,12 +10,17 @@ from abc import (
     ABC,
     abstractmethod,
 )
-from typing import Protocol
+from typing import (
+    Any,
+    Protocol,
+)
 
 import pytest
 
 from dioxide import (
     Container,
+    Profile,
+    adapter,
     service,
 )
 
@@ -354,3 +359,72 @@ class DescribeRegisterInstanceAfterScan:
 
         assert resolved is new_config
         assert resolved.setting == 'added-after-scan'
+
+
+class DescribeAutoInjectingFactoryPrimitives:
+    """Tests for auto-injecting factory handling of primitive types."""
+
+    def it_skips_primitive_params_with_defaults(self) -> None:
+        """Primitives with defaults use defaults, not resolved from container."""
+
+        @service
+        class AppConfig:
+            def __init__(
+                self,
+                host: str = 'localhost',
+                port: int = 5432,
+                debug: bool = False,
+                timeout: float = 30.0,
+            ) -> None:
+                self.host = host
+                self.port = port
+                self.debug = debug
+                self.timeout = timeout
+
+        container = Container()
+        container.scan()
+
+        config = container.resolve(AppConfig)
+        assert config.host == 'localhost'
+        assert config.port == 5432
+        assert config.debug is False
+        assert config.timeout == 30.0
+
+    def it_injects_non_primitive_deps_alongside_primitives(self) -> None:
+        """Non-primitive typed deps still resolved alongside primitive params."""
+
+        class DatabasePort(Protocol):
+            def query(self, sql: str) -> list[dict[str, Any]]: ...
+
+        @adapter.for_(DatabasePort, profile=Profile.DEVELOPMENT)
+        class FakeDatabase:
+            def query(self, sql: str) -> list[dict[str, Any]]:
+                return []
+
+        @service
+        class UserService:
+            def __init__(self, db: DatabasePort, name: str = 'default') -> None:
+                self.db = db
+                self.name = name
+
+        container = Container()
+        container.scan(profile=Profile.DEVELOPMENT)
+
+        service_instance = container.resolve(UserService)
+        assert service_instance.name == 'default'
+        assert isinstance(service_instance.db, FakeDatabase)
+
+    def it_handles_kwargs_constructor(self) -> None:
+        """Class with **kwargs in __init__ works with auto-injecting factory."""
+
+        @service
+        class FlexibleConfig:
+            def __init__(self, **kwargs: Any) -> None:
+                self.settings = kwargs
+
+        container = Container()
+        container.scan()
+
+        config = container.resolve(FlexibleConfig)
+        assert isinstance(config, FlexibleConfig)
+        assert config.settings == {}
