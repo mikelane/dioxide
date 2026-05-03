@@ -422,6 +422,8 @@ import inspect
 import logging
 import pkgutil
 import time
+import types
+import typing
 from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
@@ -626,8 +628,6 @@ class Container:
             return True
 
         # Check for UnionType (str | None, Optional[str], Union[str, int], etc.)
-        import types
-        import typing
 
         origin = typing.get_origin(dep_type)
         if origin in (typing.Union, types.UnionType):
@@ -1274,12 +1274,7 @@ class Container:
         """
         from dioxide._registry import _get_registered_components
         from dioxide.adapter import _adapter_registry
-        from dioxide.exceptions import (
-            AdapterNotFoundError,
-            ServiceNotFoundError,
-        )
 
-        profile_str = self._active_profile if self._active_profile else 'none'
         type_name = component_type.__name__
 
         # Find the implementing class for this type
@@ -1404,6 +1399,7 @@ class Container:
             return '\n'.join(lines)
 
         # Generic transitive failure (couldn't identify specific param)
+        profile_str = self._active_profile if self._active_profile else 'none'
         lines = [f"Cannot resolve {type_name} -> {impl_name} in profile '{profile_str}'"]
         lines.append(f'  {impl_name} found for {type_name} ({profiles_str})')
         lines.append('  A transitive dependency failed during resolution')
@@ -2938,8 +2934,8 @@ class Container:
             for param_name in init_signature.parameters:
                 if param_name == 'self':
                     continue
-                p = init_signature.parameters[param_name]
-                if p.kind in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL):
+                param = init_signature.parameters[param_name]
+                if param.kind in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL):
                     continue
                 if param_name in type_hints:
                     dependency_type = type_hints[param_name]
