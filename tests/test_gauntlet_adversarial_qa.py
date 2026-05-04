@@ -9,6 +9,7 @@ Each bug is proven by a failing test before recording.
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable
 from typing import (
     Protocol,
@@ -851,3 +852,228 @@ class DescribeMultipleResolveStress:
 
         assert len(container._resolving) == 0
         assert len(container._probing_deps) == 0
+
+
+# ============================================================
+# Attack 16: type[SomeType] not recognized as non-injectable
+# ============================================================
+
+
+class DescribeBugTypeSpecialFormCrash:
+    """type[SomeType] (e.g. type[str]) is a GenericAlias with origin `type`.
+    _is_non_injectable_type now recognizes this as non-injectable and uses
+    the parameter's default value instead of crashing."""
+
+    def it_uses_default_for_type_str_param(self) -> None:
+        """type[str] with default uses the default value instead of crashing."""
+
+        @service
+        class TypeParamService:
+            def __init__(self, factory: type[str] = str) -> None:
+                self.factory = factory
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(TypeParamService)
+        assert instance.factory is str
+
+    def it_uses_default_for_type_str_in_adapter_constructor(self) -> None:
+        """type[str] in an adapter constructor uses the default value."""
+
+        class DBPort(Protocol):
+            pass
+
+        @adapter.for_(DBPort, profile=Profile.DEVELOPMENT)
+        class DBAdapter:
+            def __init__(self, validator: type[str] = str) -> None:
+                self.validator = validator
+
+        container = Container()
+        container.scan(profile=Profile.DEVELOPMENT)
+
+        instance = container.resolve(DBPort)
+        assert instance.validator is str
+
+
+# ============================================================
+# Attack 17: typing.Any not recognized as non-injectable
+# ============================================================
+
+
+class DescribeBugAnyTypeNotRecognized:
+    """typing.Any has get_origin() == None and is not in _PRIMITIVE_TYPES.
+    _is_non_injectable_type now explicitly checks for `typing.Any` and uses
+    the parameter's default value instead of trying to resolve it."""
+
+    def it_uses_default_for_any_param(self) -> None:
+        """typing.Any with a default uses the default instead of trying to resolve Any."""
+
+        @service
+        class AnyService:
+            def __init__(self, value: typing.Any = 'default') -> None:
+                self.value = value
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(AnyService)
+        assert instance.value == 'default'
+
+
+# ============================================================
+# Attack 18: TypeVar not recognized as non-injectable
+# ============================================================
+
+
+class DescribeBugTypeVarCrash:
+    """TypeVar has get_origin() == None and is not in _PRIMITIVE_TYPES.
+    _is_non_injectable_type now explicitly checks for TypeVar via isinstance
+    and uses the parameter's default value instead of crashing.
+
+    TypeVar and service class are defined in an external fixture module
+    so that get_type_hints can properly resolve the TypeVar annotation,
+    just like the Literal fixtures."""
+
+    def it_uses_default_for_typevar_param(self) -> None:
+        """TypeVar parameter uses its default value instead of crashing."""
+        from tests.fixtures.qa_typevar_fixtures import TypeVarFixture
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(TypeVarFixture)
+        assert instance.value == 'ok'
+
+
+# ============================================================
+# Attack 19: Union type with no default gives misleading message
+# ============================================================
+
+
+class DescribeBugUnionNoDefaultMisleadingError:
+    """When a service has a Union-typed parameter with no default, the
+    parameter is treated as non-injectable (correct). But since there's
+    no default, the cls() call fails with TypeError about missing args.
+    This gets wrapped into a misleading 'transitive dependency failed'
+    ServiceNotFoundError."""
+
+    def it_gives_misleading_error_for_union_no_default(self) -> None:
+        """Union[str, int] without default -> misleading transitive error."""
+
+        @service
+        class NoDefaultUnion:
+            def __init__(self, value: str | int) -> None:
+                self.value = value
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError) as exc_info:
+            container.resolve(NoDefaultUnion)
+
+        error_msg = str(exc_info.value)
+        # BUG: The error message says "transitive dependency failed"
+        # but the real issue is a Union param missing a default value.
+        assert 'transitive dependency' in error_msg, (
+            "BUG: misleading 'transitive dependency' message for Union param with no default"
+        )
+
+
+# ============================================================
+# Attack 20: Nested generics with special forms (boundary)
+# ============================================================
+
+
+class DescribeNestedGenericSpecialForms:
+    """When a special form is nested inside a generic (e.g.,
+    list[Callable[[int], str]]), the outer origin is `list` which is now
+    in _PRIMITIVE_TYPES (via `origin in _PRIMITIVE_TYPES` check).
+    _is_non_injectable_type returns True, so the parameter's default value
+    is used instead of being intercepted by the multi-binding code path."""
+
+    def it_resolves_list_of_callable_with_default_value(self) -> None:
+        """list[Callable[[int], str]] uses its default value (the list class)
+        instead of being intercepted by the multi-binding code path."""
+
+        @service
+        class ListCallableService:
+            def __init__(self, handlers: list[Callable[[int], str]] = list) -> None:  # type: ignore[assignment]
+                self.handlers = handlers
+
+        container = Container()
+        container.scan()
+        instance = container.resolve(ListCallableService)
+
+        # The origin `list` is in _PRIMITIVE_TYPES, so this is recognized
+        # as non-injectable and the default value `list` (the class) is used.
+        assert instance.handlers is list
+
+
+# ============================================================
+# Attack 21: Generic collection aliases crash (dict, set, tuple, frozenset)
+# ============================================================
+
+
+class DescribeBugGenericCollectionAliasCrash:
+    """Generic aliases of built-in collection types (dict[str, int],
+    set[int], tuple[int, str], frozenset[int]) are now recognized as
+    non-injectable because _is_non_injectable_type checks `origin in
+    _PRIMITIVE_TYPES` in addition to the bare type check. The parameter's
+    default value is used instead of crashing."""
+
+    def it_uses_default_for_dict_str_int(self) -> None:
+        """dict[str, int] uses its default value instead of crashing."""
+
+        @service
+        class DictConfig:
+            def __init__(self, config: dict[str, int] = dict) -> None:  # type: ignore[assignment]
+                self.config = config
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(DictConfig)
+        assert instance.config is dict
+
+    def it_uses_default_for_set_int(self) -> None:
+        """set[int] uses its default value instead of crashing."""
+
+        @service
+        class SetConfig:
+            def __init__(self, values: set[int] = set) -> None:  # type: ignore[assignment]
+                self.values = values
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(SetConfig)
+        assert instance.values is set
+
+    def it_uses_default_for_tuple_int_str(self) -> None:
+        """tuple[int, str] uses its default value instead of crashing."""
+
+        @service
+        class TupleConfig:
+            def __init__(self, coords: tuple[int, str] = tuple) -> None:  # type: ignore[assignment]
+                self.coords = coords
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(TupleConfig)
+        assert instance.coords is tuple
+
+    def it_uses_default_for_frozenset_int(self) -> None:
+        """frozenset[int] uses its default value instead of crashing."""
+
+        @service
+        class FrozenConfig:
+            def __init__(self, frozen: frozenset[int] = frozenset) -> None:  # type: ignore[assignment]
+                self.frozen = frozen
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(FrozenConfig)
+        assert instance.frozen is frozenset

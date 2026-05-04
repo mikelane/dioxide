@@ -614,7 +614,8 @@ class Container:
         """Check if a type should NOT be resolved from the container.
 
         Returns True for types that the container cannot instantiate: primitives,
-        NoneType, Literal special forms, Callable special forms, and any Union type
+        NoneType, generic aliases of primitives (dict[str, int], set[int], etc.),
+        typing.Any, TypeVar, Literal, Callable, type[...], and any Union type
         (whether pure-primitive or mixed). These parameters should use their
         default values instead.
 
@@ -624,24 +625,42 @@ class Container:
         Returns:
             True if the type should not be resolved from the container.
         """
-        # Direct primitive match
+        # Direct primitive match (str, int, float, bytes, bool, NoneType)
         if dep_type in _PRIMITIVE_TYPES:
             return True
 
-        # All Union types (str | None, Optional[str], str | int, str | Port, etc.)
-        # are special forms that the container cannot resolve directly.
-        origin = typing.get_origin(dep_type)
-        if origin in (typing.Union, types.UnionType):
+        # typing.Any (get_origin returns None, must check before get_origin)
+        if dep_type is typing.Any:
             return True
 
-        # Literal['dev', 'prod'], Literal[1, 2, 3], etc. are special forms
-        # that cannot be resolved from the container.
+        # TypeVar (get_origin returns None, must check before get_origin)
+        if isinstance(dep_type, typing.TypeVar):
+            return True
+
+        origin = typing.get_origin(dep_type)
+
+        # Generic aliases of primitives (dict[str, int], set[int], tuple[str, ...], etc.)
+        # Only treat as non-injectable when ALL type arguments are also non-injectable.
+        # list[PortType] should be resolved via the multi-binding code path, not here.
+        if origin in _PRIMITIVE_TYPES:
+            args = typing.get_args(dep_type)
+            if args and all(Container._is_non_injectable_type(arg) for arg in args):
+                return True
+
+        # Literal['dev', 'prod'], Literal[1, 2, 3], etc.
         if origin is typing.Literal:
             return True
 
-        # Callable[[int], str], Callable[..., None], etc. are special forms
-        # that cannot be resolved from the container.
+        # Callable[[int], str], Callable[..., None], etc.
         if origin is Callable:
+            return True
+
+        # type[str], type[int], etc. -- GenericAlias with origin `type`
+        if origin is type:
+            return True
+
+        # All Union types (str | None, Optional[str], str | int, str | Port, etc.)
+        if origin in (typing.Union, types.UnionType):
             return True
 
         return False
