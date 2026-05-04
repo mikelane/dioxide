@@ -637,12 +637,23 @@ class Container:
         if isinstance(dep_type, typing.TypeVar):
             return True
 
+        # typing.Self (PEP 673, Python 3.11+)
+        # Self is a _SpecialForm with get_origin() == None, must check before get_origin
+        try:
+            if dep_type is typing.Self:
+                return True
+        except AttributeError:
+            pass  # typing.Self unavailable (pre-3.11)
+
         origin = typing.get_origin(dep_type)
 
         # Generic aliases of primitives (dict[str, int], set[int], tuple[str, ...], etc.)
-        # Only treat as non-injectable when ALL type arguments are also non-injectable.
-        # list[PortType] should be resolved via the multi-binding code path, not here.
+        # These are NOT concrete types and should use defaults regardless of args.
+        # list[...] is excluded because it goes through the multi-binding resolution path,
+        # unless ALL type args are non-injectable (e.g., list[Callable[[int], str]]).
         if origin in _PRIMITIVE_TYPES:
+            if origin is not list:
+                return True
             args = typing.get_args(dep_type)
             if args and all(Container._is_non_injectable_type(arg) for arg in args):
                 return True

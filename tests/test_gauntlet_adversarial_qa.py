@@ -1077,3 +1077,195 @@ class DescribeBugGenericCollectionAliasCrash:
 
         instance = container.resolve(FrozenConfig)
         assert instance.frozen is frozenset
+
+
+# ============================================================
+# NEW BUG 1: Mixed generic collection aliases crash
+# (dict[str, Port], set[Port], tuple[Port, ...], frozenset[Port])
+# even when a default IS provided.
+# ============================================================
+
+
+class DescribeBugMixedGenericAliasCrash:
+    """When a collection alias mixes primitive types with injectable types
+    (e.g., dict[str, Port], set[Port], tuple[Port, ...], frozenset[Port]),
+    _is_non_injectable_type returns False because not ALL type args are
+    non-injectable. The container tries to resolve the GenericAlias,
+    passing it to the Rust core, which crashes with TypeError.
+
+    Even when a DEFAULT value is provided, the resolution path is entered
+    first and crashes before any fallback logic. This is different from
+    list[Port], which is saved by accident because _resolve_multi_binding
+    intercepts list[...] and returns [] for unregistered ports."""
+
+    def it_raises_service_not_found_for_dict_str_port_no_default(self) -> None:
+        """dict[str, Port] without default raises ServiceNotFoundError because
+        the auto-injecting factory can't provide a value for a non-injectable
+        required parameter."""
+        from typing import Protocol
+
+        class DictPort(Protocol):
+            def serialize(self) -> str: ...
+
+        @service
+        class DictNoDefaultService:
+            def __init__(self, registry: dict[str, DictPort]) -> None:
+                self.registry = registry
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(DictNoDefaultService)
+
+    def it_uses_default_for_dict_str_port_with_default(self) -> None:
+        """dict[str, Port] with default uses the default value."""
+        from typing import Protocol
+
+        class DictPort(Protocol):
+            def serialize(self) -> str: ...
+
+        @service
+        class DictWithDefaultService:
+            def __init__(self, registry: dict[str, DictPort] = dict) -> None:  # type: ignore[assignment]
+                self.registry = registry
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(DictWithDefaultService)
+        assert instance.registry is dict
+
+    def it_raises_service_not_found_for_set_port_no_default(self) -> None:
+        """set[Port] without default raises ServiceNotFoundError because
+        the auto-injecting factory can't provide a value for a non-injectable
+        required parameter."""
+        from typing import Protocol
+
+        class SetPort(Protocol):
+            def validate(self) -> bool: ...
+
+        @service
+        class SetNoDefaultService:
+            def __init__(self, validators: set[SetPort]) -> None:
+                self.validators = validators
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(SetNoDefaultService)
+
+    def it_raises_service_not_found_for_tuple_port_ellipsis_no_default(self) -> None:
+        """tuple[Port, ...] without default raises ServiceNotFoundError because
+        the auto-injecting factory can't provide a value for a non-injectable
+        required parameter."""
+        from typing import Protocol
+
+        class TupPort(Protocol):
+            def transform(self) -> str: ...
+
+        @service
+        class TupleNoDefaultService:
+            def __init__(self, pipes: tuple[TupPort, ...]) -> None:
+                self.pipes = pipes
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(TupleNoDefaultService)
+
+    def it_raises_service_not_found_for_frozenset_port_no_default(self) -> None:
+        """frozenset[Port] without default raises ServiceNotFoundError because
+        the auto-injecting factory can't provide a value for a non-injectable
+        required parameter."""
+        from typing import Protocol
+
+        class FrozenPort(Protocol):
+            def hash(self) -> int: ...
+
+        @service
+        class FrozenNoDefaultService:
+            def __init__(self, plugins: frozenset[FrozenPort]) -> None:
+                self.plugins = plugins
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(FrozenNoDefaultService)
+
+    def it_uses_default_for_set_port_with_default(self) -> None:
+        """set[Port] with default uses the default value."""
+        from typing import Protocol
+
+        class SetDefaultPort(Protocol):
+            def validate(self) -> bool: ...
+
+        @service
+        class SetWithDefaultService:
+            def __init__(self, validators: set[SetDefaultPort] = set) -> None:  # type: ignore[assignment]
+                self.validators = validators
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(SetWithDefaultService)
+        assert instance.validators is set
+
+    def it_works_for_list_port_with_default_via_multi_binding(self) -> None:
+        """list[Port] with default works, but default is silently ignored.
+        The multi-binding path intercepts list[...] and returns []
+        instead of using the user's explicit default value."""
+        from typing import Protocol
+
+        class ListPort(Protocol):
+            def process(self) -> str: ...
+
+        @service
+        class ListPortService:
+            def __init__(self, handlers: list[ListPort] = list) -> None:  # type: ignore[assignment]
+                self.handlers = handlers
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(ListPortService)
+        # BUG: default was 'list' (the class) but multi-binding returns []
+        assert instance.handlers == [], "BUG: default value 'list' was silently replaced with [] from multi-binding"
+
+
+# ============================================================
+# NEW BUG 2: typing.Self crashes with TypeError
+# ============================================================
+
+
+class DescribeBugSelfSpecialFormCrash:
+    """typing.Self (PEP 673) has get_origin() == None and is a _SpecialForm.
+    _is_non_injectable_type now recognizes Self as non-injectable, so
+    parameters annotated with Self use their defaults instead of crashing.
+
+    Self fixtures are defined in an external module so that get_type_hints
+    can properly resolve the Self annotation."""
+
+    def it_uses_default_for_self_param(self) -> None:
+        """typing.Self parameter with a default resolves using the default."""
+        from tests.fixtures.qa_self_fixtures import SelfFixture
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(SelfFixture)
+        assert instance.clone is None
+
+    def it_raises_service_not_found_for_self_param_no_default(self) -> None:
+        """typing.Self parameter without a default raises ServiceNotFoundError
+        because the auto-injecting factory can't provide a value for Self."""
+        from tests.fixtures.qa_self_fixtures import SelfNoDefaultFixture
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(SelfNoDefaultFixture)
