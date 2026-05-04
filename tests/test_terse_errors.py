@@ -185,8 +185,8 @@ class DescribeTerseServiceNotFoundError:
 
         error_msg = str(exc_info.value)
         line_count = len(error_msg.strip().split('\n'))
-        # 3 lines for diagnostics + 1 optional line for doc URL
-        assert line_count <= 4, f'Error message has {line_count} lines, expected <= 4:\n{error_msg}'
+        # Chain-aware transitive error includes resolution path (up to 6 lines)
+        assert line_count <= 6, f'Error message has {line_count} lines, expected <= 6:\n{error_msg}'
 
     def it_includes_service_name_and_missing_dependency(self) -> None:
         """Error message includes service name and what dependency is missing."""

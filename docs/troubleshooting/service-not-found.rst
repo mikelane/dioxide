@@ -20,15 +20,14 @@ marked with ``@service``.
 Example Error
 -------------
 
+When a dependency cannot be resolved, the error shows the resolution chain:
+
 .. code-block:: text
 
-   Service Not Found: Cannot resolve UserService in profile 'production'
-     Missing dependency: email: EmailPort (no adapter registered)
-
-   Context:
-     - service: UserService
-     - profile: production
-     - failed_dependency: {'param_name': 'email', 'param_type': 'EmailPort', 'reason': 'no adapter registered'}
+   Service Not Found: Cannot resolve UserService -> UserService -> email: EmailPort
+     UserService found for UserService (*)
+     EmailPort missing: No adapter for EmailPort in profile 'production'
+     Registered: none
 
    -> See: https://dioxide.readthedocs.io/en/stable/troubleshooting/service-not-found.html
 
