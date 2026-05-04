@@ -1794,7 +1794,7 @@ For a deeper dive with before/after examples, see {doc}`Migration from Mocks <mi
 
 - [Martin Fowler: Mocks Aren't Stubs](https://martinfowler.com/articles/mocksArentStubs.html)
 - [Test Doubles (Meszaros)](http://xunitpatterns.com/Test%20Double.html)
-- [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/)
+- [Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software))
 
 ---
 

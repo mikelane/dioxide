@@ -94,4 +94,4 @@ External Resources
 
 - `Martin Fowler: Mocks Aren't Stubs <https://martinfowler.com/articles/mocksArentStubs.html>`_
 - `Test Doubles (Meszaros) <http://xunitpatterns.com/Test%20Double.html>`_
-- `Hexagonal Architecture <https://alistair.cockburn.us/hexagonal-architecture/>`_
+- `Hexagonal Architecture <https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)>`_
