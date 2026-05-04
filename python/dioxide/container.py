@@ -610,31 +610,39 @@ class Container:
             self.scan(profile=profile)
 
     @staticmethod
-    def _is_primitive_or_optional_primitive(dep_type: Any) -> bool:
-        """Check if a type is a primitive or Optional[primitive].
+    def _is_non_injectable_type(dep_type: Any) -> bool:
+        """Check if a type should NOT be resolved from the container.
 
-        Handles UnionType (str | None), Optional[str] (which is str | None at
-        runtime), and bare primitive types like str, int, etc.
+        Returns True for types that the container cannot instantiate: primitives,
+        NoneType, Literal special forms, Callable special forms, and any Union type
+        (whether pure-primitive or mixed). These parameters should use their
+        default values instead.
 
         Args:
             dep_type: The type annotation to check.
 
         Returns:
-            True if the type is a primitive or a union of primitives/NoneType
-            that should not be resolved from the container.
+            True if the type should not be resolved from the container.
         """
         # Direct primitive match
         if dep_type in _PRIMITIVE_TYPES:
             return True
 
-        # Check for UnionType (str | None, Optional[str], Union[str, int], etc.)
-
+        # All Union types (str | None, Optional[str], str | int, str | Port, etc.)
+        # are special forms that the container cannot resolve directly.
         origin = typing.get_origin(dep_type)
         if origin in (typing.Union, types.UnionType):
-            args = typing.get_args(dep_type)
-            type_none = type(None)
-            # True if all non-None args are primitives
-            return all(arg in _PRIMITIVE_TYPES or arg is type_none for arg in args)
+            return True
+
+        # Literal['dev', 'prod'], Literal[1, 2, 3], etc. are special forms
+        # that cannot be resolved from the container.
+        if origin is typing.Literal:
+            return True
+
+        # Callable[[int], str], Callable[..., None], etc. are special forms
+        # that cannot be resolved from the container.
+        if origin is Callable:
+            return True
 
         return False
 
@@ -1358,7 +1366,7 @@ class Container:
             if param_name not in type_hints:
                 continue
             dep_type = type_hints[param_name]
-            if self._is_primitive_or_optional_primitive(dep_type):
+            if self._is_non_injectable_type(dep_type):
                 continue
 
             # Guard against circular dependency probing
@@ -2920,7 +2928,7 @@ class Container:
             for name in init_signature.parameters
             if name != 'self'
             and name in type_hints
-            and not self._is_primitive_or_optional_primitive(type_hints[name])
+            and not self._is_non_injectable_type(type_hints[name])
             and init_signature.parameters[name].kind
             not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL)
         ]
@@ -2939,7 +2947,7 @@ class Container:
                     continue
                 if param_name in type_hints:
                     dependency_type = type_hints[param_name]
-                    if self._is_primitive_or_optional_primitive(dependency_type):
+                    if self._is_non_injectable_type(dependency_type):
                         continue
                     kwargs[param_name] = self.resolve(dependency_type)
             return cls(**kwargs)

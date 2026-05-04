@@ -9,6 +9,7 @@ Each bug is proven by a failing test before recording.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import (
     Protocol,
 )
@@ -33,15 +34,12 @@ from dioxide.exceptions import (
 
 class DescribeBugUnionPrimitiveNonPrimitiveCrash:
     """When a service constructor has a Union type that mixes a primitive
-    with a non-primitive (e.g. str | SomePort), _is_primitive_or_optional_primitive
-    returns False, the auto-injecting factory tries to resolve the entire Union
-    from the container, and _rust_core.resolve crashes with:
-    TypeError: argument 'py_type': 'Union' object is not an instance of 'type'
+    with a non-primitive (e.g. str | SomePort), the container recognizes
+    it as a non-injectable special form and uses the parameter's default value
+    instead of attempting to resolve the Union from the container."""
 
-    Expected: ServiceNotFoundError with a clear message."""
-
-    def it_crashes_with_typeerror_for_str_or_port_union(self) -> None:
-        """Union[str | SettingsPort] triggers TypeError in Rust core."""
+    def it_resolves_str_or_port_union_with_default(self) -> None:
+        """Union[str | SettingsPort] with default resolves using the default value."""
 
         class SettingsPort(Protocol):
             database_url: str
@@ -54,13 +52,11 @@ class DescribeBugUnionPrimitiveNonPrimitiveCrash:
         container = Container()
         container.scan(profile=Profile.DEVELOPMENT)
 
-        # BUG: This crashes with TypeError instead of raising
-        # ServiceNotFoundError with a clear message.
-        with pytest.raises(TypeError, match="'Union' object is not an instance of 'type'"):
-            container.resolve(MixedService)
+        instance = container.resolve(MixedService)
+        assert instance.value == 'default'
 
-    def it_crashes_with_typeerror_for_int_or_port_union(self) -> None:
-        """Union[int | CachePort] triggers TypeError in Rust core."""
+    def it_resolves_int_or_port_union_with_default(self) -> None:
+        """Union[int | CachePort] with default resolves using the default value."""
 
         class CachePort(Protocol):
             def get(self, key: str) -> str | None: ...
@@ -73,9 +69,25 @@ class DescribeBugUnionPrimitiveNonPrimitiveCrash:
         container = Container()
         container.scan(profile=Profile.DEVELOPMENT)
 
-        # BUG: TypeError crash instead of DI error.
-        with pytest.raises(TypeError, match="'Union' object is not an instance of 'type'"):
-            container.resolve(MixedIntService)
+        instance = container.resolve(MixedIntService)
+        assert instance.ttl == 300
+
+    def it_resolves_triple_union_with_default(self) -> None:
+        """Union[str | int | Port] with default resolves using the default value."""
+
+        class LogPort(Protocol):
+            def log(self, msg: str) -> None: ...
+
+        @service
+        class TripleUnionService:
+            def __init__(self, sink: str | int | LogPort = 'stdout') -> None:
+                self.sink = sink
+
+        container = Container()
+        container.scan(profile=Profile.DEVELOPMENT)
+
+        instance = container.resolve(TripleUnionService)
+        assert instance.sink == 'stdout'
 
 
 # ============================================================
@@ -90,39 +102,82 @@ class DescribeBugUnionPrimitiveNonPrimitiveCrash:
 
 
 class DescribeBugLiteralTypeCrash:
-    """typing.Literal types are not recognized as primitives. The
-    auto-injecting factory tries to resolve them from the container,
-    passing the Literal special form to _rust_core.resolve, which
-    crashes with TypeError.
+    """typing.Literal types are recognized as non-injectable special forms.
+    The container uses the parameter's default value and resolves the service
+    normally instead of attempting to resolve the Literal from the container."""
 
-    Expected: ServiceNotFoundError with a clear message, or the parameter
-    is treated with its default and the service resolves normally."""
-
-    def it_crashes_with_typeerror_for_literal_string_param(self) -> None:
-        """Literal['dev', 'prod'] causes TypeError crash in Rust core."""
+    def it_resolves_literal_string_param_with_default(self) -> None:
+        """Literal['dev', 'prod'] parameter uses its default value."""
         from tests.fixtures.qa_literal_fixtures import LiteralStringFixture
 
         container = Container()
         container.scan()
 
-        # BUG: TypeError crash instead of clear handling.
-        with pytest.raises(TypeError, match="not an instance of 'type'"):
-            container.resolve(LiteralStringFixture)
+        instance = container.resolve(LiteralStringFixture)
+        assert instance.mode == 'dev'
 
-    def it_crashes_with_typeerror_for_literal_int_param(self) -> None:
-        """Literal[1, 2, 3] causes TypeError crash in Rust core."""
+    def it_resolves_literal_int_param_with_default(self) -> None:
+        """Literal[1, 2, 3] parameter uses its default value."""
         from tests.fixtures.qa_literal_fixtures import LiteralIntFixture
 
         container = Container()
         container.scan()
 
-        # BUG: TypeError crash instead of clear handling.
-        with pytest.raises(TypeError, match="not an instance of 'type'"):
-            container.resolve(LiteralIntFixture)
+        instance = container.resolve(LiteralIntFixture)
+        assert instance.level == 1
 
 
 # ============================================================
-# BUG 3: Required primitive parameter (no default) gives
+# BUG 3: typing.Callable causes TypeError crash
+# ============================================================
+
+
+class DescribeBugCallableTypeCrash:
+    """typing.Callable types are not recognized as non-injectable. The
+    auto-injecting factory tries to resolve them from the container,
+    passing the Callable special form to _rust_core.resolve, which
+    crashes with TypeError.
+
+    Expected: The container recognizes Callable as non-injectable and
+    uses the parameter's default value."""
+
+    def it_resolves_callable_param_with_default(self) -> None:
+        """Callable[[], str] parameter uses its default value."""
+
+        def _default_fn() -> str:
+            return 'hello'
+
+        @service
+        class CallableService:
+            def __init__(self, get_message: Callable[[], str] = _default_fn) -> None:
+                self.get_message = get_message
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(CallableService)
+        assert instance.get_message() == 'hello'
+
+    def it_resolves_variadic_callable_with_default(self) -> None:
+        """Callable[..., Any] parameter uses its default value."""
+
+        def _any_fn(*_: object) -> int:
+            return 0
+
+        @service
+        class VariadicCallableService:
+            def __init__(self, worker: Callable[..., int] = _any_fn) -> None:
+                self.worker = worker
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(VariadicCallableService)
+        assert instance.worker() == 0
+
+
+# ============================================================
+# BUG 4: Required primitive parameter (no default) gives
 #        misleading error message
 # ============================================================
 
