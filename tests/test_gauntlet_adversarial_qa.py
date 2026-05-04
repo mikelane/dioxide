@@ -1102,7 +1102,6 @@ class DescribeBugMixedGenericAliasCrash:
         """dict[str, Port] without default raises ServiceNotFoundError because
         the auto-injecting factory can't provide a value for a non-injectable
         required parameter."""
-        from typing import Protocol
 
         class DictPort(Protocol):
             def serialize(self) -> str: ...
@@ -1120,7 +1119,6 @@ class DescribeBugMixedGenericAliasCrash:
 
     def it_uses_default_for_dict_str_port_with_default(self) -> None:
         """dict[str, Port] with default uses the default value."""
-        from typing import Protocol
 
         class DictPort(Protocol):
             def serialize(self) -> str: ...
@@ -1140,7 +1138,6 @@ class DescribeBugMixedGenericAliasCrash:
         """set[Port] without default raises ServiceNotFoundError because
         the auto-injecting factory can't provide a value for a non-injectable
         required parameter."""
-        from typing import Protocol
 
         class SetPort(Protocol):
             def validate(self) -> bool: ...
@@ -1160,7 +1157,6 @@ class DescribeBugMixedGenericAliasCrash:
         """tuple[Port, ...] without default raises ServiceNotFoundError because
         the auto-injecting factory can't provide a value for a non-injectable
         required parameter."""
-        from typing import Protocol
 
         class TupPort(Protocol):
             def transform(self) -> str: ...
@@ -1180,7 +1176,6 @@ class DescribeBugMixedGenericAliasCrash:
         """frozenset[Port] without default raises ServiceNotFoundError because
         the auto-injecting factory can't provide a value for a non-injectable
         required parameter."""
-        from typing import Protocol
 
         class FrozenPort(Protocol):
             def hash(self) -> int: ...
@@ -1198,7 +1193,6 @@ class DescribeBugMixedGenericAliasCrash:
 
     def it_uses_default_for_set_port_with_default(self) -> None:
         """set[Port] with default uses the default value."""
-        from typing import Protocol
 
         class SetDefaultPort(Protocol):
             def validate(self) -> bool: ...
@@ -1218,7 +1212,6 @@ class DescribeBugMixedGenericAliasCrash:
         """list[Port] with default works, but default is silently ignored.
         The multi-binding path intercepts list[...] and returns []
         instead of using the user's explicit default value."""
-        from typing import Protocol
 
         class ListPort(Protocol):
             def process(self) -> str: ...

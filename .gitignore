@@ -60,6 +60,30 @@ Thumbs.db
 *.profraw
 strategic-roadmap.md
 
+# Environment files (secrets)
+.env
+.env.*
+!.env.example
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+id_rsa
+id_ecdsa
+id_ed25519
+
+# Cloud credentials
+credentials.json
+service-account.json
+google-credentials.json
+*-credentials.json
+
 .claude
 .worktrees/
 

@@ -1357,6 +1357,7 @@ class Container:
         failed_type_name: str | None = None
         failed_reason: str | None = None
 
+        init_signature: inspect.Signature | None = None
         try:
             init_signature = inspect.signature(implementing_class.__init__)
             globalns = getattr(implementing_class.__init__, '__globals__', {})
@@ -1382,6 +1383,14 @@ class Container:
             )
         except (ValueError, AttributeError, NameError):
             type_hints = {}
+
+        if init_signature is None:
+            return str(
+                ServiceNotFoundError(
+                    'Could not inspect constructor signature.',
+                    service=component_type,
+                )
+            )
 
         # Skip parameters whose type hints can't be resolved or are
         # primitives/optional primitives. These are not container-managed
