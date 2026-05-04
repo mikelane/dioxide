@@ -267,7 +267,7 @@ Medium-weight criteria (multiplied by 2): Zero Ceremony, Type Safety, Testing, I
 
 The approach aligns with established patterns in the Python DI ecosystem:
 
-- [dependency-injector](https://python-dependency-injector.ets-labs.org/) uses a `Resource` provider
+- [dependency-injector](https://github.com/ets-labs/python-dependency-injector) uses a `Resource` provider
   type with explicit `init`/`shutdown` methods -- separate from the provider registration mechanism.
 - FastAPI's lifespan handler uses explicit `startup`/`shutdown` callbacks, not implicit protocol detection.
 - Django uses explicit signal-based lifecycle (`pre_init`, `post_init`, `pre_save`, etc.).
@@ -332,7 +332,7 @@ It should only be pursued if there is demonstrated user demand, not speculativel
 - [Dioxide Design Principles](../design-principles.md) -- Canonical design reference
 - [ADR-001: Container Architecture](ADR-001-container-architecture.md) -- Container design decisions
 - [GitHub Issue #388](https://github.com/mikelane/dioxide/issues/388) -- Original spike issue
-- [Python dependency-injector](https://python-dependency-injector.ets-labs.org/) -- Resource provider pattern
+- [Python dependency-injector](https://github.com/ets-labs/python-dependency-injector) -- Resource provider pattern
 - [.NET IDisposable Pattern](https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-dispose) -- Inspiration for `dispose` naming
 
 ---
