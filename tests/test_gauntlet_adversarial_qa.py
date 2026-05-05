@@ -9,6 +9,8 @@ Each bug is proven by a failing test before recording.
 
 from __future__ import annotations
 
+import typing
+from collections.abc import Callable
 from typing import (
     Protocol,
 )
@@ -33,15 +35,12 @@ from dioxide.exceptions import (
 
 class DescribeBugUnionPrimitiveNonPrimitiveCrash:
     """When a service constructor has a Union type that mixes a primitive
-    with a non-primitive (e.g. str | SomePort), _is_primitive_or_optional_primitive
-    returns False, the auto-injecting factory tries to resolve the entire Union
-    from the container, and _rust_core.resolve crashes with:
-    TypeError: argument 'py_type': 'Union' object is not an instance of 'type'
+    with a non-primitive (e.g. str | SomePort), the container recognizes
+    it as a non-injectable special form and uses the parameter's default value
+    instead of attempting to resolve the Union from the container."""
 
-    Expected: ServiceNotFoundError with a clear message."""
-
-    def it_crashes_with_typeerror_for_str_or_port_union(self) -> None:
-        """Union[str | SettingsPort] triggers TypeError in Rust core."""
+    def it_resolves_str_or_port_union_with_default(self) -> None:
+        """Union[str | SettingsPort] with default resolves using the default value."""
 
         class SettingsPort(Protocol):
             database_url: str
@@ -54,13 +53,11 @@ class DescribeBugUnionPrimitiveNonPrimitiveCrash:
         container = Container()
         container.scan(profile=Profile.DEVELOPMENT)
 
-        # BUG: This crashes with TypeError instead of raising
-        # ServiceNotFoundError with a clear message.
-        with pytest.raises(TypeError, match="'Union' object is not an instance of 'type'"):
-            container.resolve(MixedService)
+        instance = container.resolve(MixedService)
+        assert instance.value == 'default'
 
-    def it_crashes_with_typeerror_for_int_or_port_union(self) -> None:
-        """Union[int | CachePort] triggers TypeError in Rust core."""
+    def it_resolves_int_or_port_union_with_default(self) -> None:
+        """Union[int | CachePort] with default resolves using the default value."""
 
         class CachePort(Protocol):
             def get(self, key: str) -> str | None: ...
@@ -73,9 +70,25 @@ class DescribeBugUnionPrimitiveNonPrimitiveCrash:
         container = Container()
         container.scan(profile=Profile.DEVELOPMENT)
 
-        # BUG: TypeError crash instead of DI error.
-        with pytest.raises(TypeError, match="'Union' object is not an instance of 'type'"):
-            container.resolve(MixedIntService)
+        instance = container.resolve(MixedIntService)
+        assert instance.ttl == 300
+
+    def it_resolves_triple_union_with_default(self) -> None:
+        """Union[str | int | Port] with default resolves using the default value."""
+
+        class LogPort(Protocol):
+            def log(self, msg: str) -> None: ...
+
+        @service
+        class TripleUnionService:
+            def __init__(self, sink: str | int | LogPort = 'stdout') -> None:
+                self.sink = sink
+
+        container = Container()
+        container.scan(profile=Profile.DEVELOPMENT)
+
+        instance = container.resolve(TripleUnionService)
+        assert instance.sink == 'stdout'
 
 
 # ============================================================
@@ -90,39 +103,82 @@ class DescribeBugUnionPrimitiveNonPrimitiveCrash:
 
 
 class DescribeBugLiteralTypeCrash:
-    """typing.Literal types are not recognized as primitives. The
-    auto-injecting factory tries to resolve them from the container,
-    passing the Literal special form to _rust_core.resolve, which
-    crashes with TypeError.
+    """typing.Literal types are recognized as non-injectable special forms.
+    The container uses the parameter's default value and resolves the service
+    normally instead of attempting to resolve the Literal from the container."""
 
-    Expected: ServiceNotFoundError with a clear message, or the parameter
-    is treated with its default and the service resolves normally."""
-
-    def it_crashes_with_typeerror_for_literal_string_param(self) -> None:
-        """Literal['dev', 'prod'] causes TypeError crash in Rust core."""
+    def it_resolves_literal_string_param_with_default(self) -> None:
+        """Literal['dev', 'prod'] parameter uses its default value."""
         from tests.fixtures.qa_literal_fixtures import LiteralStringFixture
 
         container = Container()
         container.scan()
 
-        # BUG: TypeError crash instead of clear handling.
-        with pytest.raises(TypeError, match="not an instance of 'type'"):
-            container.resolve(LiteralStringFixture)
+        instance = container.resolve(LiteralStringFixture)
+        assert instance.mode == 'dev'
 
-    def it_crashes_with_typeerror_for_literal_int_param(self) -> None:
-        """Literal[1, 2, 3] causes TypeError crash in Rust core."""
+    def it_resolves_literal_int_param_with_default(self) -> None:
+        """Literal[1, 2, 3] parameter uses its default value."""
         from tests.fixtures.qa_literal_fixtures import LiteralIntFixture
 
         container = Container()
         container.scan()
 
-        # BUG: TypeError crash instead of clear handling.
-        with pytest.raises(TypeError, match="not an instance of 'type'"):
-            container.resolve(LiteralIntFixture)
+        instance = container.resolve(LiteralIntFixture)
+        assert instance.level == 1
 
 
 # ============================================================
-# BUG 3: Required primitive parameter (no default) gives
+# BUG 3: typing.Callable causes TypeError crash
+# ============================================================
+
+
+class DescribeBugCallableTypeCrash:
+    """typing.Callable types are not recognized as non-injectable. The
+    auto-injecting factory tries to resolve them from the container,
+    passing the Callable special form to _rust_core.resolve, which
+    crashes with TypeError.
+
+    Expected: The container recognizes Callable as non-injectable and
+    uses the parameter's default value."""
+
+    def it_resolves_callable_param_with_default(self) -> None:
+        """Callable[[], str] parameter uses its default value."""
+
+        def _default_fn() -> str:
+            return 'hello'
+
+        @service
+        class CallableService:
+            def __init__(self, get_message: Callable[[], str] = _default_fn) -> None:
+                self.get_message = get_message
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(CallableService)
+        assert instance.get_message() == 'hello'
+
+    def it_resolves_variadic_callable_with_default(self) -> None:
+        """Callable[..., Any] parameter uses its default value."""
+
+        def _any_fn(*_: object) -> int:
+            return 0
+
+        @service
+        class VariadicCallableService:
+            def __init__(self, worker: Callable[..., int] = _any_fn) -> None:
+                self.worker = worker
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(VariadicCallableService)
+        assert instance.worker() == 0
+
+
+# ============================================================
+# BUG 4: Required primitive parameter (no default) gives
 #        misleading error message
 # ============================================================
 
@@ -796,3 +852,413 @@ class DescribeMultipleResolveStress:
 
         assert len(container._resolving) == 0
         assert len(container._probing_deps) == 0
+
+
+# ============================================================
+# Attack 16: type[SomeType] not recognized as non-injectable
+# ============================================================
+
+
+class DescribeBugTypeSpecialFormCrash:
+    """type[SomeType] (e.g. type[str]) is a GenericAlias with origin `type`.
+    _is_non_injectable_type now recognizes this as non-injectable and uses
+    the parameter's default value instead of crashing."""
+
+    def it_uses_default_for_type_str_param(self) -> None:
+        """type[str] with default uses the default value instead of crashing."""
+
+        @service
+        class TypeParamService:
+            def __init__(self, factory: type[str] = str) -> None:
+                self.factory = factory
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(TypeParamService)
+        assert instance.factory is str
+
+    def it_uses_default_for_type_str_in_adapter_constructor(self) -> None:
+        """type[str] in an adapter constructor uses the default value."""
+
+        class DBPort(Protocol):
+            pass
+
+        @adapter.for_(DBPort, profile=Profile.DEVELOPMENT)
+        class DBAdapter:
+            def __init__(self, validator: type[str] = str) -> None:
+                self.validator = validator
+
+        container = Container()
+        container.scan(profile=Profile.DEVELOPMENT)
+
+        instance = container.resolve(DBPort)
+        assert instance.validator is str
+
+
+# ============================================================
+# Attack 17: typing.Any not recognized as non-injectable
+# ============================================================
+
+
+class DescribeBugAnyTypeNotRecognized:
+    """typing.Any has get_origin() == None and is not in _PRIMITIVE_TYPES.
+    _is_non_injectable_type now explicitly checks for `typing.Any` and uses
+    the parameter's default value instead of trying to resolve it."""
+
+    def it_uses_default_for_any_param(self) -> None:
+        """typing.Any with a default uses the default instead of trying to resolve Any."""
+
+        @service
+        class AnyService:
+            def __init__(self, value: typing.Any = 'default') -> None:
+                self.value = value
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(AnyService)
+        assert instance.value == 'default'
+
+
+# ============================================================
+# Attack 18: TypeVar not recognized as non-injectable
+# ============================================================
+
+
+class DescribeBugTypeVarCrash:
+    """TypeVar has get_origin() == None and is not in _PRIMITIVE_TYPES.
+    _is_non_injectable_type now explicitly checks for TypeVar via isinstance
+    and uses the parameter's default value instead of crashing.
+
+    TypeVar and service class are defined in an external fixture module
+    so that get_type_hints can properly resolve the TypeVar annotation,
+    just like the Literal fixtures."""
+
+    def it_uses_default_for_typevar_param(self) -> None:
+        """TypeVar parameter uses its default value instead of crashing."""
+        from tests.fixtures.qa_typevar_fixtures import TypeVarFixture
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(TypeVarFixture)
+        assert instance.value == 'ok'
+
+
+# ============================================================
+# Attack 19: Union type with no default gives misleading message
+# ============================================================
+
+
+class DescribeBugUnionNoDefaultMisleadingError:
+    """When a service has a Union-typed parameter with no default, the
+    parameter is treated as non-injectable (correct). But since there's
+    no default, the cls() call fails with TypeError about missing args.
+    This gets wrapped into a misleading 'transitive dependency failed'
+    ServiceNotFoundError."""
+
+    def it_gives_misleading_error_for_union_no_default(self) -> None:
+        """Union[str, int] without default -> misleading transitive error."""
+
+        @service
+        class NoDefaultUnion:
+            def __init__(self, value: str | int) -> None:
+                self.value = value
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError) as exc_info:
+            container.resolve(NoDefaultUnion)
+
+        error_msg = str(exc_info.value)
+        # BUG: The error message says "transitive dependency failed"
+        # but the real issue is a Union param missing a default value.
+        assert 'transitive dependency' in error_msg, (
+            "BUG: misleading 'transitive dependency' message for Union param with no default"
+        )
+
+
+# ============================================================
+# Attack 20: Nested generics with special forms (boundary)
+# ============================================================
+
+
+class DescribeNestedGenericSpecialForms:
+    """When a special form is nested inside a generic (e.g.,
+    list[Callable[[int], str]]), the outer origin is `list` which is now
+    in _PRIMITIVE_TYPES (via `origin in _PRIMITIVE_TYPES` check).
+    _is_non_injectable_type returns True, so the parameter's default value
+    is used instead of being intercepted by the multi-binding code path."""
+
+    def it_resolves_list_of_callable_with_default_value(self) -> None:
+        """list[Callable[[int], str]] uses its default value (the list class)
+        instead of being intercepted by the multi-binding code path."""
+
+        @service
+        class ListCallableService:
+            def __init__(self, handlers: list[Callable[[int], str]] = list) -> None:  # type: ignore[assignment]
+                self.handlers = handlers
+
+        container = Container()
+        container.scan()
+        instance = container.resolve(ListCallableService)
+
+        # The origin `list` is in _PRIMITIVE_TYPES, so this is recognized
+        # as non-injectable and the default value `list` (the class) is used.
+        assert instance.handlers is list
+
+
+# ============================================================
+# Attack 21: Generic collection aliases crash (dict, set, tuple, frozenset)
+# ============================================================
+
+
+class DescribeBugGenericCollectionAliasCrash:
+    """Generic aliases of built-in collection types (dict[str, int],
+    set[int], tuple[int, str], frozenset[int]) are now recognized as
+    non-injectable because _is_non_injectable_type checks `origin in
+    _PRIMITIVE_TYPES` in addition to the bare type check. The parameter's
+    default value is used instead of crashing."""
+
+    def it_uses_default_for_dict_str_int(self) -> None:
+        """dict[str, int] uses its default value instead of crashing."""
+
+        @service
+        class DictConfig:
+            def __init__(self, config: dict[str, int] = dict) -> None:  # type: ignore[assignment]
+                self.config = config
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(DictConfig)
+        assert instance.config is dict
+
+    def it_uses_default_for_set_int(self) -> None:
+        """set[int] uses its default value instead of crashing."""
+
+        @service
+        class SetConfig:
+            def __init__(self, values: set[int] = set) -> None:  # type: ignore[assignment]
+                self.values = values
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(SetConfig)
+        assert instance.values is set
+
+    def it_uses_default_for_tuple_int_str(self) -> None:
+        """tuple[int, str] uses its default value instead of crashing."""
+
+        @service
+        class TupleConfig:
+            def __init__(self, coords: tuple[int, str] = tuple) -> None:  # type: ignore[assignment]
+                self.coords = coords
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(TupleConfig)
+        assert instance.coords is tuple
+
+    def it_uses_default_for_frozenset_int(self) -> None:
+        """frozenset[int] uses its default value instead of crashing."""
+
+        @service
+        class FrozenConfig:
+            def __init__(self, frozen: frozenset[int] = frozenset) -> None:  # type: ignore[assignment]
+                self.frozen = frozen
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(FrozenConfig)
+        assert instance.frozen is frozenset
+
+
+# ============================================================
+# NEW BUG 1: Mixed generic collection aliases crash
+# (dict[str, Port], set[Port], tuple[Port, ...], frozenset[Port])
+# even when a default IS provided.
+# ============================================================
+
+
+class DescribeBugMixedGenericAliasCrash:
+    """When a collection alias mixes primitive types with injectable types
+    (e.g., dict[str, Port], set[Port], tuple[Port, ...], frozenset[Port]),
+    _is_non_injectable_type returns False because not ALL type args are
+    non-injectable. The container tries to resolve the GenericAlias,
+    passing it to the Rust core, which crashes with TypeError.
+
+    Even when a DEFAULT value is provided, the resolution path is entered
+    first and crashes before any fallback logic. This is different from
+    list[Port], which is saved by accident because _resolve_multi_binding
+    intercepts list[...] and returns [] for unregistered ports."""
+
+    def it_raises_service_not_found_for_dict_str_port_no_default(self) -> None:
+        """dict[str, Port] without default raises ServiceNotFoundError because
+        the auto-injecting factory can't provide a value for a non-injectable
+        required parameter."""
+
+        class DictPort(Protocol):
+            def serialize(self) -> str: ...
+
+        @service
+        class DictNoDefaultService:
+            def __init__(self, registry: dict[str, DictPort]) -> None:
+                self.registry = registry
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(DictNoDefaultService)
+
+    def it_uses_default_for_dict_str_port_with_default(self) -> None:
+        """dict[str, Port] with default uses the default value."""
+
+        class DictPort(Protocol):
+            def serialize(self) -> str: ...
+
+        @service
+        class DictWithDefaultService:
+            def __init__(self, registry: dict[str, DictPort] = dict) -> None:  # type: ignore[assignment]
+                self.registry = registry
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(DictWithDefaultService)
+        assert instance.registry is dict
+
+    def it_raises_service_not_found_for_set_port_no_default(self) -> None:
+        """set[Port] without default raises ServiceNotFoundError because
+        the auto-injecting factory can't provide a value for a non-injectable
+        required parameter."""
+
+        class SetPort(Protocol):
+            def validate(self) -> bool: ...
+
+        @service
+        class SetNoDefaultService:
+            def __init__(self, validators: set[SetPort]) -> None:
+                self.validators = validators
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(SetNoDefaultService)
+
+    def it_raises_service_not_found_for_tuple_port_ellipsis_no_default(self) -> None:
+        """tuple[Port, ...] without default raises ServiceNotFoundError because
+        the auto-injecting factory can't provide a value for a non-injectable
+        required parameter."""
+
+        class TupPort(Protocol):
+            def transform(self) -> str: ...
+
+        @service
+        class TupleNoDefaultService:
+            def __init__(self, pipes: tuple[TupPort, ...]) -> None:
+                self.pipes = pipes
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(TupleNoDefaultService)
+
+    def it_raises_service_not_found_for_frozenset_port_no_default(self) -> None:
+        """frozenset[Port] without default raises ServiceNotFoundError because
+        the auto-injecting factory can't provide a value for a non-injectable
+        required parameter."""
+
+        class FrozenPort(Protocol):
+            def hash(self) -> int: ...
+
+        @service
+        class FrozenNoDefaultService:
+            def __init__(self, plugins: frozenset[FrozenPort]) -> None:
+                self.plugins = plugins
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(FrozenNoDefaultService)
+
+    def it_uses_default_for_set_port_with_default(self) -> None:
+        """set[Port] with default uses the default value."""
+
+        class SetDefaultPort(Protocol):
+            def validate(self) -> bool: ...
+
+        @service
+        class SetWithDefaultService:
+            def __init__(self, validators: set[SetDefaultPort] = set) -> None:  # type: ignore[assignment]
+                self.validators = validators
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(SetWithDefaultService)
+        assert instance.validators is set
+
+    def it_works_for_list_port_with_default_via_multi_binding(self) -> None:
+        """list[Port] with default works, but default is silently ignored.
+        The multi-binding path intercepts list[...] and returns []
+        instead of using the user's explicit default value."""
+
+        class ListPort(Protocol):
+            def process(self) -> str: ...
+
+        @service
+        class ListPortService:
+            def __init__(self, handlers: list[ListPort] = list) -> None:  # type: ignore[assignment]
+                self.handlers = handlers
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(ListPortService)
+        # BUG: default was 'list' (the class) but multi-binding returns []
+        assert instance.handlers == [], "BUG: default value 'list' was silently replaced with [] from multi-binding"
+
+
+# ============================================================
+# NEW BUG 2: typing.Self crashes with TypeError
+# ============================================================
+
+
+class DescribeBugSelfSpecialFormCrash:
+    """typing.Self (PEP 673) has get_origin() == None and is a _SpecialForm.
+    _is_non_injectable_type now recognizes Self as non-injectable, so
+    parameters annotated with Self use their defaults instead of crashing.
+
+    Self fixtures are defined in an external module so that get_type_hints
+    can properly resolve the Self annotation."""
+
+    def it_uses_default_for_self_param(self) -> None:
+        """typing.Self parameter with a default resolves using the default."""
+        from tests.fixtures.qa_self_fixtures import SelfFixture
+
+        container = Container()
+        container.scan()
+
+        instance = container.resolve(SelfFixture)
+        assert instance.clone is None
+
+    def it_raises_service_not_found_for_self_param_no_default(self) -> None:
+        """typing.Self parameter without a default raises ServiceNotFoundError
+        because the auto-injecting factory can't provide a value for Self."""
+        from tests.fixtures.qa_self_fixtures import SelfNoDefaultFixture
+
+        container = Container()
+        container.scan()
+
+        with pytest.raises(ServiceNotFoundError):
+            container.resolve(SelfNoDefaultFixture)

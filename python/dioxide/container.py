@@ -610,31 +610,69 @@ class Container:
             self.scan(profile=profile)
 
     @staticmethod
-    def _is_primitive_or_optional_primitive(dep_type: Any) -> bool:
-        """Check if a type is a primitive or Optional[primitive].
+    def _is_non_injectable_type(dep_type: Any) -> bool:
+        """Check if a type should NOT be resolved from the container.
 
-        Handles UnionType (str | None), Optional[str] (which is str | None at
-        runtime), and bare primitive types like str, int, etc.
+        Returns True for types that the container cannot instantiate: primitives,
+        NoneType, generic aliases of primitives (dict[str, int], set[int], etc.),
+        typing.Any, TypeVar, Literal, Callable, type[...], and any Union type
+        (whether pure-primitive or mixed). These parameters should use their
+        default values instead.
 
         Args:
             dep_type: The type annotation to check.
 
         Returns:
-            True if the type is a primitive or a union of primitives/NoneType
-            that should not be resolved from the container.
+            True if the type should not be resolved from the container.
         """
-        # Direct primitive match
+        # Direct primitive match (str, int, float, bytes, bool, NoneType)
         if dep_type in _PRIMITIVE_TYPES:
             return True
 
-        # Check for UnionType (str | None, Optional[str], Union[str, int], etc.)
+        # typing.Any (get_origin returns None, must check before get_origin)
+        if dep_type is typing.Any:
+            return True
+
+        # TypeVar (get_origin returns None, must check before get_origin)
+        if isinstance(dep_type, typing.TypeVar):
+            return True
+
+        # typing.Self (PEP 673, Python 3.11+)
+        # Self is a _SpecialForm with get_origin() == None, must check before get_origin
+        try:
+            if dep_type is typing.Self:
+                return True
+        except AttributeError:
+            pass  # typing.Self unavailable (pre-3.11)
 
         origin = typing.get_origin(dep_type)
-        if origin in (typing.Union, types.UnionType):
+
+        # Generic aliases of primitives (dict[str, int], set[int], tuple[str, ...], etc.)
+        # These are NOT concrete types and should use defaults regardless of args.
+        # list[...] is excluded because it goes through the multi-binding resolution path,
+        # unless ALL type args are non-injectable (e.g., list[Callable[[int], str]]).
+        if origin in _PRIMITIVE_TYPES:
+            if origin is not list:
+                return True
             args = typing.get_args(dep_type)
-            type_none = type(None)
-            # True if all non-None args are primitives
-            return all(arg in _PRIMITIVE_TYPES or arg is type_none for arg in args)
+            if args and all(Container._is_non_injectable_type(arg) for arg in args):
+                return True
+
+        # Literal['dev', 'prod'], Literal[1, 2, 3], etc.
+        if origin is typing.Literal:
+            return True
+
+        # Callable[[int], str], Callable[..., None], etc.
+        if origin is Callable:
+            return True
+
+        # type[str], type[int], etc. -- GenericAlias with origin `type`
+        if origin is type:
+            return True
+
+        # All Union types (str | None, Optional[str], str | int, str | Port, etc.)
+        if origin in (typing.Union, types.UnionType):
+            return True
 
         return False
 
@@ -1319,6 +1357,7 @@ class Container:
         failed_type_name: str | None = None
         failed_reason: str | None = None
 
+        init_signature: inspect.Signature | None = None
         try:
             init_signature = inspect.signature(implementing_class.__init__)
             globalns = getattr(implementing_class.__init__, '__globals__', {})
@@ -1345,6 +1384,14 @@ class Container:
         except (ValueError, AttributeError, NameError):
             type_hints = {}
 
+        if init_signature is None:
+            return str(
+                ServiceNotFoundError(
+                    'Could not inspect constructor signature.',
+                    service=component_type,
+                )
+            )
+
         # Skip parameters whose type hints can't be resolved or are
         # primitives/optional primitives. These are not container-managed
         # and should use their defaults.
@@ -1358,7 +1405,7 @@ class Container:
             if param_name not in type_hints:
                 continue
             dep_type = type_hints[param_name]
-            if self._is_primitive_or_optional_primitive(dep_type):
+            if self._is_non_injectable_type(dep_type):
                 continue
 
             # Guard against circular dependency probing
@@ -2920,7 +2967,7 @@ class Container:
             for name in init_signature.parameters
             if name != 'self'
             and name in type_hints
-            and not self._is_primitive_or_optional_primitive(type_hints[name])
+            and not self._is_non_injectable_type(type_hints[name])
             and init_signature.parameters[name].kind
             not in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL)
         ]
@@ -2939,7 +2986,7 @@ class Container:
                     continue
                 if param_name in type_hints:
                     dependency_type = type_hints[param_name]
-                    if self._is_primitive_or_optional_primitive(dependency_type):
+                    if self._is_non_injectable_type(dependency_type):
                         continue
                     kwargs[param_name] = self.resolve(dependency_type)
             return cls(**kwargs)
