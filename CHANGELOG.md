@@ -39,7 +39,71 @@ For each breaking change, include:
 - Description (#issue)
 -->
 
-## [Unreleased]
+## [2.1.0] - 2026-05-04
+
+### Added
+
+- **Scan planning API** (#456)
+  - `container.scan_plan("myapp")` returns a `ScanPlan` with files that would be imported
+  - Lists adapters and services that would be discovered, without executing imports
+  - Enables tooling to preview scan effects before running
+
+- **Scan statistics** (#458)
+  - `container.scan("myapp", stats=True)` returns `ScanStats` with counts and details
+  - Includes adapters found, services found, modules scanned, and scan duration
+
+- **Strict mode** (#459)
+  - `container.scan("myapp", strict=True)` detects side effects during module import
+  - Raises `SideEffectWarning` when imports trigger I/O, network calls, or mutations
+  - Helps enforce clean architecture by catching import-time coupling
+
+- **Realistic fake patterns in FastAPI example** (#455)
+  - Demonstrates fake repositories and services in a FastAPI application
+  - Shows profile-based swapping between real and fake implementations
+
+- **GitHub Pages demo site** (#462)
+  - Public demo site showcasing dioxide features and patterns
+  - Built with automated deployment workflow
+
+- **Narrated demo videos** (#465, #466, #467, #468, #469)
+  - Mock-to-fake migration walkthrough
+  - Decorator usage patterns and best practices
+  - Migration experience from other DI frameworks
+  - Rust-backed correctness guarantees explained
+  - Scan performance benchmarks and optimization
+
+### Fixed
+
+- **Transitive dependency error messages** (#491)
+  - Auto-injecting factory now provides clear errors showing the full dependency chain
+  - Primitive types (`str`, `int`, etc.) are correctly skipped during auto-injection
+
+- **Special-form type annotations no longer crash the auto-injecting factory** (#497)
+  - `typing.Literal` — e.g., `Literal["dev", "prod"]` with a default value
+  - `collections.abc.Callable` — e.g., `Callable[[int], str]` with a default value
+  - `typing.Self` (PEP 673, Python 3.11+) — self-referential type hints
+  - `typing.TypeVar` — bounded or unbound type variables
+  - `typing.Any` — explicitly dynamic values
+  - `type[str]`, `type[int]`, etc. — type metatype annotations
+  - Generic collection aliases — `dict[str, int]`, `set[int]`, `tuple[str, ...]`, `frozenset[int]`
+  - Mixed generic aliases — `dict[str, Port]`, `set[Port]`, `tuple[Port, ...]`
+  - All `Union` types — `str | None`, `str | Port`, `Union[str, int]`
+
+### Documentation
+
+- Request scoping guide and examples (#479)
+- REQUEST scope demos for FastAPI and Flask (#476)
+- Async lifecycle patterns guide (#477)
+- Container introspection and debugging guide (#474)
+- Configuration injection guide (#472)
+- Migrating to dioxide guide (#471)
+- Exception documentation and troubleshooting guide (#473)
+- Data pipeline testing spike findings (#475)
+- FAQ: Why not just use @patch? (#452)
+- Production deployment story for fakes (#453)
+- Rust backend decision ADR (#457)
+- Lifecycle decorator alternatives evaluated (#454)
+- Broken documentation links fixed (#496)
 
 ## [2.0.1] - 2026-01-27
 
